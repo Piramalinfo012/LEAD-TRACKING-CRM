@@ -318,6 +318,27 @@ app.use(express.json());
   });
 
   // Auth: Login
+  app.get('/api/debug/fetch', async (req, res) => {
+    try {
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+      if (!scriptUrl) return res.json({ error: 'GOOGLE_SCRIPT_URL is not set' });
+      
+      const start = Date.now();
+      const response = await fetch(`${scriptUrl}?sheet=Login`);
+      const duration = Date.now() - start;
+      
+      const text = await response.text();
+      res.json({
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        durationMs: duration,
+        bodyPreview: text.substring(0, 500)
+      });
+    } catch (err: any) {
+      res.json({ error: err.message, stack: err.stack });
+    }
+  });
+
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
