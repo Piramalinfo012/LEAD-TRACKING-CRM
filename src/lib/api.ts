@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 
 const API_URL = ''; // Relative path because of Vite proxy
 
@@ -47,12 +48,17 @@ export function useApi() {
         const text = await response.text();
         console.error('Expected JSON but got:', text);
         if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
-           throw new Error('Received HTML instead of JSON. The API route might not be found.');
+           const errMsg = 'Received HTML instead of JSON. The API route might not be found.';
+           toast.error(errMsg);
+           throw new Error(errMsg);
         }
-        throw new Error('Response was not JSON');
+        const errJson = 'Response was not JSON';
+        toast.error(errJson);
+        throw new Error(errJson);
       }
     } catch (err: any) {
       setError(err.message);
+      toast.error('API Error: ' + err.message);
       throw err;
     } finally {
       setLoading(false);

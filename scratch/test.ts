@@ -1,0 +1,1 @@
+import 'dotenv/config'; import { SheetsDB } from '../src/lib/sheets.js'; async function test() { const rows = await SheetsDB.getRows('Entry Data'); console.log('Rows:', rows.length); if (rows.length > 0) console.log(rows[0]); } test().catch(console.error);
