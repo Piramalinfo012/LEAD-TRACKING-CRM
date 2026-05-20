@@ -112,8 +112,7 @@ async function doLeadsFetch() {
       }
       leads = [...mainLeads, ...fmsLeads].filter((l: any) => l.is_deleted !== 'true' && l.is_deleted !== true);
     } else {
-      const { MOCK_LEADS } = await import('./server-mocks.js');
-      leads = MOCK_LEADS;
+      throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
     LEADS_CACHE = leads;
     LAST_FETCH_LEADS = now;
@@ -164,8 +163,7 @@ async function doUsersFetch() {
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       users = await SheetsDB.getRows('Login');
     } else {
-      const { MOCK_USERS } = await import('./server-mocks.js');
-      users = MOCK_USERS;
+      throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
     USERS_CACHE = users;
     LAST_FETCH_USERS = now;
@@ -213,6 +211,8 @@ async function doMasterFetch() {
     let data = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       data = await SheetsDB.getRows('Master');
+    } else {
+      throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
     MASTER_CACHE = data;
     LAST_FETCH_MASTER = now;
