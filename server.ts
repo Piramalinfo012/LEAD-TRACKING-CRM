@@ -262,12 +262,11 @@ function getSubordinateIdentifiers(currentUser: any, users: any[]) {
 const MOCK_USERS: any[] = []; // Handled by server-mocks
 const MOCK_LEADS: any[] = []; // Handled by server-mocks
 
-async function startServer() {
-  console.log('--- SERVER STARTING ---');
-  const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+console.log('--- SERVER INITIALIZING ---');
+const app = express();
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-  app.use(express.json());
+app.use(express.json());
   app.use(cors());
 
   app.use((req, res, next) => {
@@ -785,17 +784,19 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     console.log('--- STARTING VITE DEV SERVER ---');
-    try {
-      const vite = await import('vite');
-      const viteServer = await vite.createServer({
+    import('vite').then(vite => {
+      vite.createServer({
         server: { middlewareMode: true },
         appType: "spa",
+      }).then(viteServer => {
+        app.use(viteServer.middlewares);
+        console.log('--- VITE DEV SERVER READY ---');
+      }).catch(err => {
+        console.error('Failed to start Vite server:', err);
       });
-      app.use(viteServer.middlewares);
-      console.log('--- VITE DEV SERVER READY ---');
-    } catch (viteError) {
-      console.error('Failed to start Vite dev server:', viteError);
-    }
+    }).catch(err => {
+      console.error('Failed to import vite:', err);
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
@@ -804,36 +805,17 @@ async function startServer() {
     });
   }
 
-  return app;
-}
-
-// Initialize the app (works for both Vercel serverless and local dev)
-let appInstance: any = null;
-
-async function getApp() {
-  if (!appInstance) {
-    appInstance = await startServer();
-  }
-  return appInstance;
-}
-
-// Vercel serverless export — Vercel calls this as the request handler
-export default async function handler(req: any, res: any) {
-  const app = await getApp();
-  app(req, res);
-}
+// Vercel serverless export
+export default app;
 
 // Local development: start listening
 if (!process.env.VERCEL) {
-  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-  getApp().then(app => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-      // Pre-warm caches
-      refreshLeadsCache().catch(e => console.error('Initial Leads Cache warm-up failed:', e));
-      refreshUsersCache().catch(e => console.error('Initial Users Cache warm-up failed:', e));
-      refreshMasterCache().catch(e => console.error('Initial Master Cache warm-up failed:', e));
-    });
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    // Pre-warm caches
+    refreshLeadsCache().catch(e => console.error('Initial Leads Cache warm-up failed:', e));
+    refreshUsersCache().catch(e => console.error('Initial Users Cache warm-up failed:', e));
+    refreshMasterCache().catch(e => console.error('Initial Master Cache warm-up failed:', e));
   });
 }
 
