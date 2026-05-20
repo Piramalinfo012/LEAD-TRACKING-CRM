@@ -33,7 +33,40 @@ async function doLeadsFetch() {
   try {
     let leads: any[] = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
-      const mainLeads = await SheetsDB.getRows('Leads');
+      let mainLeads: any[] = [];
+      try {
+        const rawMain = await SheetsDB.getRows('Entry Data');
+        mainLeads = rawMain.filter((r: any) => r['Party Name'] || r['Id']).map((l: any, index: number) => ({
+          id: l['Id'] || `LD-MAIN-${index}`,
+          company_name: l['Party Name'] || '',
+          contact_person: l['Person Name'] || '',
+          mobile: l['Mobile No. '] || l['Mobile No.'] || '',
+          email: l['Gmail ID'] || '',
+          address: l['Address'] || '',
+          state: l['State'] || '',
+          district: l['District'] || '',
+          source: l['Source'] || '',
+          status: 'COLD',
+          sales_person_name: l['Sales Person Name'] || '',
+          mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
+          last_remarks: l['Last Remarks'] || '',
+          followup_date: l['Follow Up date'] || '',
+          'District': l['District'],
+          'Follow Up date': l['Follow Up date'],
+          'Source': l['Source'],
+          'Party Name': l['Party Name'],
+          'Person Name': l['Person Name'],
+          'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
+          'Gmail ID': l['Gmail ID'],
+          'Last Remarks': l['Last Remarks'],
+          created_at: l['Timestamp'] || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          owner_id: l['Sales Person Name'] || 'SYSTEM'
+        }));
+      } catch (mainError) {
+        console.warn('Leads sheet fetch failed (might be missing), continuing with empty mainLeads:', mainError);
+      }
+      
       let fmsLeads: any[] = [];
       try {
         const fmsRows = await SheetsDB.getRows('NEW_FMS', undefined, 5);
@@ -438,7 +471,7 @@ app.use(express.json());
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      await SheetsDB.addRow('Leads', leadData);
+      await SheetsDB.addRow('Entry Data', leadData);
       // Update cache in background
       refreshLeadsCache(true);
       res.status(201).json(leadData);
@@ -471,7 +504,7 @@ app.use(express.json());
       };
       
       try {
-        await SheetsDB.addRow('Leads', standardLead);
+        await SheetsDB.addRow('Entry Data', standardLead);
       } catch (syncError) {
         console.warn('Sync to Leads sheet failed, but Entry Data was saved:', syncError);
       }
@@ -518,7 +551,15 @@ app.use(express.json());
         }
       }
 
-      await SheetsDB.updateRow('Leads', 'id', id, updateData);
+      const isFms = updateData.is_fms;
+      const sheetName = isFms ? 'NEW_FMS' : 'Entry Data';
+      const idField = 'Id';
+      
+      const mappedUpdate = { ...updateData };
+      if (updateData.status) mappedUpdate['Status'] = updateData.status;
+      if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
+
+      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate);
       // Update cache in background
       refreshLeadsCache(true);
       res.json({ success: true });
@@ -536,7 +577,8 @@ app.use(express.json());
         return res.status(403).json({ error: 'Only ADMIN and CRM roles are allowed to delete leads.' });
       }
 
-      await SheetsDB.updateRow('Leads', 'id', id, { is_deleted: 'true' });
+      const sheetName = 'Entry Data';
+      await SheetsDB.updateRow(sheetName, 'Id', id, { 'is_deleted': 'true' });
       // Update cache in background
       refreshLeadsCache(true);
       res.json({ success: true });

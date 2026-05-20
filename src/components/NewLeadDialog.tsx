@@ -71,11 +71,28 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     last_remarks: '',
     source: '',
     follow_up_date: '',
-    id: `LD-${Date.now()}`,
+    id: '', // Will be generated automatically
     owner_id: JSON.parse(localStorage.getItem('crm_user') || '{}').id,
     sales_person_name: JSON.parse(localStorage.getItem('crm_user') || '{}').name,
     senior_sales_id: JSON.parse(localStorage.getItem('crm_user') || '{}').senior_sales_id
   });
+
+  useEffect(() => {
+    if (combinedRecords.length > 0 && !formData.id) {
+      // Auto-generate next sequence ID
+      const ppplIds = combinedRecords
+        .map(r => r['Id'] || r.id)
+        .filter(id => typeof id === 'string' && id.startsWith('PPPL-26-'))
+        .map(id => parseInt(id.replace('PPPL-26-', ''), 10))
+        .filter(num => !isNaN(num));
+      
+      let nextNum = 1424; // Default fallback if no sequence found
+      if (ppplIds.length > 0) {
+        nextNum = Math.max(...ppplIds) + 1;
+      }
+      setFormData(prev => ({ ...prev, id: `PPPL-26-${nextNum}` }));
+    }
+  }, [combinedRecords, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -231,7 +248,11 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      toast.success('Lead entered into Entry Data sheet');
+      toast.success(`Lead added with ID: ${formData.id}`);
+      
+      // Reset form ID to force regeneration next time
+      setFormData(prev => ({...prev, id: ''}));
+      
       onSuccess();
       onClose();
     } catch (err: any) {
