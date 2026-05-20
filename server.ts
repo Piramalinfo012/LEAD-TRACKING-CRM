@@ -265,7 +265,7 @@ const MOCK_LEADS: any[] = []; // Handled by server-mocks
 async function startServer() {
   console.log('--- SERVER STARTING ---');
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   app.use(express.json());
   app.use(cors());
@@ -710,6 +710,7 @@ async function startServer() {
         const src = String(row.Source || row.source || '').trim();
         return src === 'Self' || src === 'self';
       });
+      console.log('[NOTICE GET] selfRow:', JSON.stringify(selfRow));
       const noticeText = selfRow ? (selfRow.Notice || selfRow.notice || '') : 'Running message to be shared through meeting – avoid sharing via WhatsApp/Email/Oral.';
       res.json({ notice: noticeText });
     } catch (error: any) {
@@ -730,8 +731,45 @@ async function startServer() {
         return res.status(400).json({ error: 'Notice field is required.' });
       }
 
-      await SheetsDB.updateRow('Master', 'Source', 'Self', { Notice: notice });
-      // Update cache
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+      if (!scriptUrl) {
+        return res.status(500).json({ error: 'GOOGLE_SCRIPT_URL not configured.' });
+      }
+
+      // Use Apps Script 'updateCell' action to update Master sheet B2 directly
+      // Master sheet: Row 1 = headers (Source, Notice), Row 2 = Self row → B2 = Notice cell
+      // rowIndex=2 (Self row), columnIndex=2 (B column = Notice)
+      const params = new URLSearchParams();
+      params.append('action', 'updateCell');
+      params.append('sheetName', 'Master');
+      params.append('rowIndex', '2');
+      params.append('columnIndex', '2');
+      params.append('value', notice);
+
+      const resp = await fetch(scriptUrl, { method: 'POST', body: params });
+      console.log('[NOTICE POST] Apps Script response status:', resp.status);
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error('[NOTICE POST] Apps Script error body:', errText);
+        return res.status(500).json({ error: `Apps Script responded with status ${resp.status}` });
+      }
+
+      const ct = resp.headers.get('content-type');
+      if (!ct || !ct.includes('application/json')) {
+        const rawText = await resp.text();
+        console.error('[NOTICE POST] Non-JSON response:', rawText.substring(0, 200));
+        return res.status(500).json({ error: 'Apps Script returned non-JSON response.' });
+      }
+
+      const result = await resp.json();
+      console.log('[NOTICE POST] Apps Script result:', JSON.stringify(result));
+      if (!result.success) {
+        return res.status(500).json({ error: result.error || 'Apps Script failed to update notice.' });
+      }
+
+      console.log('[NOTICE POST] Notice saved to Master B2 via Apps Script updateCell');
+      // Force refresh master cache so all users get the new notice immediately
       await doMasterFetch();
       res.json({ success: true, notice });
     } catch (error: any) {
