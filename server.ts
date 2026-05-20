@@ -1,5 +1,5 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
+
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -786,11 +786,12 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log('--- STARTING VITE DEV SERVER ---');
     try {
-      const vite = await createViteServer({
+      const vite = await import('vite');
+      const viteServer = await vite.createServer({
         server: { middlewareMode: true },
         appType: "spa",
       });
-      app.use(vite.middlewares);
+      app.use(viteServer.middlewares);
       console.log('--- VITE DEV SERVER READY ---');
     } catch (viteError) {
       console.error('Failed to start Vite dev server:', viteError);
