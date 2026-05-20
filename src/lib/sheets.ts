@@ -12,7 +12,12 @@ export class SheetsDB {
     // Preference: Use Google Apps Script if URL is provided
     if (scriptUrl && !rangeOverride) {
       try {
-        const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout to prevent Vercel Lambda crash
+        const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`Google Apps Script returned status ${response.status}`);
@@ -84,7 +89,12 @@ export class SheetsDB {
 
     if (scriptUrl) {
       try {
-        const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`Google Apps Script returned status ${response.status}`);
@@ -106,10 +116,14 @@ export class SheetsDB {
             params.append('sheetName', sheetName);
             params.append('rowData', JSON.stringify(row));
             
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             const postResponse = await fetch(scriptUrl, {
               method: 'POST',
-              body: params
+              body: params,
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (!postResponse.ok) {
               throw new Error(`Google Apps Script POST failed with status ${postResponse.status}`);

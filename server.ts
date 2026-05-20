@@ -807,9 +807,7 @@ app.use(express.json());
   }
 
 // Vercel serverless export
-export default function handler(req: any, res: any) {
-  return app(req, res);
-}
+export default app;
 
 // Local development: start listening
 if (!process.env.VERCEL) {
