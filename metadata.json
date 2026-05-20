@@ -1,0 +1,6 @@
+{
+  "name": "Professional Lead CRM",
+  "description": "A high-performance Lead Management CRM using Google Sheets as a database and Google Drive for document storage. Features role-based access, Kanban pipeline, and advanced sales reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
