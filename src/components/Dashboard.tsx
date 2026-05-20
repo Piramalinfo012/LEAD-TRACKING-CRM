@@ -159,10 +159,10 @@ export default function Dashboard() {
   }, [filteredLeads]);
 
   const statCards = [
-    { title: 'Total Leads', value: stats?.totalLeads, icon: Users, color: 'indigo', change: 'Active' },
-    { title: 'Active Leads', value: stats?.activeLeads, icon: Clock, color: 'purple', change: 'In Progress' },
-    { title: 'Closed Leads', value: stats?.closedLeads, icon: ArrowDownRight, color: 'pink', change: 'Lost/Inactive' },
-    { title: 'Converted Orders', value: stats?.convertedOrders, icon: CheckCircle2, color: 'emerald', change: 'Won' },
+    { title: 'Total Leads', value: stats?.totalLeads, icon: Users, bgGradient: 'from-blue-50/80 to-indigo-50/30', iconGradient: 'from-blue-500 to-indigo-600', shadowColor: 'shadow-blue-500/20', change: 'Active' },
+    { title: 'Active Leads', value: stats?.activeLeads, icon: Clock, bgGradient: 'from-purple-50/80 to-fuchsia-50/30', iconGradient: 'from-purple-500 to-fuchsia-600', shadowColor: 'shadow-purple-500/20', change: 'In Progress' },
+    { title: 'Closed Leads', value: stats?.closedLeads, icon: ArrowDownRight, bgGradient: 'from-rose-50/80 to-orange-50/30', iconGradient: 'from-rose-500 to-orange-500', shadowColor: 'shadow-rose-500/20', change: 'Lost/Inactive' },
+    { title: 'Converted Orders', value: stats?.convertedOrders, icon: CheckCircle2, bgGradient: 'from-emerald-50/80 to-teal-50/30', iconGradient: 'from-emerald-500 to-teal-600', shadowColor: 'shadow-emerald-500/20', change: 'Won' },
   ];
 
   if (loading && leads.length === 0) {
@@ -212,22 +212,38 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
           <motion.div key={i} variants={itemVariants}>
-            <Card className="bg-white border-border shadow-sm overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-              <CardContent className="p-4">
+            <motion.div 
+              whileHover={{ y: -6, scale: 1.01 }}
+              whileTap={{ scale: 0.97, y: 0 }}
+              className={`relative rounded-2xl bg-gradient-to-br ${stat.bgGradient} border-2 border-white/90 border-b-[5px] border-b-slate-200 shadow-[0_8px_16px_-6px_rgba(0,0,0,0.08),_inset_0_2px_8px_rgba(255,255,255,1),_inset_0_-2px_6px_rgba(0,0,0,0.03)] hover:border-b-[5px] hover:border-b-slate-300 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15),_0_8px_16px_-4px_rgba(0,0,0,0.06),_inset_0_2px_8px_rgba(255,255,255,1)] transition-all duration-300 overflow-hidden group backdrop-blur-sm`}
+            >
+              {/* Premium sweep shine animation on hover */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/80 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-[100%] translate-x-[-100%] transition-all duration-700 ease-in-out z-0 pointer-events-none" />
+              
+              <div className="p-4 relative z-10">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] text-slate-400 font-heading uppercase tracking-widest font-bold">{stat.title}</div>
-                  <div className={`flex items-center gap-1 text-[10px] font-sans font-bold ${stat.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <div className="text-[10px] text-slate-500 font-heading uppercase tracking-widest font-extrabold">{stat.title}</div>
+                  <div className={`flex items-center gap-1 text-[10px] font-sans font-bold px-2 py-0.5 rounded-full shadow-sm bg-white border border-slate-100 ${
+                    stat.change.startsWith('Active') || stat.change.startsWith('Won') 
+                      ? 'text-emerald-600' 
+                      : stat.change.startsWith('In') 
+                        ? 'text-indigo-600'
+                        : 'text-rose-600'
+                  }`}>
                     {stat.change}
                   </div>
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <div className="text-2xl font-sans font-semibold text-slate-900">{stat.value || 0}</div>
-                  <div className={`p-1.5 rounded-md bg-${stat.color}-50 text-${stat.color}-500 shadow-sm border border-${stat.color}-200/20`}>
-                    <stat.icon size={16} />
-                  </div>
+                  <div className="text-2xl font-sans font-extrabold text-slate-800 tracking-tight">{stat.value || 0}</div>
+                  <motion.div 
+                    whileHover={{ rotate: 12, scale: 1.15 }}
+                    className={`p-2 rounded-xl bg-white text-slate-700 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05),_inset_0_1px_2px_rgba(255,255,255,1)] border border-slate-100 group-hover:bg-gradient-to-br group-hover:${stat.iconGradient} group-hover:text-white group-hover:${stat.shadowColor} group-hover:border-transparent transition-all duration-300`}
+                  >
+                    <stat.icon size={18} strokeWidth={2.5} />
+                  </motion.div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </motion.div>
           </motion.div>
         ))}
       </div>
