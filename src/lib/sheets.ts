@@ -13,7 +13,7 @@ export class SheetsDB {
     if (scriptUrl && !rangeOverride) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout to prevent Vercel Lambda crash
+        const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout to handle large sheets like Leads
         const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
           signal: controller.signal
         });
@@ -90,7 +90,7 @@ export class SheetsDB {
     if (scriptUrl) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 50000);
         const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
           signal: controller.signal
         });
@@ -117,7 +117,7 @@ export class SheetsDB {
             params.append('rowData', JSON.stringify(row));
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const timeoutId = setTimeout(() => controller.abort(), 50000);
             const postResponse = await fetch(scriptUrl, {
               method: 'POST',
               body: params,
