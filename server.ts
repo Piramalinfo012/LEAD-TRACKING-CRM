@@ -784,7 +784,8 @@ app.use(express.json());
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     console.log('--- STARTING VITE DEV SERVER ---');
-    import('vite').then(vite => {
+    const viteMod = 'vite';
+    import(viteMod).then(vite => {
       vite.createServer({
         server: { middlewareMode: true },
         appType: "spa",
@@ -806,7 +807,9 @@ app.use(express.json());
   }
 
 // Vercel serverless export
-export default app;
+export default function handler(req: any, res: any) {
+  return app(req, res);
+}
 
 // Local development: start listening
 if (!process.env.VERCEL) {
