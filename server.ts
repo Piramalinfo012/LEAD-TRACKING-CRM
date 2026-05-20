@@ -803,15 +803,36 @@ async function startServer() {
     });
   }
 
-  // Only start listening after all middlewares are set up
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    
-    // Pre-warm caches
-    refreshLeadsCache().catch(e => console.error('Initial Leads Cache warm-up failed:', e));
-    refreshUsersCache().catch(e => console.error('Initial Users Cache warm-up failed:', e));
-    refreshMasterCache().catch(e => console.error('Initial Master Cache warm-up failed:', e));
+  return app;
+}
+
+// Initialize the app (works for both Vercel serverless and local dev)
+let appInstance: any = null;
+
+async function getApp() {
+  if (!appInstance) {
+    appInstance = await startServer();
+  }
+  return appInstance;
+}
+
+// Vercel serverless export — Vercel calls this as the request handler
+export default async function handler(req: any, res: any) {
+  const app = await getApp();
+  app(req, res);
+}
+
+// Local development: start listening
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  getApp().then(app => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      // Pre-warm caches
+      refreshLeadsCache().catch(e => console.error('Initial Leads Cache warm-up failed:', e));
+      refreshUsersCache().catch(e => console.error('Initial Users Cache warm-up failed:', e));
+      refreshMasterCache().catch(e => console.error('Initial Master Cache warm-up failed:', e));
+    });
   });
 }
 
-startServer();
