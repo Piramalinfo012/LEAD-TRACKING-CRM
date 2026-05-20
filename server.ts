@@ -10,8 +10,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import streamifier from 'streamifier';
-import { SheetsDB } from './src/lib/sheets';
-import { getDriveClient } from './src/lib/google-auth';
+import { SheetsDB } from './src/lib/sheets.js';
+import { getDriveClient } from './src/lib/google-auth.js';
 
 // --- Server Side Caching ---
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes standard for background refresh triggers
@@ -79,7 +79,7 @@ async function doLeadsFetch() {
       }
       leads = [...mainLeads, ...fmsLeads].filter((l: any) => l.is_deleted !== 'true' && l.is_deleted !== true);
     } else {
-      const { MOCK_LEADS } = await import('./server-mocks');
+      const { MOCK_LEADS } = await import('./server-mocks.js');
       leads = MOCK_LEADS;
     }
     LEADS_CACHE = leads;
@@ -131,7 +131,7 @@ async function doUsersFetch() {
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       users = await SheetsDB.getRows('Login');
     } else {
-      const { MOCK_USERS } = await import('./server-mocks');
+      const { MOCK_USERS } = await import('./server-mocks.js');
       users = MOCK_USERS;
     }
     USERS_CACHE = users;

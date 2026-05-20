@@ -1,4 +1,4 @@
-import { getSheetsClient } from './google-auth';
+import { getSheetsClient } from './google-auth.js';
 
 export class SheetsDB {
   static get spreadsheetId() {
