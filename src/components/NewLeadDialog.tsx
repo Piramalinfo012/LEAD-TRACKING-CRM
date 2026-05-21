@@ -41,6 +41,73 @@ interface NewLeadDialogProps {
 
 import { INDIAN_STATES_DISTRICTS } from '../lib/locationData';
 
+function SearchableSelect({ options, value, onChange, placeholder, disabled, onSearch }: { options: string[], value: string, onChange: (val: string) => void, placeholder: string, disabled?: boolean, onSearch?: (val: string) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <div 
+        className={`flex items-center justify-between bg-white h-12 text-sm rounded-xl shadow-sm border px-4 cursor-pointer focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400' : 'border-slate-200 text-slate-900'}`}
+        onClick={() => !disabled && setOpen(!open)}
+      >
+        <span className={value ? "text-slate-900" : "text-slate-500"}>{value || placeholder}</span>
+        <ChevronDown size={16} className={`transition-transform duration-200 ${open ? 'rotate-180 text-indigo-600' : 'text-slate-400'}`} />
+      </div>
+      
+      {open && (
+        <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+            <Search size={14} className="text-slate-400 ml-2" />
+            <input 
+              autoFocus
+              className="w-full text-sm outline-none bg-transparent h-9 placeholder:text-slate-400 font-medium text-slate-900"
+              placeholder="Type to search..."
+              value={search}
+              onChange={e => {
+                setSearch(e.target.value);
+                if (onSearch) onSearch(e.target.value);
+              }}
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto p-1.5 scrollbar-thin">
+            {filtered.length === 0 ? (
+              <div className="p-4 text-sm text-slate-500 text-center font-medium">No results found.</div>
+            ) : (
+              filtered.map(opt => (
+                <div 
+                  key={opt}
+                  className={`px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-colors ${value === opt ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium'}`}
+                  onClick={() => {
+                    onChange(opt);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                >
+                  {opt}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDialogProps) {
   const { request, loading } = useApi();
   const [uploading, setUploading] = useState(false);
@@ -395,39 +462,25 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Label htmlFor="state" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider flex items-center gap-2">
                 <Search size={14} className="text-indigo-600" /> State
               </Label>
-              <Select 
-                value={formData.state} 
-                onValueChange={(val) => setFormData({ ...formData, state: val, district: '' })}
-              >
-                <SelectTrigger className="bg-white border-slate-200 h-12 text-sm text-slate-900 rounded-xl shadow-sm focus:ring-4 focus:ring-indigo-500/10">
-                  <SelectValue placeholder="Select State..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px] bg-white">
-                  {states.map(s => (
-                    <SelectItem key={s} value={s} className="cursor-pointer text-sm font-medium">{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={states}
+                value={formData.state}
+                onChange={(val) => setFormData({ ...formData, state: val, district: '' })}
+                placeholder="Select State..."
+              />
             </div>
 
             <div className="space-y-2.5">
               <Label htmlFor="district" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider flex items-center gap-2">
                 <Search size={14} className="text-indigo-600" /> District
               </Label>
-              <Select 
-                value={formData.district} 
-                onValueChange={(val) => setFormData({ ...formData, district: val })}
+              <SearchableSelect
+                options={districts}
+                value={formData.district}
+                onChange={(val) => setFormData({ ...formData, district: val })}
+                placeholder={formData.state ? "Select District..." : "Select State First"}
                 disabled={!formData.state}
-              >
-                <SelectTrigger className="bg-white border-slate-200 h-12 text-sm text-slate-900 rounded-xl shadow-sm focus:ring-4 focus:ring-indigo-500/10">
-                  <SelectValue placeholder={formData.state ? "Select District..." : "Select State First"} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px] bg-white">
-                  {districts.map(d => (
-                    <SelectItem key={d} value={d} className="cursor-pointer text-sm font-medium">{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2.5">
