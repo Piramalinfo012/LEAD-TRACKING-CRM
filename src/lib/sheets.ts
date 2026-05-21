@@ -5,7 +5,7 @@ export class SheetsDB {
     return process.env.GOOGLE_SHEET_ID;
   }
 
-  static async getRows(sheetName: string, rangeOverride?: string, headerRowIndex: number = 0) {
+  static async getRows(sheetName: string, rangeOverride?: string, headerRowIndex: number = 0, timeoutMs: number = 50000) {
     const spreadsheetId = this.spreadsheetId;
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
 
@@ -13,7 +13,7 @@ export class SheetsDB {
     if (scriptUrl && !rangeOverride) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout to handle large sheets like Leads
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs); // Custom timeout to handle Vercel limits
         const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
           signal: controller.signal
         });

@@ -34,13 +34,13 @@ async function doLeadsFetch() {
     let leads: any[] = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       
-      // Fetch both sheets in parallel to cut loading time in half
+      // Fetch both sheets in parallel to cut loading time in half, with 8s timeout safeguard
       const [rawMain, fmsRows] = await Promise.all([
-        SheetsDB.getRows('Entry Data').catch(err => {
+        SheetsDB.getRows('Entry Data', undefined, 0, 8000).catch(err => {
           console.warn('Leads sheet fetch failed (Entry Data):', err);
           return [];
         }),
-        SheetsDB.getRows('NEW_FMS', undefined, 5).catch(err => {
+        SheetsDB.getRows('NEW_FMS', undefined, 5, 8000).catch(err => {
           console.warn('NEW_FMS fetch failed during cache refresh:', err);
           return [];
         })
