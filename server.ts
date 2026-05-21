@@ -33,14 +33,57 @@ async function doLeadsFetch() {
   try {
     let leads: any[] = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
-      let mainLeads: any[] = [];
-      try {
-        const rawMain = await SheetsDB.getRows('Entry Data');
-        mainLeads = rawMain.filter((r: any) => r['Party Name'] || r['Id']).map((l: any, index: number) => ({
-          id: l['Id'] || `LD-MAIN-${index}`,
-          company_name: l['Party Name'] || '',
+      
+      // Fetch both sheets in parallel to cut loading time in half
+      const [rawMain, fmsRows] = await Promise.all([
+        SheetsDB.getRows('Entry Data').catch(err => {
+          console.warn('Leads sheet fetch failed (Entry Data):', err);
+          return [];
+        }),
+        SheetsDB.getRows('NEW_FMS', undefined, 5).catch(err => {
+          console.warn('NEW_FMS fetch failed during cache refresh:', err);
+          return [];
+        })
+      ]);
+
+      const mainLeads = rawMain.filter((r: any) => r['Party Name'] || r['Id']).map((l: any, index: number) => ({
+        id: l['Id'] || `LD-MAIN-${index}`,
+        company_name: l['Party Name'] || '',
+        contact_person: l['Person Name'] || '',
+        mobile: l['Mobile No. '] || l['Mobile No.'] || '',
+        email: l['Gmail ID'] || '',
+        address: l['Address'] || '',
+        state: l['State'] || '',
+        district: l['District'] || '',
+        source: l['Source'] || '',
+        status: 'COLD',
+        sales_person_name: l['Sales Person Name'] || '',
+        mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
+        last_remarks: l['Last Remarks'] || '',
+        followup_date: l['Follow Up date'] || '',
+        'District': l['District'],
+        'Follow Up date': l['Follow Up date'],
+        'Source': l['Source'],
+        'Party Name': l['Party Name'],
+        'Person Name': l['Person Name'],
+        'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
+        'Gmail ID': l['Gmail ID'],
+        'Last Remarks': l['Last Remarks'],
+        created_at: l['Timestamp'] || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        owner_id: l['Sales Person Name'] || 'SYSTEM'
+      }));
+
+      const fmsLeads = fmsRows.filter((r: any) => r.Id || r['Party Name']).map((l: any, index: number) => {
+        const companyName = l['Party Name'] || '';
+        const mobile = l['Mobile No. '] || l['Mobile No.'] || '';
+        const stableId = l['Id'] || `FMS-${index}-${companyName.replace(/\s+/g, '')}-${mobile}`;
+        
+        return {
+          id: stableId,
+          company_name: companyName,
           contact_person: l['Person Name'] || '',
-          mobile: l['Mobile No. '] || l['Mobile No.'] || '',
+          mobile: mobile,
           email: l['Gmail ID'] || '',
           address: l['Address'] || '',
           state: l['State'] || '',
@@ -58,58 +101,15 @@ async function doLeadsFetch() {
           'Person Name': l['Person Name'],
           'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
           'Gmail ID': l['Gmail ID'],
+          'MCBs. (KIT) URl': l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'],
           'Last Remarks': l['Last Remarks'],
           created_at: l['Timestamp'] || new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          owner_id: l['Sales Person Name'] || 'SYSTEM'
-        }));
-      } catch (mainError) {
-        console.warn('Leads sheet fetch failed (might be missing), continuing with empty mainLeads:', mainError);
-      }
-      
-      let fmsLeads: any[] = [];
-      try {
-        const fmsRows = await SheetsDB.getRows('NEW_FMS', undefined, 5);
-        if (fmsRows.length > 0) {
-          fmsLeads = fmsRows.filter((r: any) => r.Id || r['Party Name']).map((l: any, index: number) => {
-            const companyName = l['Party Name'] || '';
-            const mobile = l['Mobile No. '] || l['Mobile No.'] || '';
-            const stableId = l['Id'] || `FMS-${index}-${companyName.replace(/\s+/g, '')}-${mobile}`;
-            
-            return {
-              id: stableId,
-              company_name: companyName,
-              contact_person: l['Person Name'] || '',
-              mobile: mobile,
-              email: l['Gmail ID'] || '',
-              address: l['Address'] || '',
-              state: l['State'] || '',
-              district: l['District'] || '',
-              source: l['Source'] || '',
-              status: 'COLD',
-              sales_person_name: l['Sales Person Name'] || '',
-              mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
-              last_remarks: l['Last Remarks'] || '',
-              followup_date: l['Follow Up date'] || '',
-              'District': l['District'],
-              'Follow Up date': l['Follow Up date'],
-              'Source': l['Source'],
-              'Party Name': l['Party Name'],
-              'Person Name': l['Person Name'],
-              'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
-              'Gmail ID': l['Gmail ID'],
-              'MCBs. (KIT) URl': l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'],
-              'Last Remarks': l['Last Remarks'],
-              created_at: l['Timestamp'] || new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
-              is_fms: true
-            };
-          });
-        }
-      } catch (fmsError) {
-        console.warn('NEW_FMS fetch failed during cache refresh:', fmsError);
-      }
+          owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
+          is_fms: true
+        };
+      });
+
       leads = [...mainLeads, ...fmsLeads].filter((l: any) => l.is_deleted !== 'true' && l.is_deleted !== true);
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
