@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import { Badge } from './ui/badge';
-import { ScrollArea } from './ui/scroll-area';
+// import { ScrollArea } from './ui/scroll-area';
 import { MapPin, Building2, User, Phone, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { INDIAN_STATES_DISTRICTS } from '../lib/locationData';
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
@@ -202,7 +202,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
             </div>
           </DialogHeader>
           <div className="p-0">
-            <ScrollArea className="max-h-[60vh]">
+            <div className="max-h-[60vh] overflow-y-auto">
               <div className="divide-y divide-slate-100">
                 {selectedLeads.map((lead, i) => (
                   <div key={lead.id || i} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
@@ -226,7 +226,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
