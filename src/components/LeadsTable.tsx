@@ -305,11 +305,7 @@ export default function LeadsTable() {
           header: 'Follow Up date',
           cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 uppercase tracking-tight">{formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date) || '-'}</div>
         },
-        {
-          accessorKey: 'Source',
-          header: 'Source',
-          cell: ({ row }) => <div className="text-xs font-bold text-slate-600 uppercase tracking-tight">{row.original.Source || row.original.source || '-'}</div>
-        },
+
         {
           id: 'actions',
           header: 'Actions',
