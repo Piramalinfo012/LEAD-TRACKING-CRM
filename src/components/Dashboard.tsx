@@ -33,6 +33,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from './ui/select';
+import IndiaMap from './IndiaMap';
 
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6'];
 
@@ -250,17 +251,29 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div variants={itemVariants} className="lg:col-span-2">
-          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full">
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Geographic Distribution</CardTitle>
+              <CardDescription className="text-slate-500 font-sans">Lead concentration across India</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[450px] p-0 relative -mt-4">
+              <IndiaMap leads={filteredLeads} />
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="flex flex-col gap-6">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300 flex-1">
             <CardHeader className="pb-2">
               <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Revenue Trend</CardTitle>
               <CardDescription className="text-slate-500 font-sans">Monthly conversion growth</CardDescription>
             </CardHeader>
-            <CardContent className="h-72">
+            <CardContent className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData?.trends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                   <XAxis dataKey="month" stroke="#1e293b" fontSize={11} fontWeight={700} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#1e293b" fontSize={11} fontWeight={700} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#1e293b" fontSize={11} fontWeight={700} tickLine={false} axisLine={false} width={40} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', border: '2px solid #1e293b', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
                     itemStyle={{ fontSize: '12px' }}
@@ -277,10 +290,8 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300 flex-1">
             <CardHeader className="pb-2">
               <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Pipeline Mix</CardTitle>
               <CardDescription className="text-slate-500 font-sans">Lead distribution</CardDescription>
