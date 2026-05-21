@@ -46,7 +46,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
   const menuItems = [
     { name: 'Dashboard', icon: Home, path: '/' },
     { name: 'Reports', icon: BarChart3, path: '/reports' },
-    { name: 'User Management', icon: Users, path: '/users', roles: ['ADMIN'] },
+    { name: 'User Management', icon: Users, path: '/users', roles: ['ADMIN', 'CRM'] },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
 

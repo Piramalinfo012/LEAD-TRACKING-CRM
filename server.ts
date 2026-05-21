@@ -667,34 +667,76 @@ app.use(express.json());
   });
 
   // User Management
-  app.get('/api/users', authenticateToken, authorizeRoles('ADMIN'), async (req, res) => {
+  app.get('/api/users', authenticateToken, authorizeRoles('ADMIN', 'CRM'), async (req, res) => {
     try {
       const users = await refreshUsersCache();
-      const safeUsers = users.map(({ PASSWORD, password, ...u }: any) => u);
+      const safeUsers = users.map((u: any) => ({
+        id: u.ID || u.id || '',
+        name: u['USER NAME'] || u.name || '',
+        email: u.GMAIL || u.Gmail || u.email || '',
+        role: (u.ROLE || u.role || 'SALES').toUpperCase(),
+        employee_id: u.ID || u.employee_id || ''
+      }));
       res.json(safeUsers);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post('/api/users', authenticateToken, authorizeRoles('ADMIN'), async (req, res) => {
+  app.post('/api/users', authenticateToken, authorizeRoles('ADMIN', 'CRM'), async (req, res) => {
     try {
       const { password, ...userData } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = {
-        ID: `USER-${Date.now()}`,
-        'USER NAME': userData.name,
-        Gmail: userData.email,
+        ID: userData.employee_id || `USER-${Date.now()}`,
         PASSWORD: hashedPassword,
+        'USER NAME': userData.name,
         ROLE: userData.role || 'SALES',
-        ...userData,
-        created_at: new Date().toISOString()
+        GMAIL: userData.email,
+        MAINAGER: '',
+        CRM: '',
+        'PROFILE URL': '',
+        'LAST LOGIN DATE AND TIME': ''
       };
       await SheetsDB.addRow('Login', newUser);
       // Refresh cache
       refreshUsersCache(true);
       const { PASSWORD: _, password: __, ...safeUser } = newUser as any;
       res.status(201).json(safeUser);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/users/:id', authenticateToken, authorizeRoles('ADMIN', 'CRM'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password, ...userData } = req.body;
+      
+      const updateData: any = {
+        'USER NAME': userData.name,
+        ROLE: userData.role,
+        GMAIL: userData.email,
+      };
+
+      if (password && password.trim() !== '') {
+        updateData.PASSWORD = await bcrypt.hash(password, 10);
+      }
+
+      await SheetsDB.updateRow('Login', 'ID', id, updateData);
+      refreshUsersCache(true);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/users/:id', authenticateToken, authorizeRoles('ADMIN', 'CRM'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      await SheetsDB.deleteRow('Login', 'ID', id);
+      refreshUsersCache(true);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

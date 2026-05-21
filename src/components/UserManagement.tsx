@@ -29,7 +29,7 @@ import {
   SelectValue 
 } from './ui/select';
 import { toast } from 'sonner';
-import { UserPlus, User as UserIcon, Shield, Mail, BadgeCheck } from 'lucide-react';
+import { UserPlus, User as UserIcon, Shield, Mail, BadgeCheck, Edit2, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 
 export default function UserManagement() {
@@ -43,6 +43,7 @@ export default function UserManagement() {
     employee_id: '',
     password: 'password'
   });
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -60,12 +61,21 @@ export default function UserManagement() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await request('/api/users', {
-        method: 'POST',
-        body: JSON.stringify(newUser),
-      });
-      toast.success('User added successfully');
+      if (editingUser) {
+        await request(`/api/users/${editingUser.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(newUser),
+        });
+        toast.success('User updated successfully');
+      } else {
+        await request('/api/users', {
+          method: 'POST',
+          body: JSON.stringify(newUser),
+        });
+        toast.success('User added successfully');
+      }
       setIsAddOpen(false);
+      setEditingUser(null);
       setNewUser({
         name: '',
         email: '',
@@ -79,6 +89,29 @@ export default function UserManagement() {
     }
   };
 
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await request(`/api/users/${id}`, { method: 'DELETE' });
+      toast.success('User deleted successfully');
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const openEdit = (user: User) => {
+    setEditingUser(user);
+    setNewUser({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      employee_id: user.employee_id,
+      password: '' // empty means no change
+    });
+    setIsAddOpen(true);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -87,16 +120,24 @@ export default function UserManagement() {
           <p className="text-slate-500 font-medium text-sm">Control resource access and team hierarchy</p>
         </div>
         
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <Dialog open={isAddOpen} onOpenChange={(open) => {
+          setIsAddOpen(open);
+          if (!open) setEditingUser(null);
+        }}>
           <DialogTrigger asChild>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2 h-11 px-6 shadow-sm shadow-indigo-500/20 uppercase tracking-widest text-[10px]">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2 h-11 px-6 shadow-sm shadow-indigo-500/20 uppercase tracking-widest text-[10px]" onClick={() => {
+              setEditingUser(null);
+              setNewUser({ name: '', email: '', role: UserRole.SALES, employee_id: '', password: 'password' });
+            }}>
               <UserPlus size={16} /> Add New User
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-white border-slate-200 text-slate-800 p-8 rounded-2xl shadow-2xl max-w-md">
             <DialogHeader className="mb-6">
-              <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 leading-tight">Create User Profile</DialogTitle>
-              <DialogDescription className="sr-only">Add a new user to the system.</DialogDescription>
+              <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 leading-tight">
+                {editingUser ? 'Edit User Profile' : 'Create User Profile'}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Add or edit a user in the system.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddUser} className="space-y-6">
               <div className="space-y-4">
@@ -149,10 +190,21 @@ export default function UserManagement() {
                     </Select>
                   </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest pl-1">Password {editingUser && '(Leave blank to keep current)'}</Label>
+                  <Input 
+                    type="text"
+                    placeholder="User password" 
+                    value={newUser.password}
+                    onChange={e => setNewUser({...newUser, password: e.target.value})}
+                    className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl focus-visible:ring-indigo-500/20"
+                    required={!editingUser}
+                  />
+                </div>
               </div>
               <DialogFooter className="pt-4">
                 <Button type="submit" className="w-full bg-slate-950 hover:bg-slate-800 text-white font-bold h-12 uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-slate-900/10">
-                  Provision Account
+                  {editingUser ? 'Update Account' : 'Provision Account'}
                 </Button>
               </DialogFooter>
             </form>
@@ -168,7 +220,7 @@ export default function UserManagement() {
               <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-6">Credentials</TableHead>
               <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-6">ID System</TableHead>
               <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-6">Authorization</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-6 text-right pr-8">Status</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-6 text-right pr-8">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -215,9 +267,13 @@ export default function UserManagement() {
                     </div>
                   </TableCell>
                   <TableCell className="py-4 text-right pr-8">
-                     <div className="flex items-center justify-end gap-1.5 text-emerald-500">
-                        <BadgeCheck size={14} />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">Verified</span>
+                     <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(u)} className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 h-auto rounded-lg">
+                          <Edit2 size={16} />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(u.id)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 h-auto rounded-lg">
+                          <Trash2 size={16} />
+                        </Button>
                      </div>
                   </TableCell>
                 </TableRow>

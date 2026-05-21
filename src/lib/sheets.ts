@@ -217,5 +217,51 @@ export class SheetsDB {
       },
     });
   }
+
+  static async deleteRow(sheetName: string, idField: string, idValue: string) {
+    const spreadsheetId = this.spreadsheetId;
+    if (!spreadsheetId || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) return;
+
+    const sheets = await getSheetsClient();
+    
+    const allRows = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+    });
+
+    const rows = allRows.data.values || [];
+    if (rows.length === 0) return;
+    
+    const headers = rows[0];
+    const idIndex = headers.indexOf(idField);
+    if (idIndex === -1) throw new Error(`Field ${idField} not found`);
+
+    const rowIndex = rows.findIndex(row => row[idIndex] === idValue);
+    if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+
+    const spreadsheetInfo = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheet = spreadsheetInfo.data.sheets?.find(s => s.properties?.title === sheetName);
+    const sheetId = sheet?.properties?.sheetId;
+
+    if (sheetId === undefined) throw new Error(`Sheet ${sheetName} not found`);
+
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId: sheetId,
+                dimension: 'ROWS',
+                startIndex: rowIndex,
+                endIndex: rowIndex + 1,
+              }
+            }
+          }
+        ]
+      }
+    });
+  }
 }
 
