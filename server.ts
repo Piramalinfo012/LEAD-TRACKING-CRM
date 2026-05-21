@@ -53,7 +53,7 @@ async function doLeadsFetch() {
         })
       ]);
 
-      const mainLeads = rawMain.filter((r: any) => r['Party Name'] || r['Id']).map((l: any, index: number) => ({
+      const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim() !== 'Id' && String(r['Party Name']).trim() !== 'Party Name').map((l: any, index: number) => ({
         id: l['Id'] || `LD-MAIN-${index}`,
         company_name: l['Party Name'] || '',
         contact_person: l['Person Name'] || '',
@@ -81,7 +81,7 @@ async function doLeadsFetch() {
         owner_id: l['Sales Person Name'] || 'SYSTEM'
       }));
 
-      const fmsLeads = fmsRows.filter((r: any) => r.Id || r['Party Name']).map((l: any, index: number) => {
+      const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim() !== 'Id' && String(r['Party Name']).trim() !== 'Party Name').map((l: any, index: number) => {
         const companyName = l['Party Name'] || '';
         const mobile = l['Mobile No. '] || l['Mobile No.'] || '';
         const stableId = l['Id'] || `FMS-${index}-${companyName.replace(/\s+/g, '')}-${mobile}`;
@@ -471,27 +471,6 @@ app.use(express.json());
       
       // Save to 'Entry Data' sheet
       await SheetsDB.addRow('Entry Data', leadData);
-      
-      // Also sync to standard 'Leads' sheet for pipeline visualization if needed
-      const standardLead = {
-        id: leadData.Id,
-        company_name: leadData['Party Name'],
-        contact_person: leadData['Person Name'],
-        mobile: leadData['Mobile No. '],
-        email: leadData['Gmail ID'],
-        address: leadData['Address'],
-        source: leadData['Source'],
-        status: 'COLD',
-        owner_id: req.user.employee_id || req.user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      try {
-        await SheetsDB.addRow('Entry Data', standardLead);
-      } catch (syncError) {
-        console.warn('Sync to Leads sheet failed, but Entry Data was saved:', syncError);
-      }
       
       // Update cache in background
       refreshLeadsCache(true);
