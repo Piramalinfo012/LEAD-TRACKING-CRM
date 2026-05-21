@@ -10,6 +10,7 @@ import {
   Cell,
   Legend
 } from 'recharts';
+import { formatDateToDMY } from '../lib/utils';
 import { 
   Download, 
   Filter, 
@@ -36,6 +37,44 @@ export default function Reports() {
   const { request, loading } = useApi();
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+
+  const handleExport = () => {
+    if (!leads || leads.length === 0) {
+      import('sonner').then(({ toast }) => toast.error('No data available to export'));
+      return;
+    }
+
+    // Extract all unique headers
+    const headers = Array.from(new Set(leads.flatMap(Object.keys)));
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...leads.map(lead => 
+        headers.map(header => {
+          let cell = lead[header] === null || lead[header] === undefined ? '' : String(lead[header]);
+          // Escape quotes and wrap in quotes if cell contains comma, quote or newline
+          if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+            cell = `"${cell.replace(/"/g, '""')}"`;
+          }
+          return cell;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create a blob and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `NEW_FMS_Data_${formatDateToDMY(new Date().toISOString())}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    import('sonner').then(({ toast }) => toast.success('Data exported successfully'));
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -105,7 +144,10 @@ export default function Reports() {
               </SelectContent>
             </Select>
           </div>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0">
+          <Button 
+            onClick={handleExport}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0"
+          >
             <Download size={16} /> Export
           </Button>
         </div>
