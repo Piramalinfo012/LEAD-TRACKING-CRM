@@ -38,7 +38,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
 import { 
   Select, 
   SelectContent, 
@@ -299,16 +299,11 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
           </DialogHeader>
 
           <div className="p-4 md:p-8 pt-2 overflow-hidden flex flex-col flex-1">
-            <Tabs defaultValue="details" className="w-full h-full flex flex-col">
-              <TabsList className="bg-slate-50 border border-border w-full justify-start p-1 rounded-lg shrink-0 overflow-x-auto">
-                <TabsTrigger value="details" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-slate-500 data-[state=active]:text-slate-900 text-xs font-heading font-semibold uppercase tracking-wider">Details</TabsTrigger>
-                <TabsTrigger value="timeline" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-slate-500 data-[state=active]:text-slate-900 text-xs font-heading font-semibold uppercase tracking-wider">Timeline</TabsTrigger>
-                <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-slate-500 data-[state=active]:text-slate-900 text-xs font-heading font-semibold uppercase tracking-wider">Storage</TabsTrigger>
-              </TabsList>
+            <div className="w-full h-full flex flex-col">
 
-              <ScrollArea className="flex-1 mt-6 pr-4">
+              <ScrollArea className="flex-1 mt-2 pr-4">
                 <div className="pb-10">
-                  <TabsContent value="details" className="space-y-8 mt-0 animate-in fade-in duration-500">
+                  <div className="space-y-8 mt-0 animate-in fade-in duration-500">
                     {isEditing ? (
                       <form onSubmit={handleSaveChanges} className="space-y-6">
                         {/* Company / Party Name & Contact Person */}
@@ -695,9 +690,10 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
                         </Button>
                       </div>
                     </div>
-                  </TabsContent>
+                  </div>
                   
-                  <TabsContent value="timeline" className="space-y-6 mt-0 animate-in slide-in-from-right-4">
+                  <div className="space-y-6 mt-12 pt-12 border-t border-slate-200 animate-in slide-in-from-right-4">
+                    <h3 className="text-sm font-heading font-bold text-slate-900 uppercase tracking-widest mb-6">Activity Timeline</h3>
                     {followups.length === 0 && history.length === 0 ? (
                       <div className="text-center py-20 text-slate-300 font-heading font-semibold uppercase tracking-widest text-[10px]">No historical activity log</div>
                     ) : (
@@ -755,8 +751,8 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
                           ))}
                       </div>
                     )}
-                  </TabsContent>
-                  <TabsContent value="documents" className="space-y-4 mt-0 animate-in fade-in">
+                  </div>
+                  <div className="space-y-4 mt-12 pt-12 border-t border-slate-200 animate-in fade-in">
                     <div className="flex items-center justify-between mb-6">
                         <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest">Document Repository</h4>
                         <div className="relative">
@@ -787,29 +783,40 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
                             const fileName = isObj ? (link as any).name : `Asset_${i+1}.pdf`;
                             const fileUrl = isObj ? (link as any).url : link;
                             
+                            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) || /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(fileUrl);
+                            
                             return (
-                              <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-white border border-border hover:border-indigo-300 transition-all group shadow-sm hover:shadow-md">
-                                <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors shrink-0">
-                                    <FileText size={24} />
+                              <div key={i} className="flex flex-col gap-3 p-4 rounded-xl bg-white border border-border hover:border-indigo-300 transition-all group shadow-sm hover:shadow-md">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors shrink-0">
+                                      <FileText size={24} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-sans font-bold text-slate-800 group-hover:text-slate-900 transition-colors truncate mb-0.5">{fileName}</p>
+                                      <p className="text-[10px] text-slate-400 font-sans font-medium truncate uppercase flex items-center gap-1">
+                                        <Clock size={10} /> Static Archive
+                                      </p>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" asChild title="View File">
+                                        <a href={fileUrl} target="_blank" rel="noreferrer">
+                                          <ExternalLink size={16} />
+                                        </a>
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" asChild title="Download File">
+                                        <a href={fileUrl} download={fileName}>
+                                          <Download size={16} />
+                                        </a>
+                                      </Button>
+                                  </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-sans font-bold text-slate-800 group-hover:text-slate-900 transition-colors truncate mb-0.5">{fileName}</p>
-                                    <p className="text-[10px] text-slate-400 font-sans font-medium truncate uppercase flex items-center gap-1">
-                                      <Clock size={10} /> Static Archive
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" asChild title="View File">
-                                      <a href={fileUrl} target="_blank" rel="noreferrer">
-                                        <ExternalLink size={16} />
-                                      </a>
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" asChild title="Download File">
-                                      <a href={fileUrl} download={fileName}>
-                                        <Download size={16} />
-                                      </a>
-                                    </Button>
-                                </div>
+                                {isImage && (
+                                  <div className="mt-2 rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
+                                    <a href={fileUrl} target="_blank" rel="noreferrer">
+                                      <img src={fileUrl} alt={fileName} className="w-full max-h-[300px] object-contain hover:opacity-90 transition-opacity" />
+                                    </a>
+                                  </div>
+                                )}
                               </div>
                             );
                           })
@@ -820,10 +827,10 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
                           </div>
                         )}
                     </div>
-                  </TabsContent>
+                  </div>
                 </div>
               </ScrollArea>
-            </Tabs>
+            </div>
           </div>
 
           <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
