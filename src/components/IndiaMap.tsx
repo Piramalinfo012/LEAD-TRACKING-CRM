@@ -67,7 +67,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
   const maxLeads = Math.max(1, ...Object.values(stateLeadCounts));
 
   const getColor = (count: number) => {
-    if (count === 0) return '#f8fafc'; // slate-50
+    if (count === 0) return '#fee2e2'; // light red
     const ratio = count / maxLeads;
     if (ratio <= 0.2) return '#bbf7d0'; // green-200
     if (ratio <= 0.4) return '#86efac'; // green-300
