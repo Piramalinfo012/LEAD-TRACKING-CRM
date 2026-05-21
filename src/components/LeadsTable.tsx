@@ -269,25 +269,15 @@ export default function LeadsTable() {
 
     if (stage?.toLowerCase() === 'cold') {
       return [
-        ...defaultCols,
         {
           accessorKey: 'created_at',
           header: 'Timestamp',
           cell: ({ row }) => {
             const raw = row.original.Timestamp || row.original.created_at;
-            let display = raw;
-            // Basic attempt to make iso strings readable
-            if (raw && String(raw).includes('T')) {
-              try {
-                const d = new Date(raw);
-                if (!isNaN(d.getTime())) {
-                  display = d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                }
-              } catch(e) {}
-            }
-            return <div className="text-xs font-bold text-slate-600 tracking-tight whitespace-nowrap">{display || '-'}</div>;
+            return <div className="text-xs font-bold text-slate-600 tracking-tight whitespace-nowrap">{formatDateToDMY(raw) || '-'}</div>;
           }
         },
+        ...defaultCols,
         {
           accessorKey: 'District',
           header: 'District',
