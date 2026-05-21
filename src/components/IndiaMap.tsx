@@ -9,8 +9,9 @@ import {
 } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { MapPin, Building2, User, Phone } from 'lucide-react';
+import { MapPin, Building2, User, Phone, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { INDIAN_STATES_DISTRICTS } from '../lib/locationData';
+import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 
 // Format currency
 const formatCurrency = (val: number | string) => {
@@ -19,6 +20,18 @@ const formatCurrency = (val: number | string) => {
     currency: 'INR',
     maximumFractionDigits: 0
   }).format(Number(val) || 0);
+};
+
+// Map Controls Component
+const MapControls = () => {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  return (
+    <div className="absolute top-4 right-4 flex flex-col gap-2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-xl shadow-lg border border-slate-200/50">
+      <button onClick={() => zoomIn()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+      <button onClick={() => zoomOut()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
+      <button onClick={() => resetTransform()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Reset View"><Maximize size={18} /></button>
+    </div>
+  );
 };
 
 export default function IndiaMap({ leads }: { leads: any[] }) {
@@ -86,10 +99,27 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
         </div>
       )}
 
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox={IndiaMapData.viewBox}
-        className="w-full max-h-[500px] drop-shadow-2xl filter"
+      <div className="w-full h-[500px] overflow-hidden rounded-2xl relative cursor-grab active:cursor-grabbing bg-slate-50/50 perspective-[1000px]">
+        <TransformWrapper
+          initialScale={1}
+          minScale={0.5}
+          maxScale={4}
+          centerOnInit
+          wheel={{ step: 0.1 }}
+        >
+          <MapControls />
+          <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+            <div 
+              className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out"
+              style={{
+                transform: 'rotateX(30deg) rotateZ(-10deg)',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox={IndiaMapData.viewBox}
+                className="w-full max-w-[600px] drop-shadow-2xl filter"
         onMouseMove={(e) => {
           // Adjust mouse position relative to a stable parent if needed, but clientX/Y works fine for fixed tooltips if we use fixed pos.
           // Better to use relative pos within the container.
@@ -101,7 +131,8 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
         }}
         onMouseLeave={() => setHoveredState(null)}
       >
-        <g stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" strokeLinecap="round">
+        {/* Increased stroke width to 1.5 and stroke color for bolder borders */}
+        <g stroke="#ffffff" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
           {IndiaMapData.locations.map(location => {
             const stdName = getStandardStateName(location.name);
             const count = stateLeadCounts[stdName] || 0;
@@ -148,6 +179,10 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
           )}
         </g>
       </svg>
+            </div>
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
 
       <Dialog open={!!selectedState} onOpenChange={(open) => !open && setSelectedState(null)}>
         <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden rounded-2xl shadow-2xl border-none">
