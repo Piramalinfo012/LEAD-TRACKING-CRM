@@ -398,7 +398,8 @@ app.use(express.json());
         role: (user.ROLE || user.role || 'SALES').toUpperCase(), 
         name: user['USER NAME'] || user.name,
         employee_id: user.ID || user.employee_id,
-        senior_sales_id: user.senior_sales_id
+        senior_sales_id: user.senior_sales_id,
+        profile_url: user['PROFILE URL'] || user['PROFILE_URL'] || ''
       };
       
       console.log(`Login successful for: ${email} with role ${payload.role}`);
@@ -406,6 +407,28 @@ app.use(express.json());
       res.json({ token, user: payload });
     } catch (error: any) {
       console.error('Login Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Profile: Update DP URL
+  app.post('/api/users/profile', authenticateToken, async (req: any, res) => {
+    try {
+      const { profile_url } = req.body;
+      const { id } = req.user;
+      
+      if (USERS_CACHE) {
+        const userIndex = USERS_CACHE.findIndex((u: any) => (u.ID || u.id || u.employee_id) === id);
+        if (userIndex !== -1) {
+          USERS_CACHE[userIndex]['PROFILE URL'] = profile_url;
+        }
+      }
+
+      await SheetsDB.updateRow('Login', 'ID', id, { 'PROFILE URL': profile_url });
+      
+      res.json({ success: true, profile_url });
+    } catch (error: any) {
+      console.error('Failed to update profile URL:', error);
       res.status(500).json({ error: error.message });
     }
   });

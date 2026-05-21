@@ -60,9 +60,26 @@ export default function Settings() {
     }
   };
 
-  const handleSave = () => {
+  const [profileUrl, setProfileUrl] = useState(user?.profile_url || '');
+
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 1000);
+    try {
+      await request('/api/users/profile', {
+        method: 'POST',
+        body: JSON.stringify({ profile_url: profileUrl })
+      });
+      toast.success('Identity Profile updated successfully!');
+      if (user) {
+        const updatedUser = { ...user, profile_url: profileUrl };
+        localStorage.setItem('crm_user', JSON.stringify(updatedUser));
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -116,6 +133,10 @@ export default function Settings() {
                 <div className="space-y-2">
                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Unique Operator ID</Label>
                    <Input value={user?.employee_id || 'CRM-882-SYS'} readOnly className="bg-slate-50 border-slate-100 text-slate-400 font-mono text-[10px] cursor-not-allowed h-11" />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile Picture URL</Label>
+                   <Input value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://example.com/my-photo.jpg" className="bg-white border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
                 </div>
                 <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest h-11 px-8 shadow-sm transition-all" onClick={handleSave} disabled={isSaving}>
                    {isSaving ? 'Synchronizing...' : 'Update Registry'}

@@ -16,6 +16,7 @@ export interface User {
   employee_id: string;
   reporting_manager_id?: string;
   senior_sales_id?: string;
+  profile_url?: string;
 }
 
 export enum LeadStatus {

@@ -178,6 +178,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
       <div className="p-4 mt-auto border-t border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3 px-2 mb-4">
           <Avatar className="w-10 h-10 ring-2 ring-indigo-500/20">
+            {user?.profile_url && <AvatarImage src={user.profile_url} alt={user?.name} className="object-cover" />}
             <AvatarFallback className="bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-heading font-bold">{user?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col min-w-0">
@@ -389,6 +390,7 @@ export function Shell({ children }: LayoutProps) {
             </div>
 
             <Avatar className="w-8 h-8 lg:w-9 lg:h-9 cursor-pointer hover:ring-2 hover:ring-indigo-500/20 transition-all">
+              {user?.profile_url && <AvatarImage src={user.profile_url} alt={user?.name} className="object-cover" />}
               <AvatarFallback className="bg-indigo-600 text-white text-[10px] font-bold">
                 {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ME'}
               </AvatarFallback>
