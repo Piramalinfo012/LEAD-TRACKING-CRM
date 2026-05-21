@@ -53,7 +53,7 @@ async function doLeadsFetch() {
         })
       ]);
 
-      const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim() !== 'Id' && String(r['Party Name']).trim() !== 'Party Name').map((l: any, index: number) => ({
+      const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => ({
         id: l['Id'] || `LD-MAIN-${index}`,
         company_name: l['Party Name'] || '',
         contact_person: l['Person Name'] || '',
@@ -81,7 +81,7 @@ async function doLeadsFetch() {
         owner_id: l['Sales Person Name'] || 'SYSTEM'
       }));
 
-      const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim() !== 'Id' && String(r['Party Name']).trim() !== 'Party Name').map((l: any, index: number) => {
+      const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => {
         const companyName = l['Party Name'] || '';
         const mobile = l['Mobile No. '] || l['Mobile No.'] || '';
         const stableId = l['Id'] || `FMS-${index}-${companyName.replace(/\s+/g, '')}-${mobile}`;
