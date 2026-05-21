@@ -14,18 +14,25 @@ import { SheetsDB } from './src/lib/sheets.js';
 import { getDriveClient } from './src/lib/google-auth.js';
 
 // --- Server Side Caching ---
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes standard for background refresh triggers
-const USERS_CACHE_TTL = 60 * 60 * 1000; // 1 hour for users background refresh trigger
-const STALE_LIMIT = 12 * 60 * 60 * 1000; // 12 hours limit to ever block
+const LEADS_CACHE_TTL = 30 * 1000; // 30 seconds for background refresh triggers
+const LEADS_STALE_LIMIT = 45 * 1000; // 45 seconds limit to ever block
+
+const USERS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes background refresh trigger
+const USERS_STALE_LIMIT = 30 * 60 * 1000; // 30 minutes limit to ever block
+
+const MASTER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes background refresh trigger
+const MASTER_STALE_LIMIT = 60 * 60 * 1000; // 60 minutes limit to ever block
+
 let LEADS_CACHE: any[] | null = null;
 let USERS_CACHE: any[] | null = null;
 let MASTER_CACHE: any[] | null = null;
 let LAST_FETCH_LEADS = 0;
 let LAST_FETCH_USERS = 0;
 let LAST_FETCH_MASTER = 0;
-let IS_REFRESHING_USERS = false;
-let IS_REFRESHING_LEADS = false;
-let IS_REFRESHING_MASTER = false;
+
+let activeLeadsFetchPromise: Promise<any[]> | null = null;
+let activeUsersFetchPromise: Promise<any[]> | null = null;
+let activeMasterFetchPromise: Promise<any[]> | null = null;
 
 async function doLeadsFetch() {
   const now = Date.now();
@@ -127,32 +134,23 @@ async function doLeadsFetch() {
 async function refreshLeadsCache(force = false) {
   const now = Date.now();
   
-  // Return immediately if we have ANY cache and aren't forcing a sync
-  if (!force && LEADS_CACHE && (now - LAST_FETCH_LEADS < STALE_LIMIT)) {
-    // If cache is older than 5 minutes and not already refreshing, start background fetch
-    if (now - LAST_FETCH_LEADS > CACHE_TTL && !IS_REFRESHING_LEADS) {
-      console.log('Leads Cache is stale, running background refresh...');
-      IS_REFRESHING_LEADS = true;
-      (async () => {
-        try {
-          await doLeadsFetch();
-        } catch (e) {
-          console.error('Background Leads Refresh failed:', e);
-        } finally {
-          IS_REFRESHING_LEADS = false;
-        }
-      })();
-    }
+  if (!force && LEADS_CACHE && (now - LAST_FETCH_LEADS < LEADS_STALE_LIMIT)) {
     return LEADS_CACHE;
   }
 
-  // Blocking fetch if no cache or forced
-  IS_REFRESHING_LEADS = true;
-  try {
-    return await doLeadsFetch();
-  } finally {
-    IS_REFRESHING_LEADS = false;
+  if (activeLeadsFetchPromise) {
+    return activeLeadsFetchPromise;
   }
+
+  activeLeadsFetchPromise = (async () => {
+    try {
+      return await doLeadsFetch();
+    } finally {
+      activeLeadsFetchPromise = null;
+    }
+  })();
+
+  return activeLeadsFetchPromise;
 }
 
 async function doUsersFetch() {
@@ -178,30 +176,23 @@ async function doUsersFetch() {
 async function refreshUsersCache(force = false) {
   const now = Date.now();
   
-  if (!force && USERS_CACHE && (now - LAST_FETCH_USERS < STALE_LIMIT)) {
-    // Refresh in background if older than 1 hour
-    if (now - LAST_FETCH_USERS > USERS_CACHE_TTL && !IS_REFRESHING_USERS) {
-      console.log('Users Cache is stale, running background refresh...');
-      IS_REFRESHING_USERS = true;
-      (async () => {
-        try {
-          await doUsersFetch();
-        } catch (e) {
-          console.error('Background Users Refresh failed:', e);
-        } finally {
-          IS_REFRESHING_USERS = false;
-        }
-      })();
-    }
+  if (!force && USERS_CACHE && (now - LAST_FETCH_USERS < USERS_STALE_LIMIT)) {
     return USERS_CACHE;
   }
 
-  IS_REFRESHING_USERS = true;
-  try {
-    return await doUsersFetch();
-  } finally {
-    IS_REFRESHING_USERS = false;
+  if (activeUsersFetchPromise) {
+    return activeUsersFetchPromise;
   }
+
+  activeUsersFetchPromise = (async () => {
+    try {
+      return await doUsersFetch();
+    } finally {
+      activeUsersFetchPromise = null;
+    }
+  })();
+
+  return activeUsersFetchPromise;
 }
 
 async function doMasterFetch() {
@@ -227,30 +218,23 @@ async function doMasterFetch() {
 async function refreshMasterCache(force = false) {
   const now = Date.now();
   
-  if (!force && MASTER_CACHE && (now - LAST_FETCH_MASTER < STALE_LIMIT)) {
-    // Refresh in background if stale (5 mins)
-    if (now - LAST_FETCH_MASTER > CACHE_TTL && !IS_REFRESHING_MASTER) {
-      console.log('Master Cache is stale, running background refresh...');
-      IS_REFRESHING_MASTER = true;
-      (async () => {
-        try {
-          await doMasterFetch();
-        } catch (e) {
-          console.error('Background Master Refresh failed:', e);
-        } finally {
-          IS_REFRESHING_MASTER = false;
-        }
-      })();
-    }
+  if (!force && MASTER_CACHE && (now - LAST_FETCH_MASTER < MASTER_STALE_LIMIT)) {
     return MASTER_CACHE;
   }
 
-  IS_REFRESHING_MASTER = true;
-  try {
-    return await doMasterFetch();
-  } finally {
-    IS_REFRESHING_MASTER = false;
+  if (activeMasterFetchPromise) {
+    return activeMasterFetchPromise;
   }
+
+  activeMasterFetchPromise = (async () => {
+    try {
+      return await doMasterFetch();
+    } finally {
+      activeMasterFetchPromise = null;
+    }
+  })();
+
+  return activeMasterFetchPromise;
 }
 
 function getSubordinateIdentifiers(currentUser: any, users: any[]) {
