@@ -7,7 +7,7 @@ export class SheetsDB {
 
   static async getRows(sheetName: string, rangeOverride?: string, headerRowIndex: number = 0, timeoutMs: number = 50000) {
     const spreadsheetId = this.spreadsheetId;
-    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
 
     // Preference: Use Google Apps Script if URL is provided
     if (scriptUrl && !rangeOverride) {
@@ -44,9 +44,12 @@ export class SheetsDB {
             });
             return obj;
           });
+        } else {
+          throw new Error('Google Apps Script returned success: false');
         }
       } catch (e: any) {
         console.error('App Script fetch failed:', e.message);
+        throw e; // Propagate the error so the caller knows it failed
       }
     }
 
@@ -83,7 +86,7 @@ export class SheetsDB {
 
   static async addRow(sheetName: string, data: any) {
     const spreadsheetId = this.spreadsheetId;
-    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
 
     let headers: string[] = [];
 

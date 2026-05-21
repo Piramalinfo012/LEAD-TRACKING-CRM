@@ -125,9 +125,10 @@ async function doLeadsFetch() {
     LAST_FETCH_LEADS = now;
     console.log(`Leads Cache refreshed in background: ${leads.length} leads`);
     return leads;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch and cache Leads:', error);
-    return LEADS_CACHE || [];
+    if (!LEADS_CACHE) throw error;
+    return LEADS_CACHE;
   }
 }
 
@@ -167,9 +168,10 @@ async function doUsersFetch() {
     LAST_FETCH_USERS = now;
     console.log(`Users Cache refreshed: ${users.length} users`);
     return users;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch and cache Users:', error);
-    return USERS_CACHE || [];
+    if (!USERS_CACHE) throw error;
+    return USERS_CACHE;
   }
 }
 
