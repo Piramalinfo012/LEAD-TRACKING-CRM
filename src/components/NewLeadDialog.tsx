@@ -114,10 +114,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   };
 
   const states = useMemo(() => {
-    const sheetStates = combinedRecords.map(item => item.State || item.state).filter(Boolean);
-    const allStates = [...new Set([...sheetStates, ...Object.keys(INDIAN_STATES_DISTRICTS)])];
-    return allStates.sort();
-  }, [combinedRecords]);
+    return Object.keys(INDIAN_STATES_DISTRICTS).sort();
+  }, []);
 
   const sources = useMemo(() => {
     const s = combinedRecords.map(item => item.Source || item.source).filter(Boolean);
@@ -127,17 +125,14 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   const districts = useMemo(() => {
     if (!formData.state) return [];
     
-    // Get from combined records
-    const sheetDistricts = combinedRecords
-      .filter(item => (item.State || item.state) === formData.state)
-      .map(item => item.District || item.district)
-      .filter(Boolean);
-
-    // Get from hardcoded list
-    const fallbackDistricts = INDIAN_STATES_DISTRICTS[formData.state] || [];
+    // Find a case-insensitive match for the state in case of manual typing
+    const stateKey = Object.keys(INDIAN_STATES_DISTRICTS).find(
+      key => key.toLowerCase() === formData.state.toLowerCase()
+    ) || formData.state;
     
-    return Array.from(new Set([...sheetDistricts, ...fallbackDistricts])).sort();
-  }, [combinedRecords, formData.state]);
+    const matchedDistricts = INDIAN_STATES_DISTRICTS[stateKey] || [];
+    return [...matchedDistricts].sort();
+  }, [formData.state]);
 
   const handleMobileChange = (val: string) => {
     // Basic number cleaning
