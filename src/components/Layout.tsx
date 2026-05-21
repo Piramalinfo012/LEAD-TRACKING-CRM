@@ -232,9 +232,14 @@ export function Shell({ children }: LayoutProps) {
   useEffect(() => {
     async function fetchLeads() {
       try {
+        const cached = localStorage.getItem('crm_leads_cache');
+        if (cached) {
+          try { setLeads(JSON.parse(cached)); } catch(e) {}
+        }
         const data = await request('/api/leads');
         if (data && Array.isArray(data)) {
           setLeads(data);
+          localStorage.setItem('crm_leads_cache', JSON.stringify(data));
         }
       } catch (err) {
         console.error('Error fetching leads for layout notifications:', err);

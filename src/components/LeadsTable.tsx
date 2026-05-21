@@ -191,26 +191,33 @@ export default function LeadsTable() {
 
   const fetchData = async () => {
     try {
-      const leads = await request('/api/leads');
-      
-      // Filter by stage if parameter exists
-      if (stage) {
-        const stageMap: Record<string, LeadStatus> = {
-          'cold': LeadStatus.COLD,
-          'lead': LeadStatus.LEAD,
-          'meeting': LeadStatus.MEETING,
-          'tech': LeadStatus.TECHNICAL_DISCUSSION,
-          'negotiation': LeadStatus.NEGOTIATION,
-          'order': LeadStatus.ORDER
-        };
-        const targetStatus = stageMap[stage.toLowerCase()];
-        if (targetStatus) {
-          setData(leads.filter((l: Lead) => l.status?.toUpperCase() === targetStatus));
-          return;
+      const applyData = (leadsToApply: any[]) => {
+        if (stage) {
+          const stageMap: Record<string, LeadStatus> = {
+            'cold': LeadStatus.COLD,
+            'lead': LeadStatus.LEAD,
+            'meeting': LeadStatus.MEETING,
+            'tech': LeadStatus.TECHNICAL_DISCUSSION,
+            'negotiation': LeadStatus.NEGOTIATION,
+            'order': LeadStatus.ORDER
+          };
+          const targetStatus = stageMap[stage.toLowerCase()];
+          if (targetStatus) {
+            setData(leadsToApply.filter((l: Lead) => l.status?.toUpperCase() === targetStatus));
+            return;
+          }
         }
+        setData(leadsToApply);
+      };
+
+      const cached = localStorage.getItem('crm_leads_cache');
+      if (cached) {
+        try { applyData(JSON.parse(cached)); } catch(e) {}
       }
-      
-      setData(leads);
+
+      const leads = await request('/api/leads');
+      applyData(leads);
+      localStorage.setItem('crm_leads_cache', JSON.stringify(leads));
     } catch (err) {
       console.error(err);
     }

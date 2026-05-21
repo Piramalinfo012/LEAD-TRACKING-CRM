@@ -69,9 +69,14 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const cached = localStorage.getItem('crm_leads_cache');
+        if (cached) {
+          try { setLeads(JSON.parse(cached)); } catch(e) {}
+        }
         const data = await request('/api/leads');
         if (data && Array.isArray(data)) {
           setLeads(data);
+          localStorage.setItem('crm_leads_cache', JSON.stringify(data));
         }
       } catch (err) {
         console.error(err);
