@@ -395,50 +395,39 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Label htmlFor="state" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider flex items-center gap-2">
                 <Search size={14} className="text-indigo-600" /> State
               </Label>
-              <div className="relative group">
-                <Input 
-                  id="state" 
-                  list="states-list"
-                  placeholder="Type to Search..." 
-                  className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pr-10 rounded-xl"
-                  value={formData.state}
-                  onChange={(e) => {
-                    const newState = e.target.value;
-                    setFormData({ ...formData, state: newState, district: '' });
-                  }}
-                  required
-                />
-                <datalist id="states-list">
-                  {states.map(s => <option key={s} value={s}>{s}</option>)}
-                </datalist>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
+              <Select 
+                value={formData.state} 
+                onValueChange={(val) => setFormData({ ...formData, state: val, district: '' })}
+              >
+                <SelectTrigger className="bg-white border-slate-200 h-12 text-sm text-slate-900 rounded-xl shadow-sm focus:ring-4 focus:ring-indigo-500/10">
+                  <SelectValue placeholder="Select State..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px] bg-white">
+                  {states.map(s => (
+                    <SelectItem key={s} value={s} className="cursor-pointer text-sm font-medium">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2.5">
               <Label htmlFor="district" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider flex items-center gap-2">
                 <Search size={14} className="text-indigo-600" /> District
               </Label>
-              <div className="relative">
-                <Input 
-                  id="district" 
-                  list="districts-list"
-                  placeholder={formData.state ? "Type to Search..." : "Select State First"} 
-                  className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pr-10 rounded-xl"
-                  value={formData.district}
-                  onChange={(e) => setFormData({...formData, district: e.target.value})}
-                  disabled={!formData.state}
-                  required
-                />
-                <datalist id="districts-list">
-                  {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                </datalist>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
+              <Select 
+                value={formData.district} 
+                onValueChange={(val) => setFormData({ ...formData, district: val })}
+                disabled={!formData.state}
+              >
+                <SelectTrigger className="bg-white border-slate-200 h-12 text-sm text-slate-900 rounded-xl shadow-sm focus:ring-4 focus:ring-indigo-500/10">
+                  <SelectValue placeholder={formData.state ? "Select District..." : "Select State First"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px] bg-white">
+                  {districts.map(d => (
+                    <SelectItem key={d} value={d} className="cursor-pointer text-sm font-medium">{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2.5">
