@@ -249,7 +249,24 @@ export default function LeadsTable() {
       {
         accessorKey: 'mobile',
         header: () => <span className="hidden sm:inline">Mobile No.</span>,
-        cell: ({ row }) => <div className="text-slate-600 font-sans font-medium hidden sm:block">{row.original['Mobile No. '] || row.original.mobile}</div>,
+        cell: ({ row }) => {
+          const mobileNumber = row.original['Mobile No. '] || row.original.mobile;
+          return (
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-slate-600 font-sans font-medium">{mobileNumber}</span>
+              {mobileNumber && (
+                <a 
+                  href={`tel:${String(mobileNumber).replace(/\D/g, '')}`} 
+                  className="p-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Click to call"
+                >
+                  <Phone size={14} />
+                </a>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: 'view',
