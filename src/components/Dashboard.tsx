@@ -101,9 +101,12 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     return {
       totalLeads: filteredLeads.length,
-      activeLeads: filteredLeads.filter((l: any) => l.status !== 'CLOSED' && l.status !== 'ORDER').length,
-      closedLeads: filteredLeads.filter((l: any) => l.status === 'CLOSED').length,
-      convertedOrders: filteredLeads.filter((l: any) => l.status === 'ORDER').length,
+      activeLeads: filteredLeads.filter((l: any) => {
+        const st = l.status?.toUpperCase() || 'COLD';
+        return st !== 'CLOSED' && st !== 'ORDER';
+      }).length,
+      closedLeads: filteredLeads.filter((l: any) => l.status?.toUpperCase() === 'CLOSED').length,
+      convertedOrders: filteredLeads.filter((l: any) => l.status?.toUpperCase() === 'ORDER').length,
     };
   }, [filteredLeads]);
 
@@ -132,12 +135,12 @@ export default function Dashboard() {
     });
 
     const funnel = [
-      { name: 'Cold', value: filteredLeads.filter(l => l.status === 'COLD').length },
-      { name: 'Lead', value: filteredLeads.filter(l => l.status === 'LEAD').length },
-      { name: 'Meeting', value: filteredLeads.filter(l => l.status === 'MEETING').length },
-      { name: 'Tech Talk', value: filteredLeads.filter(l => l.status === 'TECHNICAL_DISCUSSION').length },
-      { name: 'Negotiation', value: filteredLeads.filter(l => l.status === 'NEGOTIATION').length },
-      { name: 'Order', value: filteredLeads.filter(l => l.status === 'ORDER').length },
+      { name: 'Cold', value: filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === 'COLD').length },
+      { name: 'Lead', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'LEAD').length },
+      { name: 'Meeting', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'MEETING').length },
+      { name: 'Tech Talk', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'TECHNICAL_DISCUSSION').length },
+      { name: 'Negotiation', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'NEGOTIATION').length },
+      { name: 'Order', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'ORDER').length },
     ];
 
     return {

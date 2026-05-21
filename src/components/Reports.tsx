@@ -114,7 +114,7 @@ export default function Reports() {
         groups[name] = { name, leads: 0, conversions: 0, value: 0 };
       }
       groups[name].leads++;
-      if (l.status === 'ORDER') {
+      if (l.status?.toUpperCase() === 'ORDER') {
         groups[name].conversions++;
         groups[name].value += Number(l.expected_value || 0);
       }

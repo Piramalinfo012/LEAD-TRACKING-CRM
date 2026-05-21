@@ -205,7 +205,7 @@ export default function LeadsTable() {
         };
         const targetStatus = stageMap[stage.toLowerCase()];
         if (targetStatus) {
-          setData(leads.filter((l: Lead) => l.status === targetStatus));
+          setData(leads.filter((l: Lead) => l.status?.toUpperCase() === targetStatus));
           return;
         }
       }

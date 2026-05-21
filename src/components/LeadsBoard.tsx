@@ -108,7 +108,7 @@ export default function KanbanBoard() {
   };
 
   const leadsByStage = STAGES.reduce((acc, stage) => {
-    acc[stage] = filteredLeads.filter(l => l.status === stage);
+    acc[stage] = filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === stage);
     return acc;
   }, {} as Record<string, Lead[]>);
 
