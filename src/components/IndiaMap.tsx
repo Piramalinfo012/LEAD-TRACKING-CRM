@@ -132,7 +132,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
         onMouseLeave={() => setHoveredState(null)}
       >
         {/* Increased stroke width to 1.5 and stroke color for bolder borders */}
-        <g stroke="#ffffff" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+        <g stroke="#94a3b8" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
           {IndiaMapData.locations.map(location => {
             const stdName = getStandardStateName(location.name);
             const count = stateLeadCounts[stdName] || 0;
