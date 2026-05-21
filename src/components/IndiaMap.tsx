@@ -23,7 +23,7 @@ const formatCurrency = (val: number | string) => {
 
 export default function IndiaMap({ leads }: { leads: any[] }) {
   const [selectedState, setSelectedState] = useState<string | null>(null);
-  const [hoveredState, setHoveredState] = useState<{ id: string, name: string, count: number } | null>(null);
+  const [hoveredState, setHoveredState] = useState<{ id: string, name: string, count: number, path: string, fill: string } | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Group leads by normalized state name
@@ -56,11 +56,11 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
   const getColor = (count: number) => {
     if (count === 0) return '#f8fafc'; // slate-50
     const ratio = count / maxLeads;
-    if (ratio < 0.2) return '#c7d2fe'; // indigo-200
-    if (ratio < 0.4) return '#a5b4fc'; // indigo-300
-    if (ratio < 0.6) return '#818cf8'; // indigo-400
-    if (ratio < 0.8) return '#6366f1'; // indigo-500
-    return '#4f46e5'; // indigo-600
+    if (ratio <= 0.2) return '#bbf7d0'; // green-200
+    if (ratio <= 0.4) return '#86efac'; // green-300
+    if (ratio <= 0.6) return '#4ade80'; // green-400
+    if (ratio <= 0.8) return '#22c55e'; // green-500
+    return '#16a34a'; // green-600
   };
 
   const selectedLeads = useMemo(() => {
@@ -82,7 +82,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
           style={{ left: mousePos.x, top: mousePos.y - 15 }}
         >
           <span className="font-bold">{hoveredState.name}</span>
-          <Badge className="bg-indigo-500 hover:bg-indigo-500 border-none text-white text-[10px] h-5 px-1.5">{hoveredState.count} Leads</Badge>
+          <Badge className="bg-green-500 hover:bg-green-500 border-none text-white text-[10px] h-5 px-1.5">{hoveredState.count} Leads</Badge>
         </div>
       )}
 
@@ -106,6 +106,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
             const stdName = getStandardStateName(location.name);
             const count = stateLeadCounts[stdName] || 0;
             const isHovered = hoveredState?.id === location.id;
+            const fill = getColor(count);
 
             return (
               <path
@@ -113,14 +114,14 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
                 id={location.id}
                 name={location.name}
                 d={location.path}
-                fill={getColor(count)}
+                fill={fill}
                 className="transition-all duration-300 cursor-pointer outline-none"
                 style={{
                   transformOrigin: 'center',
-                  transform: isHovered ? 'scale(1.01) translateY(-2px)' : 'scale(1)',
-                  filter: isHovered ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : 'none',
+                  transform: isHovered ? 'scale(1.02) translateY(-4px)' : 'scale(1)',
+                  filter: isHovered ? 'drop-shadow(0 15px 25px rgba(0,0,0,0.3))' : 'none',
                 }}
-                onMouseEnter={() => setHoveredState({ id: location.id, name: location.name, count })}
+                onMouseEnter={() => setHoveredState({ id: location.id, name: location.name, count, path: location.path, fill })}
                 onClick={() => {
                   if (count > 0) {
                     setSelectedState(location.name);
@@ -129,6 +130,22 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
               />
             );
           })}
+          
+          {/* Render the hovered state again on top to ensure it is not overlapped by adjacent SVG paths, giving a true cut-out pop effect */}
+          {hoveredState && (
+            <path
+              key={`hover-${hoveredState.id}`}
+              d={hoveredState.path}
+              fill={hoveredState.fill}
+              className="transition-all duration-300 cursor-pointer outline-none"
+              style={{
+                transformOrigin: 'center',
+                transform: 'scale(1.02) translateY(-4px)',
+                filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.3))',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
         </g>
       </svg>
 
@@ -136,8 +153,8 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
         <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden rounded-2xl shadow-2xl border-none">
           <DialogHeader className="p-6 bg-slate-50 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                <MapPin className="text-indigo-600" size={20} />
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                <MapPin className="text-green-600" size={20} />
               </div>
               <div>
                 <DialogTitle className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
@@ -163,7 +180,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
                         <span className="flex items-center gap-1.5"><User size={12} className="text-slate-400" /> {lead['Person Name'] || lead.contact_person || '-'}</span>
                         <span className="flex items-center gap-1.5"><Phone size={12} className="text-slate-400" /> {lead['Mobile No. '] || lead.mobile || '-'}</span>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium">Assigned to: <span className="text-indigo-600 font-bold">{lead['Sales Person Name'] || lead.owner_id || 'Unassigned'}</span></p>
+                      <p className="text-[10px] text-slate-400 font-medium">Assigned to: <span className="text-green-600 font-bold">{lead['Sales Person Name'] || lead.owner_id || 'Unassigned'}</span></p>
                     </div>
                     {lead.expected_value && (
                       <div className="text-right">
