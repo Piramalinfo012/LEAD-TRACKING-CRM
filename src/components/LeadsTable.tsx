@@ -90,7 +90,7 @@ export default function LeadsTable() {
       toast.error(err.message || "Failed to promote lead");
     }
   };
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
@@ -270,6 +270,24 @@ export default function LeadsTable() {
     if (stage?.toLowerCase() === 'cold') {
       return [
         ...defaultCols,
+        {
+          accessorKey: 'created_at',
+          header: 'Timestamp',
+          cell: ({ row }) => {
+            const raw = row.original.Timestamp || row.original.created_at;
+            let display = raw;
+            // Basic attempt to make iso strings readable
+            if (raw && String(raw).includes('T')) {
+              try {
+                const d = new Date(raw);
+                if (!isNaN(d.getTime())) {
+                  display = d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+              } catch(e) {}
+            }
+            return <div className="text-xs font-bold text-slate-600 tracking-tight whitespace-nowrap">{display || '-'}</div>;
+          }
+        },
         {
           accessorKey: 'District',
           header: 'District',
