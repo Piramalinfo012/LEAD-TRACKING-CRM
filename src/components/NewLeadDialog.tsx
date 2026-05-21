@@ -269,8 +269,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                <Plus size={24} />
             </div>
             <div>
-               <DialogTitle className="text-xl md:text-2xl font-heading font-semibold tracking-tight text-slate-900">New Entry Data</DialogTitle>
-               <DialogDescription className="text-slate-400 font-heading text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">Add record to Entry Data sheet</DialogDescription>
+               <DialogTitle className="text-xl md:text-2xl font-heading font-semibold tracking-tight text-slate-900">New Lead Entry</DialogTitle>
+               <DialogDescription className="text-slate-400 font-heading text-[10px] md:text-xs font-bold uppercase tracking-widest mt-0.5">Add record to FMS Tracker</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -548,7 +548,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                     <Loader2 size={16} className="animate-spin" />
                     <span>Processing</span>
                   </div>
-                ) : 'Save Entry Data'}
+                ) : 'Save to FMS'}
              </Button>
           </DialogFooter>
         </form>

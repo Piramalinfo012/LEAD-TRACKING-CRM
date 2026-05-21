@@ -469,8 +469,8 @@ app.use(express.json());
     try {
       const leadData = req.body;
       
-      // Save to 'Entry Data' sheet
-      await SheetsDB.addRow('Entry Data', leadData);
+      // Save to 'NEW_FMS' sheet
+      await SheetsDB.addRow('NEW_FMS', leadData);
       
       // Update cache in background
       refreshLeadsCache(true);
