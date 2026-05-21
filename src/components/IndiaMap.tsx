@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import IndiaMapData from '@svg-maps/india';
+import IndiaMapRaw from '@svg-maps/india';
+const IndiaMapData = (IndiaMapRaw as any).default || IndiaMapRaw;
 import { 
   Dialog, 
   DialogContent, 
