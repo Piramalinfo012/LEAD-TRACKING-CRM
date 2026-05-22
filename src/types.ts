@@ -78,6 +78,27 @@ export interface Lead {
   close_remark?: string;
   closed_by?: string;
   closed_at?: string;
+
+  // Lead Stage Specific Data
+  lead_planned_date?: string;
+  lead_actual_date?: string;
+  lead_status?: string;
+  product_details?: string;
+  mcb_requirement?: string;
+  pain_points?: string;
+  kit_details?: string;
+  meeting_followup_date?: string;
+
+  // Meeting Stage Specific Data
+  meeting_planned_date?: string;
+  meeting_actual_date?: string;
+  meeting_status?: string;
+  reschedule_date?: string;
+  discussion_points?: string;
+  meeting_person_name?: string;
+  meeting_number?: string;
+  bullet_point_remarks?: string;
+  meeting_url?: string;
 }
 
 export interface Followup {

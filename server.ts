@@ -78,7 +78,28 @@ async function doLeadsFetch() {
         'Last Remarks': l['Last Remarks'],
         created_at: l['Timestamp'] || new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        owner_id: l['Sales Person Name'] || 'SYSTEM'
+        owner_id: l['Sales Person Name'] || 'SYSTEM',
+        
+        // Lead Stage Fields
+        lead_planned_date: l['Lead Planned Date'] || l['planned_date'] || '',
+        lead_actual_date: l['Lead Actual Date'] || l['actual_date'] || '',
+        lead_status: l['Lead Status'] || l['custom_status'] || '',
+        product_details: l['Product details.'] || l['product_details'] || '',
+        mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
+        pain_points: l['Pain Points – Remark in detail.'] || l['pain_points'] || '',
+        kit_details: l['KIT Url'] || l['KIT.'] || l['kit_details'] || '',
+        meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
+
+        // Meeting Stage Fields
+        meeting_planned_date: l['Meeting Planned Date'] || l['Meeting Planned'] || '',
+        meeting_actual_date: l['Meeting Actual Date'] || l['Meeting Actual'] || '',
+        meeting_status: l['Meeting Status'] || '',
+        reschedule_date: l['Reschedule Meeting Date'] || '',
+        discussion_points: l['Discussion Points.'] || '',
+        meeting_person_name: l['Meeting Person Name'] || '',
+        meeting_number: l['Number'] || '',
+        bullet_point_remarks: l['Bullet Point Remarks.'] || '',
+        meeting_url: l['Picture of Meeting Url'] || ''
       }));
 
       const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => {
@@ -113,7 +134,28 @@ async function doLeadsFetch() {
           created_at: l['Timestamp'] || new Date().toISOString(),
           updated_at: new Date().toISOString(),
           owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
-          is_fms: true
+          is_fms: true,
+          
+          // Lead Stage Fields
+          lead_planned_date: l['Lead Planned Date'] || l['planned_date'] || '',
+          lead_actual_date: l['Lead Actual Date'] || l['actual_date'] || '',
+          lead_status: l['Lead Status'] || l['custom_status'] || '',
+          product_details: l['Product details.'] || l['product_details'] || '',
+          mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
+          pain_points: l['Pain Points – Remark in detail.'] || l['pain_points'] || '',
+          kit_details: l['KIT Url'] || l['KIT.'] || l['kit_details'] || '',
+          meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
+  
+          // Meeting Stage Fields
+          meeting_planned_date: l['Meeting Planned Date'] || l['Meeting Planned'] || '',
+          meeting_actual_date: l['Meeting Actual Date'] || l['Meeting Actual'] || '',
+          meeting_status: l['Meeting Status'] || '',
+          reschedule_date: l['Reschedule Meeting Date'] || '',
+          discussion_points: l['Discussion Points.'] || '',
+          meeting_person_name: l['Meeting Person Name'] || '',
+          meeting_number: l['Number'] || '',
+          bullet_point_remarks: l['Bullet Point Remarks.'] || '',
+          meeting_url: l['Picture of Meeting Url'] || ''
         };
       });
 
@@ -526,7 +568,43 @@ app.use(express.json());
       const leadData = req.body;
       
       // Save to 'NEW_FMS' sheet
-      await SheetsDB.addRow('NEW_FMS', leadData);
+      await SheetsDB.addRow('NEW_FMS', leadData, 5);
+      
+      // Update cache optimistically
+      if (LEADS_CACHE) {
+        const l = leadData;
+        const newLead = {
+          id: l.Id,
+          company_name: l['Party Name'] || '',
+          contact_person: l['Person Name'] || '',
+          mobile: l['Mobile No. '] || '',
+          email: l['Gmail ID'] || '',
+          address: l['Address'] || '',
+          district: l['District'] || '',
+          state: l['State'] || '',
+          owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
+          source: l['Source'] || '',
+          follow_up_date: l['Follow Up date'] || '',
+          mcb_kit_url: l['MCBs. (KIT) URl'] || '',
+          last_remarks: l['Last Remarks'] || '',
+          status: 'COLD',
+          sales_person_name: l['Sales Person Name'] || '',
+          followup_date: l['Follow Up date'] || '',
+          'District': l['District'],
+          'Follow Up date': l['Follow Up date'],
+          'Source': l['Source'],
+          'Party Name': l['Party Name'],
+          'Person Name': l['Person Name'],
+          'Mobile No. ': l['Mobile No. '],
+          'Gmail ID': l['Gmail ID'],
+          'MCBs. (KIT) URl': l['MCBs. (KIT) URl'],
+          'Last Remarks': l['Last Remarks'],
+          created_at: l['Timestamp'] || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_fms: true
+        };
+        LEADS_CACHE.push(newLead);
+      }
       
       // Update cache in background
       refreshLeadsCache(true);
@@ -570,15 +648,59 @@ app.use(express.json());
         }
       }
 
-      const isFms = updateData.is_fms;
+      const existingLeadObj = leads.find((l: any) => l.id === id);
+      const isFms = updateData.is_fms !== undefined ? updateData.is_fms : (existingLeadObj ? existingLeadObj.is_fms : true);
       const sheetName = isFms ? 'NEW_FMS' : 'Entry Data';
       const idField = 'Id';
       
       const mappedUpdate = { ...updateData };
-      if (updateData.status) mappedUpdate['Status'] = updateData.status;
+      if (updateData.status) mappedUpdate['Stage'] = updateData.status; // Avoid collision with 'Status' which is custom_status
       if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
+      
+      // Map Lead Stage fields
+      if (updateData.lead_planned_date !== undefined) mappedUpdate['Lead Planned Date'] = updateData.lead_planned_date;
+      if (updateData.lead_actual_date !== undefined) mappedUpdate['Lead Actual Date'] = updateData.lead_actual_date;
+      if (updateData.custom_status !== undefined) mappedUpdate['Lead Status'] = updateData.custom_status;
+      if (updateData.lead_status !== undefined && !updateData.custom_status) mappedUpdate['Lead Status'] = updateData.lead_status;
+      if (updateData.product_details !== undefined) mappedUpdate['Product details.'] = updateData.product_details;
+      if (updateData.mcb_requirement !== undefined) {
+        mappedUpdate['MCB according to requirement. Url'] = updateData.mcb_requirement;
+        mappedUpdate['MCB according to requirement.'] = updateData.mcb_requirement; // fallback
+      }
+      if (updateData.pain_points !== undefined) mappedUpdate['Pain Points – Remark in detail.'] = updateData.pain_points;
+      if (updateData.kit_details !== undefined) {
+        mappedUpdate['KIT Url'] = updateData.kit_details;
+        mappedUpdate['KIT.'] = updateData.kit_details; // fallback
+      }
+      if (updateData.meeting_followup_date !== undefined) {
+        mappedUpdate['Meeting Follow-up Date.'] = updateData.meeting_followup_date;
+        if (updateData.meeting_planned_date === undefined) {
+          mappedUpdate['Meeting Planned'] = updateData.meeting_followup_date;
+          mappedUpdate['Meeting Planned Date'] = updateData.meeting_followup_date;
+        }
+      }
 
-      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate);
+      // Map Meeting Stage fields
+      if (updateData.meeting_planned_date !== undefined) {
+        mappedUpdate['Meeting Planned'] = updateData.meeting_planned_date;
+        mappedUpdate['Meeting Planned Date'] = updateData.meeting_planned_date;
+      }
+      if (updateData.meeting_actual_date !== undefined) {
+        mappedUpdate['Meeting Actual'] = updateData.meeting_actual_date;
+        mappedUpdate['Meeting Actual Date'] = updateData.meeting_actual_date;
+      }
+      if (updateData.meeting_status !== undefined) {
+        mappedUpdate['Status'] = updateData.meeting_status;
+        mappedUpdate['Meeting Status'] = updateData.meeting_status;
+      }
+      if (updateData.reschedule_date !== undefined) mappedUpdate['Reschedule Meeting Date'] = updateData.reschedule_date;
+      if (updateData.discussion_points !== undefined) mappedUpdate['Discussion Points.'] = updateData.discussion_points;
+      if (updateData.meeting_person_name !== undefined) mappedUpdate['Meeting Person Name'] = updateData.meeting_person_name;
+      if (updateData.meeting_number !== undefined) mappedUpdate['Number'] = updateData.meeting_number;
+      if (updateData.bullet_point_remarks !== undefined) mappedUpdate['Bullet Point Remarks.'] = updateData.bullet_point_remarks;
+      if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
+
+      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
       // Update cache in background
       refreshLeadsCache(true);
       res.json({ success: true });

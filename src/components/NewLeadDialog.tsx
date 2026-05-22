@@ -286,7 +286,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     e.preventDefault();
     try {
       const payload = {
-        Timestamp: new Date().toLocaleString(),
+        Timestamp: formatDateToDMY(new Date()),
         Id: formData.id,
         'Party Name': formData.party_name,
         'Address': formData.address,
@@ -300,6 +300,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         'Source': formData.source,
         'Gmail ID': formData.gmail_id,
         'Follow Up date': formatDateToDMY(formData.follow_up_date),
+        'Lead Planned Date': formatDateToDMY(formData.follow_up_date),
         // Also keep standard fields for compatibility if needed
         company_name: formData.party_name,
         contact_person: formData.person_name,

@@ -1,1 +1,0 @@
-import 'dotenv/config'; async function test() { try { const res = await fetch('http://localhost:3000/api/leads', { headers: { 'Authorization': 'Bearer ' + (process.env.TEST_TOKEN || '') } }); const json = await res.json(); console.log('API Leads count:', json.length || json); } catch (e) { console.error(e); } } test();

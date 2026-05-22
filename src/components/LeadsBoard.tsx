@@ -33,6 +33,7 @@ import {
 import { useMemo } from 'react';
 import LeadDetailsSheet from './LeadDetailsSheet';
 import NewLeadDialog from './NewLeadDialog';
+import ColdLeadFormDialog from './ColdLeadFormDialog';
 
 const STAGES: LeadStatus[] = [
   LeadStatus.COLD,
@@ -59,6 +60,8 @@ export default function KanbanBoard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const [activeColdTab, setActiveColdTab] = useState<'pending' | 'history'>('pending');
+  const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
 
   const salesPersonsList = useMemo(() => {
     const list = new Set<string>();
@@ -113,7 +116,15 @@ export default function KanbanBoard() {
   };
 
   const leadsByStage = STAGES.reduce((acc, stage) => {
-    acc[stage] = filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === stage);
+    let stageLeads = filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === stage);
+    if (stage === LeadStatus.COLD) {
+      if (activeColdTab === 'history') {
+        stageLeads = stageLeads.filter(l => l.lead_planned_date);
+      } else {
+        stageLeads = stageLeads.filter(l => !l.lead_planned_date && l.status === LeadStatus.COLD);
+      }
+    }
+    acc[stage] = stageLeads;
     return acc;
   }, {} as Record<string, Lead[]>);
 
@@ -150,13 +161,31 @@ export default function KanbanBoard() {
       <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide">
         {STAGES.map((stage) => (
           <div key={stage} className="w-80 shrink-0 flex flex-col gap-4">
-            <div className="flex items-center justify-between px-2 mb-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-[11px] font-heading font-semibold uppercase tracking-widest text-slate-900">{STAGE_LABELS[stage]}</h3>
-                <Badge variant="outline" className="bg-white text-slate-700 border-slate-300 rounded-full text-[10px] font-sans font-semibold">
-                  {leadsByStage[stage]?.length || 0}
-                </Badge>
+            <div className="flex flex-col gap-2 px-2 mb-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[11px] font-heading font-semibold uppercase tracking-widest text-slate-900">{STAGE_LABELS[stage]}</h3>
+                  <Badge variant="outline" className="bg-white text-slate-700 border-slate-300 rounded-full text-[10px] font-sans font-semibold">
+                    {leadsByStage[stage]?.length || 0}
+                  </Badge>
+                </div>
               </div>
+              {stage === LeadStatus.COLD && (
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setActiveColdTab('pending')}
+                    className={`flex-1 text-[10px] font-heading font-bold uppercase py-1 rounded-md transition-colors ${activeColdTab === 'pending' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    onClick={() => setActiveColdTab('history')}
+                    className={`flex-1 text-[10px] font-heading font-bold uppercase py-1 rounded-md transition-colors ${activeColdTab === 'history' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    History
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 space-y-3 p-1">
@@ -204,19 +233,49 @@ export default function KanbanBoard() {
                          <div className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-sans font-bold text-slate-600">MK</div>
                        </div>
                        <div className="flex items-center gap-1">
+                          {stage === LeadStatus.COLD && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] font-heading uppercase px-2 py-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedColdLeadForForm(lead);
+                              }}
+                            >
+                              Lead
+                            </Button>
+                          )}
                           <span className="text-[10px] font-heading font-medium text-indigo-600 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">View Details</span>
-                          <Button 
-                             variant="ghost" 
-                             size="icon" 
-                             className="h-6 w-6 text-slate-400 hover:bg-slate-50 hover:text-indigo-600"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               moveLead(lead.id, STAGES[STAGES.indexOf(stage) + 1] || stage);
-                             }}
-                             disabled={STAGES.indexOf(stage) === STAGES.length -1}
-                          >
-                            <ChevronRight size={14} />
-                          </Button>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                   variant="ghost" 
+                                   size="icon" 
+                                   className="h-6 w-6 text-slate-400 hover:bg-slate-50 hover:text-indigo-600"
+                                >
+                                  <ChevronRight size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 border-b border-slate-100 mb-1">Move to stage</div>
+                                {STAGES.map((s) => (
+                                  <DropdownMenuItem 
+                                    key={s} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveLead(lead.id, s);
+                                    }}
+                                    disabled={s === stage}
+                                    className="cursor-pointer text-xs font-medium"
+                                  >
+                                    {STAGE_LABELS[s]}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                        </div>
                     </div>
                   </CardContent>
@@ -245,6 +304,13 @@ export default function KanbanBoard() {
         isOpen={isNewLeadDialogOpen} 
         onClose={() => setIsNewLeadDialogOpen(false)} 
         onSuccess={fetchLeads} 
+      />
+
+      <ColdLeadFormDialog
+        lead={selectedColdLeadForForm}
+        isOpen={!!selectedColdLeadForForm}
+        onClose={() => setSelectedColdLeadForForm(null)}
+        onSuccess={fetchLeads}
       />
     </div>
   );

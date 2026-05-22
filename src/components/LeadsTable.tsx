@@ -46,7 +46,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { toast } from 'sonner';
-import { formatDateToDMY } from '../lib/utils';
+import { formatDateToDMY, customDateSortFn } from '../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 import { 
   Select, 
@@ -57,6 +57,8 @@ import {
 } from './ui/select';
 import LeadDetailsSheet from './LeadDetailsSheet';
 import NewLeadDialog from './NewLeadDialog';
+import ColdLeadFormDialog from './ColdLeadFormDialog';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 export default function LeadsTable() {
   const { request, loading } = useApi();
@@ -93,6 +95,7 @@ export default function LeadsTable() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
@@ -100,6 +103,7 @@ export default function LeadsTable() {
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [stageTab, setStageTab] = useState<'pending' | 'history'>('pending');
 
   const salesPersonsList = useMemo(() => {
     const list = new Set<string>();
@@ -185,29 +189,57 @@ export default function LeadsTable() {
         }
       }
 
+      if (stage) {
+        const stageKey = stage.toLowerCase();
+        
+        if (stageTab === 'pending') {
+          if (stageKey === 'cold') {
+            // Cold pending: no lead_planned_date yet (or just status COLD)
+            if (lead.lead_planned_date) return false;
+            if (lead.status !== 'COLD') return false;
+          } else if (stageKey === 'lead') {
+            // Lead pending: has lead_planned_date, but NO lead_actual_date
+            if (!lead.lead_planned_date) return false;
+            if (lead.lead_actual_date) return false;
+          } else if (stageKey === 'meeting') {
+            // Meeting pending: has meeting_planned_date, but NO meeting_actual_date
+            if (!lead.meeting_planned_date) return false;
+            if (lead.meeting_actual_date) return false;
+          } else {
+            // Other stages pending fallback: check status
+            const stageMap: Record<string, string> = {
+              'tech': 'TECHNICAL_DISCUSSION',
+              'negotiation': 'NEGOTIATION',
+              'order': 'ORDER'
+            };
+            const targetStatus = stageMap[stageKey];
+            if (targetStatus && lead.status?.toUpperCase() !== targetStatus) return false;
+          }
+        } else {
+          // History logic
+          if (stageKey === 'cold') {
+            // Cold history: has moved past COLD (has lead_planned_date)
+            if (!lead.lead_planned_date) return false;
+          } else if (stageKey === 'lead') {
+            // Lead history: has lead_actual_date
+            if (!lead.lead_actual_date) return false;
+          } else if (stageKey === 'meeting') {
+            // Meeting history: has meeting_actual_date
+            if (!lead.meeting_actual_date) return false;
+          } else {
+            return false;
+          }
+        }
+      }
+
       return true;
     });
-  }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate]);
+  }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, stage, stageTab]);
 
   const fetchData = async () => {
     try {
       const applyData = (leadsToApply: any[]) => {
-        if (stage) {
-          const stageMap: Record<string, LeadStatus> = {
-            'cold': LeadStatus.COLD,
-            'lead': LeadStatus.LEAD,
-            'meeting': LeadStatus.MEETING,
-            'tech': LeadStatus.TECHNICAL_DISCUSSION,
-            'negotiation': LeadStatus.NEGOTIATION,
-            'order': LeadStatus.ORDER
-          };
-          const targetStatus = stageMap[stage.toLowerCase()];
-          if (targetStatus) {
-            setData(leadsToApply.filter((l: Lead) => l.status?.toUpperCase() === targetStatus));
-            return;
-          }
-        }
-        setData(leadsToApply);
+        setData(leadsToApply); // Status filtering is now handled in filteredData
       };
 
       const cached = localStorage.getItem('crm_leads_cache');
@@ -296,6 +328,7 @@ export default function LeadsTable() {
         {
           accessorKey: 'created_at',
           header: 'Timestamp',
+          sortingFn: customDateSortFn,
           cell: ({ row }) => {
             const raw = row.original.Timestamp || row.original.created_at;
             return <div className="text-xs font-bold text-slate-600 tracking-tight whitespace-nowrap">{formatDateToDMY(raw) || '-'}</div>;
@@ -310,6 +343,7 @@ export default function LeadsTable() {
         {
           accessorKey: 'Follow Up date',
           header: 'Follow Up date',
+          sortingFn: customDateSortFn,
           cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 uppercase tracking-tight">{formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date) || '-'}</div>
         },
 
@@ -333,8 +367,8 @@ export default function LeadsTable() {
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8 text-emerald-600 hover:bg-slate-50 hover:text-emerald-700 rounded-lg"
-                  onClick={() => handlePromoteLead(row.original.id)}
-                  title="Promote to Lead"
+                  onClick={() => setSelectedColdLeadForForm(row.original)}
+                  title="Update Stage"
                 >
                   <ArrowUpDown size={16} />
                 </Button>
@@ -356,12 +390,120 @@ export default function LeadsTable() {
     ];
   }
 
+  if (stage?.toLowerCase() === 'lead') {
+    return [
+      ...defaultCols,
+      {
+        accessorKey: 'lead_planned_date',
+        header: 'Lead Planned',
+        sortingFn: customDateSortFn,
+        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.lead_planned_date || row.original['Lead Planned Date']) || '-'}</div>
+      },
+      {
+        accessorKey: 'lead_actual_date',
+        header: 'Lead Actual',
+        sortingFn: customDateSortFn,
+        cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
+      },
+      {
+        accessorKey: 'custom_status',
+        header: 'Lead Status',
+        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        cell: ({ row }) => {
+          const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
+          return (
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
+                onClick={() => setSelectedLead(row.original)}
+                title="Edit Lead"
+              >
+                <Edit size={16} />
+              </Button>
+              {canDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
+                  onClick={() => handleDeleteLead(row.original.id)}
+                  title="Delete Lead"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          );
+        }
+      }
+    ];
+  }
+
+  if (stage?.toLowerCase() === 'meeting') {
+    return [
+      ...defaultCols,
+      {
+        accessorKey: 'meeting_planned_date',
+        header: 'Meeting Planned',
+        sortingFn: customDateSortFn,
+        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.meeting_planned_date || row.original['Meeting Planned']) || '-'}</div>
+      },
+      {
+        accessorKey: 'meeting_actual_date',
+        header: 'Meeting Actual',
+        sortingFn: customDateSortFn,
+        cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
+      },
+      {
+        accessorKey: 'meeting_status',
+        header: 'Status',
+        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        cell: ({ row }) => {
+          const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
+          return (
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
+                onClick={() => setSelectedLead(row.original)}
+                title="Edit Lead"
+              >
+                <Edit size={16} />
+              </Button>
+              {canDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
+                  onClick={() => handleDeleteLead(row.original.id)}
+                  title="Delete Lead"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          );
+        }
+      }
+    ];
+  }
+
   // Standard columns for other stages
   return [
     ...defaultCols,
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: 'Stage',
       cell: ({ row }) => {
         const status = row.getValue('status') as LeadStatus;
         return (
@@ -379,6 +521,7 @@ export default function LeadsTable() {
     {
       accessorKey: 'created_at',
       header: () => <span className="hidden md:inline">Timestamp</span>,
+      sortingFn: customDateSortFn,
       cell: ({ row }) => {
         return <div className="text-[10px] text-slate-400 font-sans font-medium uppercase tracking-tight hidden md:block">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
       },
@@ -415,7 +558,7 @@ export default function LeadsTable() {
       }
     },
   ];
-}, [stage, user]);
+}, [stage, user, stageTab]);
 
 const table = useReactTable({
   data: filteredData,
@@ -432,18 +575,31 @@ const table = useReactTable({
   },
 });
 
-return (
-  <div className="space-y-6 animate-in fade-in duration-700 pb-12">
-    <div className="flex flex-col gap-1">
-      <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
-        {stage ? `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List` : 'Lead Management'}
-      </h2>
-      <p className="text-xs text-slate-400 font-sans font-medium tracking-tight">
-        Manage and track leads in the {stage || 'total'} pipeline.
-      </p>
-    </div>
+  return (
+    <div className="space-y-6 animate-in fade-in duration-700 pb-12">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
+          {stage ? `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List` : 'Lead Management'}
+        </h2>
+        <p className="text-xs text-slate-400 font-sans font-medium tracking-tight">
+          Manage and track leads in the {stage || 'total'} pipeline.
+        </p>
+      </div>
 
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {stage && (
+        <Tabs value={stageTab} onValueChange={(v) => setStageTab(v as 'pending' | 'history')} className="w-full">
+          <TabsList className="bg-slate-100/50 p-1 rounded-xl h-12 flex w-fit min-w-[300px]">
+            <TabsTrigger value="pending" className="flex-1 font-bold text-xs uppercase tracking-widest rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
+              Pending {stage.charAt(0).toUpperCase() + stage.slice(1)}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 font-bold text-xs uppercase tracking-widest rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
+              History
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:max-w-2xl">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -681,6 +837,13 @@ return (
          isOpen={!!selectedLead} 
          onClose={() => setSelectedLead(null)} 
          onUpdate={fetchData}
+      />
+
+      <ColdLeadFormDialog
+        lead={selectedColdLeadForForm}
+        isOpen={!!selectedColdLeadForForm}
+        onClose={() => setSelectedColdLeadForForm(null)}
+        onSuccess={fetchData}
       />
     </div>
   );

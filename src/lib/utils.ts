@@ -77,3 +77,33 @@ export function getEmbeddableUrl(url?: string): string {
   }
   return url;
 }
+
+export function customDateSortFn(rowA: any, rowB: any, columnId: string) {
+  const getMs = (val: any) => {
+    if (!val) return 0;
+    const str = String(val).trim();
+    if (!str) return 0;
+    
+    // Match DD/MM/YYYY, optionally followed by time
+    const dmyMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (dmyMatch) {
+      // Convert to YYYY-MM-DDT... for robust parsing
+      const rest = str.substring(dmyMatch[0].length);
+      const parsed = new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}${rest}`);
+      if (!isNaN(parsed.getTime())) return parsed.getTime();
+    }
+    
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d.getTime();
+    return 0;
+  };
+
+  const valA = rowA.getValue(columnId);
+  const valB = rowB.getValue(columnId);
+  
+  const msA = getMs(valA);
+  const msB = getMs(valB);
+  
+  if (msA === msB) return 0;
+  return msA > msB ? 1 : -1;
+}

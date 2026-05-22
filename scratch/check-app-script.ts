@@ -10,12 +10,9 @@ async function checkAppScript() {
   const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
   if (!scriptUrl) return console.log('No URL');
   
-  const response = await fetch(`${scriptUrl}?sheet=NEW_FMS`);
-  const result = await response.json();
-  
-  if (result.success && result.data) {
-    console.log('Headers array:', result.data[5]);
-  }
+  const getResponse = await fetch(`${scriptUrl}?sheet=Entry Data`);
+  const getResult = await getResponse.json();
+  console.log('Result:', getResult);
 }
 
 checkAppScript();

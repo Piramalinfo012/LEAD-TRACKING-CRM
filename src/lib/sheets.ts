@@ -45,7 +45,7 @@ export class SheetsDB {
             return obj;
           });
         } else {
-          throw new Error('Google Apps Script returned success: false');
+          throw new Error('Google Apps Script returned success: false. Error: ' + result.error);
         }
       } catch (e: any) {
         console.error('App Script fetch failed:', e.message);
@@ -84,7 +84,7 @@ export class SheetsDB {
     });
   }
 
-  static async addRow(sheetName: string, data: any) {
+  static async addRow(sheetName: string, data: any, headerRowIndex: number = 0) {
     const spreadsheetId = this.spreadsheetId;
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
 
@@ -109,11 +109,16 @@ export class SheetsDB {
         }
 
         const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
-          headers = result.data[0];
+        if (result.success && result.data && result.data.length > headerRowIndex) {
+          headers = result.data[headerRowIndex];
           
           if (headers.length > 0) {
-            const row = headers.map(header => data[header] || '');
+            const row = headers.map((header: string) => data[header] || '');
+            console.log(`[SheetsDB.addRow] Sheet: ${sheetName}`);
+            console.log(`[SheetsDB.addRow] Payload Keys:`, Object.keys(data));
+            console.log(`[SheetsDB.addRow] First 5 Headers:`, headers.slice(0, 5));
+            console.log(`[SheetsDB.addRow] Generated Row (first 5):`, row.slice(0, 5));
+            
             const params = new URLSearchParams();
             params.append('action', 'insert');
             params.append('sheetName', sheetName);
@@ -159,9 +164,10 @@ export class SheetsDB {
     const sheets = await getSheetsClient();
     
     // Get headers first to preserve order
+    const rowNum = headerRowIndex + 1;
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A1:Z1`,
+      range: `${sheetName}!A${rowNum}:BZ${rowNum}`,
     });
     
     headers = response.data.values?.[0] || [];
@@ -177,15 +183,88 @@ export class SheetsDB {
     });
   }
 
-  static async updateRow(sheetName: string, idField: string, idValue: string, data: any) {
+  static async updateRow(sheetName: string, idField: string, idValue: string, data: any, headerRowIndex: number = 0) {
     const spreadsheetId = this.spreadsheetId;
+    
+    // Check if we need to use App Script Fallback
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+      if (scriptUrl) {
+        try {
+          // 1. Fetch all rows to find the rowIndex and construct the updated array
+          const getResponse = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`);
+          const getResult = await getResponse.json();
+          
+          if (!getResult.success || !getResult.data) throw new Error('Failed to fetch data for update');
+          
+          const allRows = getResult.data;
+          if (allRows.length <= headerRowIndex) throw new Error('Sheet is empty or missing headers');
+          
+          const headers = allRows[headerRowIndex];
+          const idColIndex = headers.indexOf(idField);
+          if (idColIndex === -1) throw new Error(`Id field ${idField} not found in headers`);
+          
+          const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
+          if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+          
+          const existingRow = allRows[rowIndex0Based];
+          
+          // Construct the full rowData array
+          // The App Script will read `rowData.length` columns, so we need to pass an array
+          // that is at least as long as the headers length.
+          const newRowData = [...existingRow].map(val => {
+            // doGet converts Date objects to ISO strings. Convert them back to DD/MM/YYYY before saving.
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(val)) {
+              const d = new Date(val);
+              return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            }
+            return val;
+          });
+          
+          // Pad array if necessary
+          while (newRowData.length < headers.length) newRowData.push('');
+          
+          for (const key of Object.keys(data)) {
+            const colIndex = headers.indexOf(key);
+            if (colIndex !== -1) {
+              newRowData[colIndex] = data[key];
+            }
+          }
+          
+          // 2. Call the 'update' action with the 1-based rowIndex
+          const rowIndex1Based = rowIndex0Based + 1;
+          const params = new URLSearchParams();
+          params.append('action', 'update');
+          params.append('sheetName', sheetName);
+          params.append('rowIndex', rowIndex1Based.toString());
+          params.append('rowData', JSON.stringify(newRowData));
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const postResponse = await fetch(scriptUrl, {
+            method: 'POST',
+            body: params,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          const result = await postResponse.json();
+          if (!result.success) throw new Error(result.error || 'Update failed via App Script');
+          console.log(`[SheetsDB.updateRow] Successfully updated ${idValue} in ${sheetName} via App Script`);
+          return;
+        } catch (e: any) {
+          console.error('[SheetsDB.updateRow] App Script fallback failed:', e.message);
+          throw e; // Throw so server.ts can catch it
+        }
+      } else {
+        console.warn('No GOOGLE_SERVICE_ACCOUNT_EMAIL and no GOOGLE_SCRIPT_URL. Cannot update.');
+        return;
+      }
+    }
+
     if (!spreadsheetId) {
       console.warn('Spreadsheet ID missing, cannot use direct API');
-      return;
-    }
-    
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-      console.warn('Google Service Account email missing, cannot use direct API');
       return;
     }
 
@@ -196,12 +275,12 @@ export class SheetsDB {
     });
 
     const rows = allRows.data.values || [];
-    const headers = rows[0];
+    const headers = rows[headerRowIndex] || [];
     const idIndex = headers.indexOf(idField);
     
     if (idIndex === -1) throw new Error(`Field ${idField} not found`);
 
-    const rowIndex = rows.findIndex(row => row[idIndex] === idValue);
+    const rowIndex = rows.findIndex((row, idx) => idx > headerRowIndex && row[idIndex] === idValue);
     if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
 
     const updatedRow = headers.map((header, index) => {
@@ -218,7 +297,7 @@ export class SheetsDB {
     });
   }
 
-  static async deleteRow(sheetName: string, idField: string, idValue: string) {
+  static async deleteRow(sheetName: string, idField: string, idValue: string, headerRowIndex: number = 0) {
     const spreadsheetId = this.spreadsheetId;
     if (!spreadsheetId || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) return;
 
@@ -232,11 +311,11 @@ export class SheetsDB {
     const rows = allRows.data.values || [];
     if (rows.length === 0) return;
     
-    const headers = rows[0];
+    const headers = rows[headerRowIndex] || [];
     const idIndex = headers.indexOf(idField);
     if (idIndex === -1) throw new Error(`Field ${idField} not found`);
 
-    const rowIndex = rows.findIndex(row => row[idIndex] === idValue);
+    const rowIndex = rows.findIndex((row, idx) => idx > headerRowIndex && row[idIndex] === idValue);
     if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
 
     const spreadsheetInfo = await sheets.spreadsheets.get({ spreadsheetId });

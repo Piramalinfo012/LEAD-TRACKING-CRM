@@ -1,1 +1,0 @@
-import 'dotenv/config'; import { SheetsDB } from '../src/lib/sheets.js'; async function test() { const rows = await SheetsDB.getRows('Login'); console.log('Login users:', rows.length); console.log(rows.find(u => u['Email Id']?.toLowerCase().includes('atul') || u['Name']?.toLowerCase().includes('atul'))); } test().catch(console.error);
