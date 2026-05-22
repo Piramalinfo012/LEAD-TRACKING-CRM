@@ -61,6 +61,30 @@ export default function Settings() {
   };
 
   const [profileUrl, setProfileUrl] = useState(user?.profile_url || '');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await request('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res && res.webViewLink) {
+        setProfileUrl(res.webViewLink);
+        toast.success('Image uploaded! Click Update Registry to save.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -136,7 +160,15 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile Picture URL</Label>
-                   <Input value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://example.com/my-photo.jpg" className="bg-white border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
+                   <div className="flex gap-2">
+                     <Input value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://example.com/my-photo.jpg" className="bg-white border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
+                     <div className="relative">
+                       <Input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={isUploading} />
+                       <Button type="button" variant="outline" className="h-11 px-4 border-slate-200 text-slate-600 bg-slate-50 pointer-events-none" disabled={isUploading}>
+                         {isUploading ? 'Uploading...' : 'Upload File'}
+                       </Button>
+                     </div>
+                   </div>
                 </div>
                 <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest h-11 px-8 shadow-sm transition-all" onClick={handleSave} disabled={isSaving}>
                    {isSaving ? 'Synchronizing...' : 'Update Registry'}

@@ -31,6 +31,8 @@ import {
 import { toast } from 'sonner';
 import { UserPlus, User as UserIcon, Shield, Mail, BadgeCheck, Edit2, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { getEmbeddableUrl } from '../lib/utils';
 
 export default function UserManagement() {
   const { request, loading } = useApi();
@@ -48,6 +50,7 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       const data = await request('/api/users');
+      console.log('Fetched users data:', data);
       setUsers(data);
     } catch (err) {
       console.error(err);
@@ -233,9 +236,12 @@ export default function UserManagement() {
                 <TableRow key={u.id} className="border-slate-100 hover:bg-slate-50/30 transition-colors group">
                   <TableCell className="py-5 pl-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-50 transition-colors">
-                        <UserIcon size={20} />
-                      </div>
+                      <Avatar className="w-10 h-10 ring-2 ring-indigo-500/10">
+                        {u.profile_url && <AvatarImage src={getEmbeddableUrl(u.profile_url)} referrerPolicy="no-referrer" />}
+                        <AvatarFallback className="bg-indigo-50 text-indigo-600 font-bold">
+                          <UserIcon size={20} />
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-900 tracking-tight leading-none mb-1.5">{u.name}</span>
                         <span className="text-[10px] font-medium text-slate-400 tracking-wide uppercase">Identity Active</span>

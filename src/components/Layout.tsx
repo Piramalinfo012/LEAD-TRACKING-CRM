@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect, useMemo } from 'react';
+import React, { ReactNode, useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -29,10 +29,11 @@ import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './ui/sheet';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from './ui/dialog';
 import NewLeadDialog from './NewLeadDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { useApi } from '../lib/api';
-import { formatDateToDMY } from '../lib/utils';
+import { formatDateToDMY, getEmbeddableUrl } from '../lib/utils';
 import { toast } from 'sonner';
 
 interface LayoutProps {
@@ -42,6 +43,48 @@ interface LayoutProps {
 export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { className?: string, onNewLead: () => void, isMobile?: boolean, onNavItemClick?: () => void }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { request } = useApi();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingDP, setIsUploadingDP] = useState(false);
+
+  const handleAvatarClick = () => {
+    if (isUploadingDP) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleDPUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDP(true);
+    const toastId = toast.loading('Uploading profile picture...');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await request('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (uploadRes && uploadRes.webViewLink) {
+        await request('/api/users/profile', {
+          method: 'POST',
+          body: JSON.stringify({ profile_url: uploadRes.webViewLink })
+        });
+        toast.success('Profile picture updated!', { id: toastId });
+        
+        if (user) {
+          const updatedUser = { ...user, profile_url: uploadRes.webViewLink };
+          localStorage.setItem('crm_user', JSON.stringify(updatedUser));
+          window.location.reload(); 
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile picture', { id: toastId });
+    } finally {
+      setIsUploadingDP(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const menuItems = [
     { name: 'Dashboard', icon: Home, path: '/' },
@@ -177,10 +220,48 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 
       <div className="p-4 mt-auto border-t border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3 px-2 mb-4">
-          <Avatar className="w-10 h-10 ring-2 ring-indigo-500/20">
-            {user?.profile_url && <AvatarImage src={user.profile_url} alt={user?.name} className="object-cover" />}
-            <AvatarFallback className="bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-heading font-bold">{user?.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
+          <Dialog>
+            <DialogTrigger asChild>
+              <div className="relative group cursor-pointer">
+                <Avatar className={`w-10 h-10 ring-2 ring-indigo-500/20 transition-opacity ${isUploadingDP ? 'opacity-50' : 'group-hover:opacity-80'}`}>
+                  {user?.profile_url && <AvatarImage src={getEmbeddableUrl(user.profile_url)} referrerPolicy="no-referrer" alt={user?.name} className="object-cover" />}
+                  <AvatarFallback className="bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-heading font-bold">{user?.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-full">
+                  <span className="text-[8px] text-white font-bold uppercase tracking-widest text-center leading-tight">View</span>
+                </div>
+              </div>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-sm rounded-3xl p-6 overflow-hidden">
+              <DialogHeader className="mb-4">
+                 <DialogTitle className="text-center font-heading text-xl">Profile Picture</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-indigo-500/30 relative shadow-2xl">
+                  {user?.profile_url ? (
+                    <img src={getEmbeddableUrl(user.profile_url)} referrerPolicy="no-referrer" alt={user?.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-6xl font-heading font-bold text-white">
+                      {user?.name?.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="w-full flex justify-center">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleDPUpload} 
+                  />
+                  <Button onClick={handleAvatarClick} disabled={isUploadingDP} className="bg-indigo-600 hover:bg-indigo-700 w-full font-heading uppercase tracking-widest h-12 rounded-xl">
+                    {isUploadingDP ? 'Uploading...' : 'Change Picture'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-heading font-semibold text-white truncate">{user?.name}</span>
             <span className="text-[10px] font-heading uppercase text-indigo-400 tracking-wider font-bold truncate">{user?.role}</span>
@@ -390,9 +471,9 @@ export function Shell({ children }: LayoutProps) {
             </div>
 
             <Avatar className="w-8 h-8 lg:w-9 lg:h-9 cursor-pointer hover:ring-2 hover:ring-indigo-500/20 transition-all">
-              {user?.profile_url && <AvatarImage src={user.profile_url} alt={user?.name} className="object-cover" />}
+              {user?.profile_url && <AvatarImage src={getEmbeddableUrl(user.profile_url)} referrerPolicy="no-referrer" alt={user?.name} className="object-cover" />}
               <AvatarFallback className="bg-indigo-600 text-white text-[10px] font-bold">
-                {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ME'}
+                {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'ME'}
               </AvatarFallback>
             </Avatar>
           </div>

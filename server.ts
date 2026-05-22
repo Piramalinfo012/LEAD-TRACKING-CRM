@@ -417,18 +417,49 @@ app.use(express.json());
       const { profile_url } = req.body;
       const { id } = req.user;
       
+      let userIndex = -1;
       if (USERS_CACHE) {
-        const userIndex = USERS_CACHE.findIndex((u: any) => (u.ID || u.id || u.employee_id) === id);
+        userIndex = USERS_CACHE.findIndex((u: any) => (u.ID || u.id || u.employee_id) === id);
         if (userIndex !== -1) {
           USERS_CACHE[userIndex]['PROFILE URL'] = profile_url;
         }
       }
 
-      await SheetsDB.updateRow('Login', 'ID', id, { 'PROFILE URL': profile_url });
+      if (userIndex !== -1) {
+        // Use updateCell to update 'PROFILE URL' (Column H = 8)
+        const rowIndex = userIndex + 2; // +1 for 0-index offset, +1 for header row
+        const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+        if (scriptUrl) {
+          const params = new URLSearchParams();
+          params.append('action', 'updateCell');
+          params.append('sheetName', 'Login');
+          params.append('rowIndex', rowIndex.toString());
+          params.append('columnIndex', '8');
+          params.append('value', profile_url);
+          
+          const resp = await fetch(scriptUrl, { method: 'POST', body: params });
+          if (!resp.ok) console.error('Failed to update DP in Sheets', await resp.text());
+        }
+      } else {
+        console.warn('User not found in cache, skipping sheet update');
+      }
       
       res.json({ success: true, profile_url });
     } catch (error: any) {
       console.error('Failed to update profile URL:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/users/avatars', authenticateToken, async (req, res) => {
+    try {
+      const users = await refreshUsersCache();
+      const avatars = users.map((u: any) => ({
+        name: u['USER NAME'] || u.name || '',
+        profile_url: u['PROFILE URL'] || u.profile_url || ''
+      }));
+      res.json(avatars);
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
@@ -675,7 +706,8 @@ app.use(express.json());
         name: u['USER NAME'] || u.name || '',
         email: u.GMAIL || u.Gmail || u.email || '',
         role: (u.ROLE || u.role || 'SALES').toUpperCase(),
-        employee_id: u.ID || u.employee_id || ''
+        employee_id: u.ID || u.employee_id || '',
+        profile_url: u['PROFILE URL'] || u.profile_url || ''
       }));
       res.json(safeUsers);
     } catch (error: any) {
@@ -713,17 +745,39 @@ app.use(express.json());
       const { id } = req.params;
       const { password, ...userData } = req.body;
       
-      const updateData: any = {
-        'USER NAME': userData.name,
-        ROLE: userData.role,
-        GMAIL: userData.email,
-      };
-
-      if (password && password.trim() !== '') {
-        updateData.PASSWORD = await bcrypt.hash(password, 10);
+      let userIndex = -1;
+      if (USERS_CACHE) {
+        userIndex = USERS_CACHE.findIndex((u: any) => (u.ID || u.id || u.employee_id) === id);
       }
 
-      await SheetsDB.updateRow('Login', 'ID', id, updateData);
+      if (userIndex !== -1) {
+        const rowIndex = userIndex + 2;
+        const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+        if (scriptUrl) {
+          const updates = [
+            { col: '3', val: userData.name },
+            { col: '4', val: userData.role },
+            { col: '5', val: userData.email }
+          ];
+
+          if (password && password.trim() !== '') {
+            updates.push({ col: '2', val: await bcrypt.hash(password, 10) });
+          }
+
+          for (const u of updates) {
+            const params = new URLSearchParams();
+            params.append('action', 'updateCell');
+            params.append('sheetName', 'Login');
+            params.append('rowIndex', rowIndex.toString());
+            params.append('columnIndex', u.col);
+            params.append('value', u.val);
+            await fetch(scriptUrl, { method: 'POST', body: params });
+          }
+        }
+      } else {
+        console.warn('User not found in cache for PUT');
+      }
+
       refreshUsersCache(true);
       res.json({ success: true });
     } catch (error: any) {
@@ -734,7 +788,28 @@ app.use(express.json());
   app.delete('/api/users/:id', authenticateToken, authorizeRoles('ADMIN', 'CRM'), async (req, res) => {
     try {
       const { id } = req.params;
-      await SheetsDB.deleteRow('Login', 'ID', id);
+      let userIndex = -1;
+      if (USERS_CACHE) {
+        userIndex = USERS_CACHE.findIndex((u: any) => (u.ID || u.id || u.employee_id) === id);
+      }
+
+      if (userIndex !== -1) {
+        const rowIndex = userIndex + 2;
+        const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+        if (scriptUrl) {
+          const updates = ['1', '2', '3', '4', '5', '6', '7', '8'];
+          for (const col of updates) {
+            const params = new URLSearchParams();
+            params.append('action', 'updateCell');
+            params.append('sheetName', 'Login');
+            params.append('rowIndex', rowIndex.toString());
+            params.append('columnIndex', col);
+            params.append('value', '');
+            await fetch(scriptUrl, { method: 'POST', body: params });
+          }
+        }
+      }
+
       refreshUsersCache(true);
       res.json({ success: true });
     } catch (error: any) {

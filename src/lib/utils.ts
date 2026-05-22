@@ -67,3 +67,13 @@ export function formatDateToYMD(dateInput: any): string {
 
   return '';
 }
+
+export function getEmbeddableUrl(url?: string): string {
+  if (!url) return '';
+  const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    // lh3.googleusercontent.com/d/ID is generally unrestricted for rendering Drive images
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return url;
+}

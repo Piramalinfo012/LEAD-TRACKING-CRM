@@ -10,7 +10,8 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { formatDateToDMY } from '../lib/utils';
+import { formatDateToDMY, getEmbeddableUrl } from '../lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { 
   Download, 
   Filter, 
@@ -37,6 +38,7 @@ export default function Reports() {
   const { request, loading } = useApi();
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
 
   const handleExport = () => {
     if (!leads || leads.length === 0) {
@@ -92,7 +94,20 @@ export default function Reports() {
         console.error('Failed to load report data:', err);
       }
     }
+    async function loadAvatars() {
+      try {
+        const data = await request('/api/users/avatars');
+        if (data && Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach(u => {
+            if (u.name) map[u.name.toLowerCase().trim()] = u.profile_url;
+          });
+          setAvatars(map);
+        }
+      } catch (err) {}
+    }
     loadData();
+    loadAvatars();
   }, []);
 
   const salesPersonsList = useMemo(() => {
@@ -216,13 +231,22 @@ export default function Reports() {
                      label: 'Best Performer', 
                      value: leadStats[0]?.name || 'N/A', 
                      change: 'Top', 
-                     color: 'purple' 
+                     color: 'purple',
+                     isPerformer: true
                    },
-                 ].map((item, i) => (
+                 ].map((item: any, i) => (
                     <div key={i} className="p-4 rounded-xl bg-slate-50/50 border border-slate-100 flex items-center justify-between">
                        <div>
-                          <p className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-wider whitespace-nowrap">{item.label}</p>
-                          <p className="text-lg font-sans font-semibold text-slate-900 mt-0.5">{item.value}</p>
+                          <p className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-wider whitespace-nowrap mb-1">{item.label}</p>
+                          <div className="flex items-center gap-3">
+                            {item.isPerformer && item.value !== 'N/A' && (
+                              <Avatar className="w-10 h-10 ring-2 ring-purple-500/20 shadow-sm">
+                                <AvatarImage src={getEmbeddableUrl(avatars[item.value.toLowerCase().trim()])} referrerPolicy="no-referrer" />
+                                <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-sm">{item.value.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                            )}
+                            <p className="text-lg font-sans font-semibold text-slate-900">{item.value}</p>
+                          </div>
                        </div>
                        <Badge className={`bg-white border text-${item.color}-500 border-${item.color}-500/20 text-[10px] font-heading font-medium`}>{item.change}</Badge>
                     </div>
@@ -268,7 +292,15 @@ export default function Reports() {
                 <tbody className="divide-y divide-slate-100">
                    {leadStats.map((row, i) => (
                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-sans font-semibold text-slate-900">{row.name}</td>
+                        <td className="px-6 py-4">
+                           <div className="flex items-center gap-3">
+                              <Avatar className="w-8 h-8">
+                                <AvatarImage src={getEmbeddableUrl(avatars[row.name.toLowerCase().trim()])} referrerPolicy="no-referrer" />
+                                <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">{row.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <span className="font-sans font-semibold text-slate-900">{row.name}</span>
+                           </div>
+                        </td>
                         <td className="px-6 py-4 text-slate-600 font-sans">{row.leads}</td>
                         <td className="px-6 py-4 text-slate-600 font-sans">{row.conversions}</td>
                         <td className="px-6 py-4 font-sans font-bold text-indigo-600">₹{row.value.toLocaleString()}</td>

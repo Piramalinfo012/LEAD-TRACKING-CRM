@@ -22,6 +22,8 @@ import {
   ArrowUpRight, 
   ArrowDownRight 
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { getEmbeddableUrl } from '../lib/utils';
 import { useApi } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Skeleton } from './ui/skeleton';
@@ -65,6 +67,7 @@ export default function Dashboard() {
   const { request, loading } = useApi();
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchData() {
@@ -79,10 +82,23 @@ export default function Dashboard() {
           localStorage.setItem('crm_leads_cache', JSON.stringify(data));
         }
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load dashboard data:', err);
       }
     }
+    async function loadAvatars() {
+      try {
+        const data = await request('/api/users/avatars');
+        if (data && Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach(u => {
+            if (u.name) map[u.name.toLowerCase().trim()] = u.profile_url;
+          });
+          setAvatars(map);
+        }
+      } catch (err) {}
+    }
     fetchData();
+    loadAvatars();
   }, []);
 
   const salesPersonsList = useMemo(() => {
@@ -374,9 +390,12 @@ export default function Dashboard() {
                 {recentActivities.length > 0 ? (
                   recentActivities.map((item, i) => (
                     <div key={i} className="flex gap-4 group">
-                      <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 group-hover:border-indigo-500/50 transition-colors">
-                        <Users size={14} className="text-slate-400" />
-                      </div>
+                      <Avatar className="w-8 h-8 rounded-full shrink-0 border border-slate-600 group-hover:border-indigo-500/50 transition-colors">
+                        <AvatarImage src={getEmbeddableUrl(avatars[item.rep.toLowerCase().trim()])} referrerPolicy="no-referrer" />
+                        <AvatarFallback className="bg-slate-700 text-slate-300 font-bold">
+                          <Users size={14} />
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 space-y-0.5">
                         <p className="text-xs text-slate-300 leading-snug font-sans">
                           <span className="font-semibold text-white">{item.rep}</span> moved <span className="text-slate-100">{item.company}</span> to <span className="text-indigo-400 font-semibold capitalize">{item.action}</span>

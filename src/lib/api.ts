@@ -12,11 +12,17 @@ export function useApi() {
     setError(null);
     try {
       const token = localStorage.getItem('crm_token');
-      const headers = {
-        'Content-Type': 'application/json',
+      const isFormData = options.body instanceof FormData;
+      const headers: any = {
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       };
+
+      // Remove Content-Type if it was explicitly set to undefined or empty (to let browser set multipart/form-data boundary)
+      if (headers['Content-Type'] === undefined || headers['Content-Type'] === null || headers['Content-Type'] === '') {
+        delete headers['Content-Type'];
+      }
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
