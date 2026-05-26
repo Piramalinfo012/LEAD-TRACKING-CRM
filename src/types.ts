@@ -58,6 +58,7 @@ export interface Lead {
   attachments?: string[]; // Drive IDs or URLs
   created_at: string;
   updated_at: string;
+  custom_status?: string;
   
   // Entry Data Fields
   'Party Name'?: string;

@@ -21,7 +21,9 @@ import {
   Trash2,
   Phone,
   Mail,
-  Plus
+  Plus,
+  Calendar,
+  ArrowRight
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Lead, LeadStatus, Priority } from '../types';
@@ -92,10 +94,19 @@ export default function LeadsTable() {
       toast.error(err.message || "Failed to promote lead");
     }
   };
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }]);
+  
+  const [sorting, setSorting] = useState<SortingState>([
+    { 
+      id: stage?.toLowerCase() === 'lead' ? 'lead_planned_date' : 
+          stage?.toLowerCase() === 'meeting' ? 'meeting_planned_date' : 
+          'created_at', 
+      desc: true 
+    }
+  ]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
+  const [promoteTargetStage, setPromoteTargetStage] = useState<LeadStatus | undefined>(undefined);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
@@ -194,17 +205,22 @@ export default function LeadsTable() {
         
         if (stageTab === 'pending') {
           if (stageKey === 'cold') {
-            // Cold pending: no lead_planned_date yet (or just status COLD)
-            if (lead.lead_planned_date) return false;
-            if (lead.status !== 'COLD') return false;
+            // Cold pending: no lead_planned_date yet
+            if (lead.lead_planned_date || lead['Lead Planned Date']) return false;
           } else if (stageKey === 'lead') {
-            // Lead pending: has lead_planned_date, but NO lead_actual_date
-            if (!lead.lead_planned_date) return false;
-            if (lead.lead_actual_date) return false;
+            // Lead pending: P column (Lead Planned Date) NOT blank AND Q column (Lead Actual Date) IS blank
+            const pBlank = !lead.lead_planned_date && !lead['Lead Planned Date'];
+            const qBlank = !lead.lead_actual_date && !lead['Lead Actual Date'] && lead['Lead Actual Date'] !== '#VALUE!';
+            
+            if (pBlank) return false;
+            if (!qBlank) return false;
           } else if (stageKey === 'meeting') {
-            // Meeting pending: has meeting_planned_date, but NO meeting_actual_date
-            if (!lead.meeting_planned_date) return false;
-            if (lead.meeting_actual_date) return false;
+            // Meeting pending: X column (Meeting Planned) NOT blank AND Y column (Meeting Actual Date) IS blank
+            const xBlank = !lead.meeting_planned_date && !lead['Meeting Planned'];
+            const yBlank = !lead.meeting_actual_date && !lead['Meeting Actual date'] && lead['Meeting Actual date'] !== '#VALUE!';
+            
+            if (xBlank) return false;
+            if (!yBlank) return false;
           } else {
             // Other stages pending fallback: check status
             const stageMap: Record<string, string> = {
@@ -260,11 +276,79 @@ export default function LeadsTable() {
   }, [stage]);
 
   const columns = useMemo<ColumnDef<Lead>[]>(() => {
+    const STAGES_ORDER = [
+      LeadStatus.COLD,
+      LeadStatus.LEAD,
+      LeadStatus.MEETING,
+      LeadStatus.TECHNICAL_DISCUSSION,
+      LeadStatus.NEGOTIATION,
+      LeadStatus.ORDER
+    ];
+
+    const renderActions = (row: any) => {
+      const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
+      
+      // Determine the current stage context. Prioritize the active tab/view (stage from URL).
+      let currentStageStr = (row.original.status as string) || 'COLD';
+      if (stage) {
+        currentStageStr = stage.toUpperCase().replace('-', '_');
+        if (currentStageStr === 'TECHNICAL_DISCUSSION' || currentStageStr === 'TECH') {
+          currentStageStr = 'TECHNICAL_DISCUSSION';
+        }
+      } else if (!row.original.status) {
+         currentStageStr = 'COLD';
+      }
+
+      const currentStage = currentStageStr as LeadStatus;
+      const currentIndex = STAGES_ORDER.indexOf(currentStage);
+      const availableStages = currentIndex >= 0 ? STAGES_ORDER.slice(currentIndex + 1) : [];
+
+      return (
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
+            onClick={() => setSelectedLead(row.original)}
+            title="Edit Lead"
+          >
+            <Edit size={16} />
+          </Button>
+          {availableStages.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg"
+              title="Update or Promote Stage"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedColdLeadForForm(row.original);
+              }}
+            >
+              <ArrowRight size={16} />
+            </Button>
+          )}
+          {canDelete && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
+              onClick={() => handleDeleteLead(row.original.id)}
+              title="Delete Lead"
+            >
+              <Trash2 size={16} />
+            </Button>
+          )}
+        </div>
+      );
+    };
+
     const defaultCols: ColumnDef<Lead>[] = [
       {
         accessorKey: 'id',
-        header: () => <span className="hidden md:inline">Lead ID</span>,
-        cell: ({ row }) => <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tight hidden md:block">{row.getValue('id')}</div>,
+        meta: { className: 'hidden md:table-cell' },
+        header: 'Lead ID',
+        cell: ({ row }) => <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tight">{row.getValue('id')}</div>,
       },
       {
         accessorKey: 'company_name',
@@ -287,11 +371,12 @@ export default function LeadsTable() {
       },
       {
         accessorKey: 'mobile',
-        header: () => <span className="hidden sm:inline">Mobile No.</span>,
+        meta: { className: 'hidden sm:table-cell' },
+        header: 'Mobile No.',
         cell: ({ row }) => {
           const mobileNumber = row.original['Mobile No. '] || row.original.mobile;
           return (
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="text-slate-600 font-sans font-medium">{mobileNumber}</span>
               {mobileNumber && (
                 <a 
@@ -309,6 +394,7 @@ export default function LeadsTable() {
       },
       {
         id: 'view',
+        meta: { className: 'hidden md:table-cell' },
         header: '',
         cell: ({ row }) => (
           <Button 
@@ -327,6 +413,7 @@ export default function LeadsTable() {
       return [
         {
           accessorKey: 'created_at',
+          meta: { className: 'hidden md:table-cell' },
           header: 'Timestamp',
           sortingFn: customDateSortFn,
           cell: ({ row }) => {
@@ -337,11 +424,13 @@ export default function LeadsTable() {
         ...defaultCols,
         {
           accessorKey: 'District',
+          meta: { className: 'hidden md:table-cell' },
           header: 'District',
           cell: ({ row }) => <div className="text-xs font-bold text-slate-600 uppercase tracking-tight">{row.original.District || row.original.city || '-'}</div>
         },
         {
           accessorKey: 'Follow Up date',
+          meta: { className: 'hidden md:table-cell' },
           header: 'Follow Up date',
           sortingFn: customDateSortFn,
           cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 uppercase tracking-tight">{formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date) || '-'}</div>
@@ -391,111 +480,81 @@ export default function LeadsTable() {
   }
 
   if (stage?.toLowerCase() === 'lead') {
-    return [
+    const leadCols = [
       ...defaultCols,
       {
         accessorKey: 'lead_planned_date',
+        meta: { className: 'hidden sm:table-cell' },
         header: 'Lead Planned',
         sortingFn: customDateSortFn,
-        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.lead_planned_date || row.original['Lead Planned Date']) || '-'}</div>
-      },
-      {
-        accessorKey: 'lead_actual_date',
-        header: 'Lead Actual',
-        sortingFn: customDateSortFn,
-        cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
-      },
-      {
-        accessorKey: 'custom_status',
-        header: 'Lead Status',
-        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
-      },
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: ({ row }) => {
-          const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
-          return (
-            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
-                onClick={() => setSelectedLead(row.original)}
-                title="Edit Lead"
-              >
-                <Edit size={16} />
-              </Button>
-              {canDelete && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
-                  onClick={() => handleDeleteLead(row.original.id)}
-                  title="Delete Lead"
-                >
-                  <Trash2 size={16} />
-                </Button>
-              )}
-            </div>
-          );
-        }
+        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.lead_planned_date || row.original['Lead Planned Date']) || '-'}</div>
       }
     ];
+
+    if (stageTab === 'history') {
+      leadCols.push(
+        {
+          accessorKey: 'lead_actual_date',
+          meta: { className: 'hidden sm:table-cell' },
+          header: 'Lead Actual',
+          sortingFn: customDateSortFn,
+          cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
+        },
+        {
+          accessorKey: 'custom_status',
+          meta: { className: 'hidden sm:table-cell' },
+          header: 'Lead Status',
+          cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
+        }
+      );
+    }
+
+    leadCols.push({
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => renderActions(row)
+    });
+
+    return leadCols as ColumnDef<Lead>[];
   }
 
   if (stage?.toLowerCase() === 'meeting') {
-    return [
+    const meetingCols = [
       ...defaultCols,
       {
         accessorKey: 'meeting_planned_date',
+        meta: { className: 'hidden sm:table-cell' },
         header: 'Meeting Planned',
         sortingFn: customDateSortFn,
-        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.meeting_planned_date || row.original['Meeting Planned']) || '-'}</div>
-      },
-      {
-        accessorKey: 'meeting_actual_date',
-        header: 'Meeting Actual',
-        sortingFn: customDateSortFn,
-        cell: ({ row }) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
-      },
-      {
-        accessorKey: 'meeting_status',
-        header: 'Status',
-        cell: ({ row }) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
-      },
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: ({ row }) => {
-          const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
-          return (
-            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
-                onClick={() => setSelectedLead(row.original)}
-                title="Edit Lead"
-              >
-                <Edit size={16} />
-              </Button>
-              {canDelete && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
-                  onClick={() => handleDeleteLead(row.original.id)}
-                  title="Delete Lead"
-                >
-                  <Trash2 size={16} />
-                </Button>
-              )}
-            </div>
-          );
-        }
+        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.meeting_planned_date || row.original['Meeting Planned']) || '-'}</div>
       }
     ];
+
+    if (stageTab === 'history') {
+      meetingCols.push(
+        {
+          accessorKey: 'meeting_actual_date',
+          meta: { className: 'hidden sm:table-cell' },
+          header: 'Meeting Actual',
+          sortingFn: customDateSortFn,
+          cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
+        },
+        {
+          accessorKey: 'meeting_status',
+          meta: { className: 'hidden sm:table-cell' },
+          header: 'Status',
+          cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
+        }
+      );
+    }
+
+    meetingCols.push({
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => renderActions(row)
+    });
+
+    return meetingCols as ColumnDef<Lead>[];
   }
 
   // Standard columns for other stages
@@ -503,6 +562,7 @@ export default function LeadsTable() {
     ...defaultCols,
     {
       accessorKey: 'status',
+      meta: { className: 'hidden sm:table-cell' },
       header: 'Stage',
       cell: ({ row }) => {
         const status = row.getValue('status') as LeadStatus;
@@ -520,42 +580,17 @@ export default function LeadsTable() {
     },
     {
       accessorKey: 'created_at',
-      header: () => <span className="hidden md:inline">Timestamp</span>,
+      meta: { className: 'hidden md:table-cell' },
+      header: 'Timestamp',
       sortingFn: customDateSortFn,
       cell: ({ row }) => {
-        return <div className="text-[10px] text-slate-400 font-sans font-medium uppercase tracking-tight hidden md:block">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
+        return <div className="text-[10px] text-slate-400 font-sans font-medium uppercase tracking-tight">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
       },
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: ({ row }) => {
-        const canDelete = user?.role === 'ADMIN' || user?.role === 'CRM';
-        return (
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-indigo-600 hover:bg-slate-50 hover:text-indigo-700 rounded-lg"
-              onClick={() => setSelectedLead(row.original)}
-              title="Edit Lead"
-            >
-              <Edit size={16} />
-            </Button>
-            {canDelete && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg"
-                onClick={() => handleDeleteLead(row.original.id)}
-                title="Delete Lead"
-              >
-                <Trash2 size={16} />
-              </Button>
-            )}
-          </div>
-        );
-      }
+      cell: ({ row }) => renderActions(row)
     },
   ];
 }, [stage, user, stageTab]);
@@ -737,13 +772,13 @@ const table = useReactTable({
     />
 
     <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-      <div className="overflow-x-auto text-slate-900">
+      <div className="hidden md:block overflow-x-auto text-slate-900">
         <Table>
         <TableHeader className="bg-slate-50 border-b-2 border-slate-100">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-slate-700 font-heading font-semibold uppercase text-[11px] tracking-widest py-5 h-14">
+                <TableHead key={header.id} className={`text-slate-700 font-heading font-semibold uppercase text-[11px] tracking-widest py-5 h-14 ${(header.column.columnDef.meta as any)?.className || ''}`}>
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -756,8 +791,8 @@ const table = useReactTable({
           {loading && data.length === 0 ? (
             [1, 2, 3, 4, 5].map((i) => (
               <TableRow key={i}>
-                {columns.map((_, index) => (
-                  <TableCell key={index} className="py-4">
+                {columns.map((col: any, index) => (
+                  <TableCell key={index} className={`py-4 ${col.meta?.className || ''}`}>
                     <Skeleton className="h-6 w-full rounded" />
                   </TableCell>
                 ))}
@@ -771,7 +806,7 @@ const table = useReactTable({
                 onClick={() => setSelectedLead(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-4">
+                  <TableCell key={cell.id} className={`py-4 ${(cell.column.columnDef.meta as any)?.className || ''}`}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -803,6 +838,116 @@ const table = useReactTable({
           )}
         </TableBody>
       </Table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden flex flex-col divide-y divide-slate-100 text-slate-900">
+        {loading && data.length === 0 ? (
+          [1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="p-4 space-y-3">
+              <Skeleton className="h-4 w-1/2 rounded" />
+              <Skeleton className="h-4 w-3/4 rounded" />
+            </div>
+          ))
+        ) : table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              className="p-4 flex flex-col gap-3 cursor-pointer hover:bg-slate-50/50 transition-colors"
+              onClick={() => setSelectedLead(row.original)}
+            >
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <div className="font-heading font-semibold text-slate-900 text-sm">
+                    {row.original['Party Name'] || row.original.company_name}
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium mt-0.5">
+                    {row.original['Person Name'] || row.original.contact_person}
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const actionCell = row.getVisibleCells().find(c => c.column.id === 'actions');
+                    return actionCell ? flexRender(actionCell.column.columnDef.cell, actionCell.getContext()) : null;
+                  })()}
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-1">
+                 {(row.original['Mobile No. '] || row.original.mobile) && (
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                       <Phone size={12} className="text-slate-400" />
+                       {(row.original['Mobile No. '] || row.original.mobile)}
+                    </div>
+                 )}
+                 
+                 <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                    <Calendar size={12} className="text-slate-400" />
+                    {formatDateToDMY(row.original.created_at || row.original.Timestamp) || '-'}
+                 </div>
+
+                 {stage?.toLowerCase() === 'cold' && (row.original['Follow Up date'] || row.original.followup_date) && (
+                    <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
+                       <Calendar size={12} className="text-indigo-400" />
+                       Follow Up: {formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date)}
+                    </div>
+                 )}
+                 
+                 {stage?.toLowerCase() === 'lead' && (row.original['Lead Planned Date'] || row.original.lead_planned_date) && (
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                       <Calendar size={12} className="text-slate-400" />
+                       Planned: {formatDateToDMY(row.original['Lead Planned Date'] || row.original.lead_planned_date)}
+                    </div>
+                 )}
+                 
+                 {stage?.toLowerCase() === 'meeting' && (row.original['Meeting Planned'] || row.original.meeting_planned_date) && (
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                       <Calendar size={12} className="text-slate-400" />
+                       Planned: {formatDateToDMY(row.original['Meeting Planned'] || row.original.meeting_planned_date)}
+                    </div>
+                 )}
+                 
+                 {row.original.District && (
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium uppercase tracking-tight">
+                       <span className="font-bold text-[10px] text-slate-400">DIST:</span> {row.original.District}
+                    </div>
+                 )}
+
+                 {!stage && row.getValue('status') && (
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <Badge className={`
+                        capitalize font-heading font-medium text-[9px] border-none px-2 py-0.5 rounded-full
+                        ${row.getValue('status') === 'ORDER' ? 'bg-emerald-50 text-emerald-600' : 
+                          row.getValue('status') === 'CLOSED' ? 'bg-rose-50 text-rose-600' :
+                          'bg-indigo-50 text-indigo-600'}
+                      `}>
+                         {(row.getValue('status') as string).toLowerCase().replace('_', ' ')}
+                      </Badge>
+                    </div>
+                 )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="p-8 flex flex-col items-center justify-center space-y-3">
+             <span className="text-slate-400 italic text-sm font-medium">No prospects found in pipeline.</span>
+             {activeFiltersCount > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedSalesPerson('ALL');
+                    setSelectedSource('ALL');
+                    setSelectedProduct('ALL');
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs h-8 border border-slate-300 rounded-lg px-3 shadow-sm font-semibold transition mt-2"
+                >
+                  Clear Active Filters
+                </Button>
+             )}
+          </div>
+        )}
       </div>
     </div>
     
@@ -837,13 +982,19 @@ const table = useReactTable({
          isOpen={!!selectedLead} 
          onClose={() => setSelectedLead(null)} 
          onUpdate={fetchData}
+         currentStageView={stage}
       />
 
       <ColdLeadFormDialog
         lead={selectedColdLeadForForm}
         isOpen={!!selectedColdLeadForForm}
-        onClose={() => setSelectedColdLeadForForm(null)}
+        onClose={() => {
+          setSelectedColdLeadForForm(null);
+          setPromoteTargetStage(undefined);
+        }}
         onSuccess={fetchData}
+        promoteToStage={promoteTargetStage}
+        currentStageView={stage}
       />
     </div>
   );

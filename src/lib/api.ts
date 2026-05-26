@@ -39,6 +39,12 @@ export function useApi() {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
+          
+          // Gracefully handle missing Followups or History sheets without throwing an error toast
+          if (data.error && data.error.toLowerCase().includes('not found') && (endpoint.includes('followups') || endpoint.includes('history'))) {
+            return [];
+          }
+          
           throw new Error(data.error || 'Request failed');
         } else {
           const text = await response.text();

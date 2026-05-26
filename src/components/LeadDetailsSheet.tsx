@@ -54,9 +54,10 @@ interface LeadDetailsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  currentStageView?: string;
 }
 
-export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: LeadDetailsSheetProps) {
+export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, currentStageView }: LeadDetailsSheetProps) {
   const { user: currentUser } = useAuth();
   const { request, loading } = useApi();
   const [followups, setFollowups] = useState<Followup[]>([]);
@@ -666,6 +667,115 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate }: Le
                               </div>
                            </div>
                         )}
+
+                        {/* Additional Stage Details */}
+                        {(() => {
+                           const STAGES_ORDER = [
+                              LeadStatus.COLD,
+                              LeadStatus.LEAD,
+                              LeadStatus.MEETING,
+                              LeadStatus.TECHNICAL_DISCUSSION,
+                              LeadStatus.NEGOTIATION,
+                              LeadStatus.ORDER,
+                              LeadStatus.CLOSED
+                           ];
+                           let calculatedStageStr = (lead.status as string) || 'COLD';
+                           if (currentStageView) {
+                             calculatedStageStr = currentStageView.toUpperCase().replace('-', '_');
+                             if (calculatedStageStr === 'TECH') calculatedStageStr = 'TECHNICAL_DISCUSSION';
+                           } else if (!lead.status) {
+                             calculatedStageStr = 'COLD';
+                           }
+                           
+                           const currentStage = calculatedStageStr as LeadStatus;
+                           const stageIndex = STAGES_ORDER.indexOf(currentStage);
+
+                           const renderValueOrLink = (value: string | undefined) => {
+                             if (!value) return '-';
+                             if (value.startsWith('http://') || value.startsWith('https://')) {
+                               return (
+                                 <a href={value} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline flex items-center gap-1">
+                                   <ExternalLink size={12} /> View File
+                                 </a>
+                               );
+                             }
+                             return value;
+                           };
+
+                           return (
+                              <div className="space-y-6 pt-2">
+                                 {stageIndex > 1 && (
+                                    <div className="space-y-4">
+                                       <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                          <FileText size={14} className="text-indigo-600" /> Lead Stage Details
+                                       </h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Lead Planned Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.lead_planned_date || lead['Lead Planned Date'] ? formatDateToDMY(lead.lead_planned_date || lead['Lead Planned Date']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Product Details</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.product_details || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">MCB Requirement</span>
+                                             <div className="text-sm font-sans font-semibold text-slate-700 truncate">{renderValueOrLink(lead.mcb_requirement)}</div>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Kit Details</span>
+                                             <div className="text-sm font-sans font-semibold text-slate-700 truncate">{renderValueOrLink(lead.kit_details || lead['MCBs. (KIT) URl'])}</div>
+                                          </div>
+                                          <div className="space-y-1 md:col-span-2">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Pain Points</span>
+                                             <p className="text-sm font-sans font-medium text-slate-600">{lead.pain_points || '-'}</p>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 )}
+
+                                 {stageIndex > 2 && (
+                                    <div className="space-y-4">
+                                       <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                          <FileText size={14} className="text-indigo-600" /> Meeting Stage Details
+                                       </h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Planned</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_planned_date || lead['Meeting Planned'] ? formatDateToDMY(lead.meeting_planned_date || lead['Meeting Planned']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Status</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_status || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Person Met</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_person_name || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Contact Number</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_number || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1 md:col-span-2">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Discussion Points</span>
+                                             <p className="text-sm font-sans font-medium text-slate-600">{lead.discussion_points || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1 md:col-span-2">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Remarks</span>
+                                             <p className="text-sm font-sans font-medium text-slate-600">{lead.bullet_point_remarks || '-'}</p>
+                                          </div>
+                                          {lead.meeting_url && (
+                                            <div className="space-y-1 md:col-span-2">
+                                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting File / Image</span>
+                                               <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.meeting_url)}</div>
+                                            </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+                              </div>
+                           );
+                        })()}
                       </>
                     )}
 

@@ -701,6 +701,20 @@ app.use(express.json());
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
       await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
+      
+      // Log to Reschedule sheet if status is Reschedule
+      if (updateData.meeting_status === 'Reschedule' || updateData.status === 'Reschedule') {
+        const rescheduleData = {
+          'Timestamp': new Date().toISOString(),
+          'Id': id,
+          'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
+          'Reschedule Date': updateData.reschedule_date || '',
+          'Remark': updateData.custom_status || '',
+          'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
+        };
+        await SheetsDB.addRow('Reschedule', rescheduleData).catch(e => console.error("Error adding to Reschedule sheet:", e));
+      }
+
       // Update cache in background
       refreshLeadsCache(true);
       res.json({ success: true });
@@ -734,7 +748,11 @@ app.use(express.json());
       const history = await SheetsDB.getRows('LeadHistory');
       res.json(history.filter(h => h.lead_id === req.params.leadId));
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      if (error.message && error.message.includes('not found')) {
+        res.json([]);
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 
@@ -743,7 +761,11 @@ app.use(express.json());
       const followups = await SheetsDB.getRows('Followups');
       res.json(followups.filter(f => f.lead_id === req.params.leadId));
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      if (error.message && error.message.includes('not found')) {
+        res.json([]);
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 
@@ -758,7 +780,11 @@ app.use(express.json());
       await SheetsDB.addRow('Followups', followup);
       res.status(201).json(followup);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      if (error.message && error.message.includes('not found')) {
+        res.status(400).json({ error: "Please create a sheet named 'Followups' in your Google Spreadsheet to add followups." });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 

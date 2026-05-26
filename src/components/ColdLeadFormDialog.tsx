@@ -30,9 +30,10 @@ interface ColdLeadFormDialogProps {
   onClose: () => void;
   onSuccess: () => void;
   promoteToStage?: LeadStatus;
+  currentStageView?: string;
 }
 
-export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, promoteToStage }: ColdLeadFormDialogProps) {
+export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, promoteToStage, currentStageView }: ColdLeadFormDialogProps) {
   const { request } = useApi();
   const [isSaving, setIsSaving] = useState(false);
   const [masterProducts, setMasterProducts] = useState<string[]>([]);
@@ -109,7 +110,16 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
           ? lead.product_details.split(',').map(s => s.trim()).filter(Boolean) 
           : []
       );
-      setSelectedStage(promoteToStage || (lead.status as LeadStatus) || LeadStatus.COLD);
+      
+      let calculatedStageStr = (lead.status as string) || 'COLD';
+      if (currentStageView) {
+        calculatedStageStr = currentStageView.toUpperCase().replace('-', '_');
+        if (calculatedStageStr === 'TECH') calculatedStageStr = 'TECHNICAL_DISCUSSION';
+      } else if (!lead.status) {
+        calculatedStageStr = 'COLD';
+      }
+      
+      setSelectedStage(promoteToStage || (calculatedStageStr as LeadStatus) || LeadStatus.COLD);
     }
   }, [lead, isOpen, promoteToStage]);
 
@@ -167,6 +177,28 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const isLeadFieldsVisible = selectedStage === LeadStatus.LEAD || selectedStage === LeadStatus.COLD || !selectedStage;
   const isMeetingFieldsVisible = selectedStage === LeadStatus.MEETING;
 
+  const STAGES_ORDER = [
+    LeadStatus.COLD,
+    LeadStatus.LEAD,
+    LeadStatus.MEETING,
+    LeadStatus.TECHNICAL_DISCUSSION,
+    LeadStatus.NEGOTIATION,
+    LeadStatus.ORDER,
+    LeadStatus.CLOSED
+  ];
+  
+  let calculatedOrigStageStr = (lead?.status as string) || 'COLD';
+  if (currentStageView) {
+    calculatedOrigStageStr = currentStageView.toUpperCase().replace('-', '_');
+    if (calculatedOrigStageStr === 'TECH') calculatedOrigStageStr = 'TECHNICAL_DISCUSSION';
+  } else if (!lead?.status) {
+    calculatedOrigStageStr = 'COLD';
+  }
+  
+  const originalStage = (calculatedOrigStageStr as LeadStatus) || LeadStatus.COLD;
+  const originalStageIndex = STAGES_ORDER.indexOf(originalStage);
+  const allowedStages = originalStageIndex >= 0 ? STAGES_ORDER.slice(originalStageIndex) : STAGES_ORDER;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="w-[95vw] max-w-4xl bg-white border-none shadow-2xl rounded-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col">
@@ -203,7 +235,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <SelectValue placeholder="Select Stage" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    {Object.values(LeadStatus).map(stage => (
+                    {allowedStages.map(stage => (
                       <SelectItem key={stage} value={stage} className="font-medium text-sm">
                         {stage.replace('_', ' ')}
                       </SelectItem>
@@ -364,71 +396,75 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                      <User size={12} /> Meeting Person Name
-                    </Label>
-                    <Input 
-                      type="text"
-                      value={formData.meeting_person_name}
-                      onChange={(e) => setFormData(p => ({ ...p, meeting_person_name: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="Name of person met..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                      <Phone size={12} /> Contact Number
-                    </Label>
-                    <Input 
-                      type="tel"
-                      value={formData.meeting_number}
-                      onChange={(e) => setFormData(p => ({ ...p, meeting_number: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="Phone number..."
-                    />
-                  </div>
-                </div>
+                {formData.meeting_status !== 'Reschedule' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <User size={12} /> Meeting Person Name
+                        </Label>
+                        <Input 
+                          type="text"
+                          value={formData.meeting_person_name}
+                          onChange={(e) => setFormData(p => ({ ...p, meeting_person_name: e.target.value }))}
+                          className="bg-white border-slate-200 text-sm h-11"
+                          placeholder="Name of person met..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <Phone size={12} /> Contact Number
+                        </Label>
+                        <Input 
+                          type="tel"
+                          value={formData.meeting_number}
+                          onChange={(e) => setFormData(p => ({ ...p, meeting_number: e.target.value }))}
+                          className="bg-white border-slate-200 text-sm h-11"
+                          placeholder="Phone number..."
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                    <MessageSquare size={12} /> Discussion Points
-                  </Label>
-                  <Textarea 
-                    value={formData.discussion_points}
-                    onChange={(e) => setFormData(p => ({ ...p, discussion_points: e.target.value }))}
-                    className="bg-white border-slate-200 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
-                    placeholder="Enter main points discussed..."
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                        <MessageSquare size={12} /> Discussion Points
+                      </Label>
+                      <Textarea 
+                        value={formData.discussion_points}
+                        onChange={(e) => setFormData(p => ({ ...p, discussion_points: e.target.value }))}
+                        className="bg-white border-slate-200 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
+                        placeholder="Enter main points discussed..."
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                      <Briefcase size={12} /> Bullet Point Remarks
-                    </Label>
-                    <Input 
-                      type="text"
-                      value={formData.bullet_point_remarks}
-                      onChange={(e) => setFormData(p => ({ ...p, bullet_point_remarks: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="Short remarks..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                      <LinkIcon size={12} /> Picture of Meeting Url
-                    </Label>
-                    <Input 
-                      type="text"
-                      value={formData.meeting_url}
-                      onChange={(e) => setFormData(p => ({ ...p, meeting_url: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="URL of picture..."
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <Briefcase size={12} /> Bullet Point Remarks
+                        </Label>
+                        <Input 
+                          type="text"
+                          value={formData.bullet_point_remarks}
+                          onChange={(e) => setFormData(p => ({ ...p, bullet_point_remarks: e.target.value }))}
+                          className="bg-white border-slate-200 text-sm h-11"
+                          placeholder="Short remarks..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <LinkIcon size={12} /> Meeting File / Image (Url)
+                        </Label>
+                        <Input 
+                          type="url"
+                          value={formData.meeting_url}
+                          onChange={(e) => setFormData(p => ({ ...p, meeting_url: e.target.value }))}
+                          className="bg-white border-slate-200 text-sm h-11"
+                          placeholder="Drive link to meeting image or file..."
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
