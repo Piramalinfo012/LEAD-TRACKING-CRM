@@ -457,23 +457,21 @@ export default function LeadsTable() {
       }
     ];
 
-    if (stageTab === 'history') {
-      leadCols.push(
-        {
-          accessorKey: 'lead_actual_date',
-          meta: { className: 'hidden sm:table-cell' },
-          header: 'Lead Actual',
-          sortingFn: customDateSortFn,
-          cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
-        },
-        {
-          accessorKey: 'custom_status',
-          meta: { className: 'hidden sm:table-cell' },
-          header: 'Lead Status',
-          cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
-        }
-      );
-    }
+    leadCols.push(
+      {
+        accessorKey: 'lead_actual_date',
+        meta: { className: 'hidden sm:table-cell' },
+        header: 'Lead Actual',
+        sortingFn: customDateSortFn,
+        cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
+      },
+      {
+        accessorKey: 'custom_status',
+        meta: { className: 'hidden sm:table-cell' },
+        header: 'Lead Status',
+        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
+      }
+    );
 
     leadCols.push({
       id: 'actions',
@@ -496,23 +494,21 @@ export default function LeadsTable() {
       }
     ];
 
-    if (stageTab === 'history') {
-      meetingCols.push(
-        {
-          accessorKey: 'meeting_actual_date',
-          meta: { className: 'hidden sm:table-cell' },
-          header: 'Meeting Actual',
-          sortingFn: customDateSortFn,
-          cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
-        },
-        {
-          accessorKey: 'meeting_status',
-          meta: { className: 'hidden sm:table-cell' },
-          header: 'Status',
-          cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
-        }
-      );
-    }
+    meetingCols.push(
+      {
+        accessorKey: 'meeting_actual_date',
+        meta: { className: 'hidden sm:table-cell' },
+        header: 'Meeting Actual',
+        sortingFn: customDateSortFn,
+        cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
+      },
+      {
+        accessorKey: 'meeting_status',
+        meta: { className: 'hidden sm:table-cell' },
+        header: 'Status',
+        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
+      }
+    );
 
     meetingCols.push({
       id: 'actions',
@@ -559,7 +555,7 @@ export default function LeadsTable() {
       cell: ({ row }) => renderActions(row)
     },
   ];
-}, [stage, user, stageTab]);
+}, [stage, user]);
 
 const table = useReactTable({
   data: filteredData,
