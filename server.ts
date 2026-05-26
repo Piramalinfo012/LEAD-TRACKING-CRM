@@ -700,10 +700,22 @@ app.use(express.json());
       if (updateData.bullet_point_remarks !== undefined) mappedUpdate['Bullet Point Remarks.'] = updateData.bullet_point_remarks;
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
+      // Map Negotiation Stage fields
+      if (updateData.negotiation_status !== undefined) mappedUpdate['Status'] = updateData.negotiation_status;
+      if (updateData.quotation_url !== undefined) mappedUpdate['Quotation Upload:'] = updateData.quotation_url;
+      if (updateData.unit !== undefined) mappedUpdate['Unit'] = updateData.unit;
+      if (updateData.final_price !== undefined) mappedUpdate['Final Price'] = updateData.final_price;
+      if (updateData.quantity !== undefined) mappedUpdate['Quantity,'] = updateData.quantity;
+      if (updateData.payment_terms !== undefined) mappedUpdate['Payment Terms'] = updateData.payment_terms;
+      if (updateData.delivery_schedule !== undefined) mappedUpdate['Delivery Schedule.'] = updateData.delivery_schedule;
+      if (updateData.party_type !== undefined) mappedUpdate['Party Type classification:'] = updateData.party_type;
+      if (updateData.negotiation_remark !== undefined) mappedUpdate['Remark if-Any'] = updateData.negotiation_remark;
+      if (updateData.negotiation_kit_url !== undefined) mappedUpdate['Kit Attachment'] = updateData.negotiation_kit_url;
+
       await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
       
       // Log to Reschedule sheet if status is Reschedule
-      if (updateData.meeting_status === 'Reschedule' || updateData.status === 'Reschedule') {
+      if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
         const rescheduleData = {
           'Timestamp': new Date().toISOString(),
           'Id': id,
@@ -713,6 +725,28 @@ app.use(express.json());
           'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
         };
         await SheetsDB.addRow('Reschedule', rescheduleData).catch(e => console.error("Error adding to Reschedule sheet:", e));
+      }
+
+      // Log Tech Products to 'Prodcut Negotiation'
+      if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {
+        for (const prod of updateData.tech_products) {
+          const productData = {
+            'Id': id,
+            'Timetamp': new Date().toISOString(),
+            'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
+            'Product Name': prod.product_name || '',
+            'Density': prod.density || '',
+            'GCV': prod.gcv || '',
+            'Flash Point': prod.flash_point || '',
+            'Moisture': prod.moisture || '',
+            'Carbon Content': prod.carbon_content || '',
+            'Sulphur': prod.sulphur || '',
+            'Remarks in Detail.': prod.remarks || '',
+            'Sediment.': prod.sediment || '',
+            'Kit Attachment Url': updateData.tech_kit_url || ''
+          };
+          await SheetsDB.addRow('Prodcut Negotiation', productData).catch(e => console.error("Error adding to Prodcut Negotiation sheet:", e));
+        }
       }
 
       // Update cache in background

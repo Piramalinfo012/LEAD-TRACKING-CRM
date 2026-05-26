@@ -100,6 +100,35 @@ export interface Lead {
   meeting_number?: string;
   bullet_point_remarks?: string;
   meeting_url?: string;
+  
+  // Technical Discussion Stage Data
+  tech_status?: string;
+  tech_products?: TechProduct[];
+  tech_kit_url?: string;
+
+  // Negotiation Stage Data
+  negotiation_status?: string;
+  quotation_url?: string;
+  unit?: string;
+  final_price?: string;
+  quantity?: string;
+  payment_terms?: string;
+  delivery_schedule?: string;
+  party_type?: string;
+  negotiation_remark?: string;
+  negotiation_kit_url?: string;
+}
+
+export interface TechProduct {
+  product_name: string;
+  density: string;
+  gcv: string;
+  flash_point: string;
+  moisture: string;
+  carbon_content: string;
+  sulphur: string;
+  remarks: string;
+  sediment: string;
 }
 
 export interface Followup {
