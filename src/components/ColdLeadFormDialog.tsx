@@ -102,17 +102,17 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
           const units = new Set<string>();
 
           res.forEach(row => {
-            const p = row['Product details.'];
-            if (p && p.trim()) products.add(p.trim());
+            const p = String(row['Product details.'] || '');
+            if (p.trim()) products.add(p.trim());
 
-            const pt = row['Payment Terms'];
-            if (pt && pt.trim()) paymentTerms.add(pt.trim());
+            const pt = String(row['Payment Terms'] || '');
+            if (pt.trim()) paymentTerms.add(pt.trim());
 
-            const party = row['Party Type classification:'];
-            if (party && party.trim()) partyTypes.add(party.trim());
+            const party = String(row['Party Type classification:'] || '');
+            if (party.trim()) partyTypes.add(party.trim());
 
-            const u = row['Unit'];
-            if (u && u.trim()) units.add(u.trim());
+            const u = String(row['Unit'] || '');
+            if (u.trim()) units.add(u.trim());
           });
 
           setMasterProducts(Array.from(products));
@@ -210,10 +210,10 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         payload.status = selectedStage;
       }
 
-      // Automatically store actual dates based on stage movement
-      if (selectedStage === LeadStatus.LEAD && lead.status !== LeadStatus.LEAD) {
+      // Automatically store actual dates based on stage movement or if they are missing
+      if (selectedStage === LeadStatus.LEAD && (lead.status !== LeadStatus.LEAD || !lead.lead_actual_date)) {
         payload.lead_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.MEETING && lead.status !== LeadStatus.MEETING) {
+      } else if (selectedStage === LeadStatus.MEETING) {
         payload.meeting_actual_date = nowDmy;
       }
 

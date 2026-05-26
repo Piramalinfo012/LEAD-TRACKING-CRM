@@ -95,10 +95,10 @@ async function doLeadsFetch() {
         meeting_actual_date: l['Meeting Actual Date'] || l['Meeting Actual'] || '',
         meeting_status: l['Meeting Status'] || '',
         reschedule_date: l['Reschedule Meeting Date'] || '',
-        discussion_points: l['Discussion Points.'] || '',
+        discussion_points: l['Discussion Points'] || l['Discussion Points.'] || '',
         meeting_person_name: l['Meeting Person Name'] || '',
-        meeting_number: l['Number'] || '',
-        bullet_point_remarks: l['Bullet Point Remarks.'] || '',
+        meeting_number: l['Contact Number'] || l['Contact No'] || l['Number'] || '',
+        bullet_point_remarks: l['Bullet Point Remarks'] || l['Bullet Point Remarks.'] || '',
         meeting_url: l['Picture of Meeting Url'] || ''
       }));
 
@@ -688,20 +688,37 @@ app.use(express.json());
       if (updateData.meeting_actual_date !== undefined) {
         mappedUpdate['Meeting Actual'] = updateData.meeting_actual_date;
         mappedUpdate['Meeting Actual Date'] = updateData.meeting_actual_date;
+        mappedUpdate['Meeting Actual date'] = updateData.meeting_actual_date;
       }
       if (updateData.meeting_status !== undefined) {
-        mappedUpdate['Status'] = updateData.meeting_status;
         mappedUpdate['Meeting Status'] = updateData.meeting_status;
+        if (updateData.status === 'MEETING') {
+          mappedUpdate['Status'] = updateData.meeting_status;
+        }
       }
       if (updateData.reschedule_date !== undefined) mappedUpdate['Reschedule Meeting Date'] = updateData.reschedule_date;
-      if (updateData.discussion_points !== undefined) mappedUpdate['Discussion Points.'] = updateData.discussion_points;
+      if (updateData.discussion_points !== undefined) {
+        mappedUpdate['Discussion Points'] = updateData.discussion_points;
+        mappedUpdate['Discussion Points.'] = updateData.discussion_points;
+      }
       if (updateData.meeting_person_name !== undefined) mappedUpdate['Meeting Person Name'] = updateData.meeting_person_name;
-      if (updateData.meeting_number !== undefined) mappedUpdate['Number'] = updateData.meeting_number;
-      if (updateData.bullet_point_remarks !== undefined) mappedUpdate['Bullet Point Remarks.'] = updateData.bullet_point_remarks;
+      if (updateData.meeting_number !== undefined) {
+        mappedUpdate['Contact Number'] = updateData.meeting_number;
+        mappedUpdate['Contact No'] = updateData.meeting_number;
+        mappedUpdate['Number'] = updateData.meeting_number;
+      }
+      if (updateData.bullet_point_remarks !== undefined) {
+        mappedUpdate['Bullet Point Remarks'] = updateData.bullet_point_remarks;
+        mappedUpdate['Bullet Point Remarks.'] = updateData.bullet_point_remarks;
+      }
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
       // Map Negotiation Stage fields
-      if (updateData.negotiation_status !== undefined) mappedUpdate['Status'] = updateData.negotiation_status;
+      if (updateData.negotiation_status !== undefined) {
+        if (updateData.status === 'NEGOTIATION') {
+          mappedUpdate['Status'] = updateData.negotiation_status;
+        }
+      }
       if (updateData.quotation_url !== undefined) mappedUpdate['Quotation Upload:'] = updateData.quotation_url;
       if (updateData.unit !== undefined) mappedUpdate['Unit'] = updateData.unit;
       if (updateData.final_price !== undefined) mappedUpdate['Final Price'] = updateData.final_price;

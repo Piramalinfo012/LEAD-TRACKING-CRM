@@ -60,7 +60,6 @@ export default function KanbanBoard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
-  const [activeColdTab, setActiveColdTab] = useState<'pending' | 'history'>('pending');
   const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
 
   const salesPersonsList = useMemo(() => {
@@ -117,13 +116,6 @@ export default function KanbanBoard() {
 
   const leadsByStage = STAGES.reduce((acc, stage) => {
     let stageLeads = filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === stage);
-    if (stage === LeadStatus.COLD) {
-      if (activeColdTab === 'history') {
-        stageLeads = stageLeads.filter(l => l.lead_planned_date);
-      } else {
-        stageLeads = stageLeads.filter(l => !l.lead_planned_date && l.status === LeadStatus.COLD);
-      }
-    }
     acc[stage] = stageLeads;
     return acc;
   }, {} as Record<string, Lead[]>);
@@ -170,22 +162,6 @@ export default function KanbanBoard() {
                   </Badge>
                 </div>
               </div>
-              {stage === LeadStatus.COLD && (
-                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
-                  <button
-                    onClick={() => setActiveColdTab('pending')}
-                    className={`flex-1 text-[10px] font-heading font-bold uppercase py-1 rounded-md transition-colors ${activeColdTab === 'pending' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => setActiveColdTab('history')}
-                    className={`flex-1 text-[10px] font-heading font-bold uppercase py-1 rounded-md transition-colors ${activeColdTab === 'history' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    History
-                  </button>
-                </div>
-              )}
             </div>
 
             <div className="flex-1 space-y-3 p-1">

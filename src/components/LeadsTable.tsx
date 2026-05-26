@@ -114,7 +114,6 @@ export default function LeadsTable() {
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
-  const [stageTab, setStageTab] = useState<'pending' | 'history'>('pending');
 
   const salesPersonsList = useMemo(() => {
     const list = new Set<string>();
@@ -202,55 +201,22 @@ export default function LeadsTable() {
 
       if (stage) {
         const stageKey = stage.toLowerCase();
-        
-        if (stageTab === 'pending') {
-          if (stageKey === 'cold') {
-            // Cold pending: no lead_planned_date yet
-            if (lead.lead_planned_date || lead['Lead Planned Date']) return false;
-          } else if (stageKey === 'lead') {
-            // Lead pending: P column (Lead Planned Date) NOT blank AND Q column (Lead Actual Date) IS blank
-            const pBlank = !lead.lead_planned_date && !lead['Lead Planned Date'];
-            const qBlank = !lead.lead_actual_date && !lead['Lead Actual Date'] && lead['Lead Actual Date'] !== '#VALUE!';
-            
-            if (pBlank) return false;
-            if (!qBlank) return false;
-          } else if (stageKey === 'meeting') {
-            // Meeting pending: X column (Meeting Planned) NOT blank AND Y column (Meeting Actual Date) IS blank
-            const xBlank = !lead.meeting_planned_date && !lead['Meeting Planned'];
-            const yBlank = !lead.meeting_actual_date && !lead['Meeting Actual date'] && lead['Meeting Actual date'] !== '#VALUE!';
-            
-            if (xBlank) return false;
-            if (!yBlank) return false;
-          } else {
-            // Other stages pending fallback: check status
-            const stageMap: Record<string, string> = {
-              'tech': 'TECHNICAL_DISCUSSION',
-              'negotiation': 'NEGOTIATION',
-              'order': 'ORDER'
-            };
-            const targetStatus = stageMap[stageKey];
-            if (targetStatus && lead.status?.toUpperCase() !== targetStatus) return false;
-          }
-        } else {
-          // History logic
-          if (stageKey === 'cold') {
-            // Cold history: has moved past COLD (has lead_planned_date)
-            if (!lead.lead_planned_date) return false;
-          } else if (stageKey === 'lead') {
-            // Lead history: has lead_actual_date
-            if (!lead.lead_actual_date) return false;
-          } else if (stageKey === 'meeting') {
-            // Meeting history: has meeting_actual_date
-            if (!lead.meeting_actual_date) return false;
-          } else {
-            return false;
-          }
-        }
+        const stageMap: Record<string, string> = {
+          'cold': 'COLD',
+          'lead': 'LEAD',
+          'meeting': 'MEETING',
+          'tech': 'TECHNICAL_DISCUSSION',
+          'negotiation': 'NEGOTIATION',
+          'order': 'ORDER',
+          'closed': 'CLOSED'
+        };
+        const targetStatus = stageMap[stageKey];
+        if (targetStatus && (lead.status?.toUpperCase() || 'COLD') !== targetStatus) return false;
       }
 
       return true;
     });
-  }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, stage, stageTab]);
+  }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, stage]);
 
   const fetchData = async () => {
     try {
@@ -621,18 +587,7 @@ const table = useReactTable({
         </p>
       </div>
 
-      {stage && (
-        <Tabs value={stageTab} onValueChange={(v) => setStageTab(v as 'pending' | 'history')} className="w-full">
-          <TabsList className="bg-slate-100/50 p-1 rounded-xl h-12 flex w-fit min-w-[300px]">
-            <TabsTrigger value="pending" className="flex-1 font-bold text-xs uppercase tracking-widest rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
-              Pending {stage.charAt(0).toUpperCase() + stage.slice(1)}
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 font-bold text-xs uppercase tracking-widest rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
-              History
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:max-w-2xl">
