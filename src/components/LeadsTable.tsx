@@ -23,7 +23,8 @@ import {
   Mail,
   Plus,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  XCircle
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Lead, LeadStatus, Priority } from '../types';
@@ -201,17 +202,36 @@ export default function LeadsTable() {
 
       if (stage) {
         const stageKey = stage.toLowerCase();
-        const stageMap: Record<string, string> = {
-          'cold': 'COLD',
-          'lead': 'LEAD',
-          'meeting': 'MEETING',
-          'tech': 'TECHNICAL_DISCUSSION',
-          'negotiation': 'NEGOTIATION',
-          'order': 'ORDER',
-          'closed': 'CLOSED'
-        };
-        const targetStatus = stageMap[stageKey];
-        if (targetStatus && (lead.status?.toUpperCase() || 'COLD') !== targetStatus) return false;
+        
+        if (stageKey === 'lead') {
+          const hasPlanned = !!(lead.lead_planned_date);
+          const hasActual = !!(lead.lead_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'meeting') {
+          const hasPlanned = !!(lead.meeting_planned_date);
+          const hasActual = !!(lead.meeting_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'tech') {
+          const hasPlanned = !!(lead.tech_planned_date);
+          const hasActual = !!(lead.tech_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'negotiation') {
+          const hasPlanned = !!(lead.negotiation_planned_date);
+          const hasActual = !!(lead.negotiation_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'order') {
+          const hasPlanned = !!(lead.order_planned_date);
+          const hasActual = !!(lead.order_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else {
+          // cold and closed stages
+          const stageMap: Record<string, string> = {
+            'cold': 'COLD',
+            'closed': 'CLOSED'
+          };
+          const targetStatus = stageMap[stageKey];
+          if (targetStatus && (lead.status?.toUpperCase() || 'COLD') !== targetStatus) return false;
+        }
       }
 
       return true;
@@ -248,7 +268,8 @@ export default function LeadsTable() {
       LeadStatus.MEETING,
       LeadStatus.TECHNICAL_DISCUSSION,
       LeadStatus.NEGOTIATION,
-      LeadStatus.ORDER
+      LeadStatus.ORDER,
+      LeadStatus.CLOSED
     ];
 
     const renderActions = (row: any) => {
@@ -292,6 +313,21 @@ export default function LeadsTable() {
               }}
             >
               <ArrowRight size={16} />
+            </Button>
+          )}
+          {currentStage !== LeadStatus.CLOSED && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-amber-500 hover:bg-amber-50 hover:text-amber-600 rounded-lg"
+              title="Close Lead"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPromoteTargetStage(LeadStatus.CLOSED);
+                setSelectedColdLeadForForm(row.original);
+              }}
+            >
+              <XCircle size={16} />
             </Button>
           )}
           {canDelete && (
@@ -572,6 +608,48 @@ const table = useReactTable({
   },
 });
 
+  const handleDownloadCSV = () => {
+    if (!filteredData || filteredData.length === 0) {
+      alert("No data to download.");
+      return;
+    }
+    
+    const headers = [
+      'id', 'company_name', 'contact_person', 'mobile', 'email', 'address', 'district', 'state', 'source', 'status', 'sales_person_name',
+      'lead_status', 'product_details', 'pain_points', 'lead_planned_date', 'lead_actual_date',
+      'meeting_status', 'meeting_planned_date', 'meeting_actual_date', 'meeting_person_name', 'meeting_number',
+      'tech_status', 'tech_planned_date', 'tech_actual_date',
+      'negotiation_status', 'negotiation_planned_date', 'negotiation_actual_date',
+      'order_status', 'order_planned_date', 'order_actual_date',
+      'created_at'
+    ];
+
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    for (const row of filteredData) {
+      const values = headers.map(header => {
+        let val = (row as any)[header] || '';
+        val = String(val).replace(/"/g, '""');
+        if (val.search(/("|,|\n)/g) >= 0) {
+          val = `"${val}"`;
+        }
+        return val;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-12">
       <div className="flex flex-col gap-1">
@@ -628,7 +706,13 @@ const table = useReactTable({
             </span>
           )}
         </Button>
-        <Button variant="outline" size="icon" className="bg-white border-border text-slate-400 hover:text-slate-900 shadow-sm grow sm:grow-0 h-11 sm:h-10">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-white border-border text-slate-400 hover:text-slate-900 shadow-sm grow sm:grow-0 h-11 sm:h-10"
+          onClick={handleDownloadCSV}
+          title="Download CSV"
+        >
           <Download size={18} />
         </Button>
         <Button 

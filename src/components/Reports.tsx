@@ -143,6 +143,56 @@ export default function Reports() {
     return Object.values(groups).sort((a: any, b: any) => b.leads - a.leads);
   }, [leads, selectedSalesPerson]);
 
+  const dashboardMetrics = useMemo(() => {
+    let inHand = 0;
+    let quotationShared = 0;
+    let meetingDone = 0;
+    let rateShared = 0;
+    let negotiation = 0;
+    let orderReceived = 0;
+
+    const filtered = selectedSalesPerson === 'ALL' 
+      ? leads 
+      : leads.filter(l => (l['Sales Person Name'] || l.owner_id || 'Unassigned').toLowerCase().trim() === selectedSalesPerson.toLowerCase().trim());
+
+    filtered.forEach((l: any) => {
+      const status = l.status?.toUpperCase();
+      
+      // Active Leads in hand (not closed)
+      if (status !== 'CLOSED') {
+        inHand++;
+      }
+      
+      // Quotation shared (has quotation url or status is negotiation)
+      if (l.quotation_url || l.negotiation_status?.toLowerCase().includes('quotation')) {
+        quotationShared++;
+      }
+
+      // Meeting Done (has actual date or status passed meeting)
+      if (l.meeting_actual_date || status === 'MEETING' || status === 'TECHNICAL_DISCUSSION' || status === 'NEGOTIATION' || status === 'ORDER') {
+        meetingDone++;
+      }
+
+      // Rate Shared (has final price)
+      if (l.final_price) {
+        rateShared++;
+      }
+
+      // Negotiation Stage
+      if (status === 'NEGOTIATION') {
+        negotiation++;
+      }
+
+      // Order Received
+      if (status === 'ORDER') {
+        orderReceived++;
+      }
+    });
+
+    return { inHand, quotationShared, meetingDone, rateShared, negotiation, orderReceived };
+  }, [leads, selectedSalesPerson]);
+
+
   return (
     <div className="space-y-6 lg:space-y-8 animate-in zoom-in-95 duration-500 pb-12 lg:pb-0">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -171,6 +221,50 @@ export default function Reports() {
             <Download size={16} /> Export
           </Button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 border-0 shadow-lg shadow-indigo-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.inHand}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Leads In Hand</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-lg shadow-blue-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.meetingDone}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Meeting Done</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 border-0 shadow-lg shadow-emerald-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.rateShared}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Rate Shared</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 border-0 shadow-lg shadow-amber-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.quotationShared}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Quotation Shared</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 shadow-lg shadow-purple-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.negotiation}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Negotiation</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-pink-500 to-pink-600 border-0 shadow-lg shadow-pink-500/20 text-white">
+          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.orderReceived}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Order Received</span>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

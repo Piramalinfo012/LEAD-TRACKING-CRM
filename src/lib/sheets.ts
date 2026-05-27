@@ -41,6 +41,7 @@ export class SheetsDB {
             const obj: any = {};
             headers.forEach((header: string, index: number) => {
               obj[header] = row[index];
+              obj[`__col_${index}`] = row[index];
             });
             return obj;
           });
@@ -79,6 +80,7 @@ export class SheetsDB {
       const obj: any = {};
       headers.forEach((header, index) => {
         obj[header] = row[index];
+        obj[`__col_${index}`] = row[index];
       });
       return obj;
     });
@@ -225,8 +227,15 @@ export class SheetsDB {
           while (newRowData.length < headers.length) newRowData.push('');
           
           for (const key of Object.keys(data)) {
-            const colIndex = headers.indexOf(key);
+            let colIndex = headers.indexOf(key);
+            if (key.startsWith('__col_')) {
+              const idx = parseInt(key.replace('__col_', ''), 10);
+              if (!isNaN(idx)) colIndex = idx;
+            }
+            
             if (colIndex !== -1) {
+              // Expand newRowData if colIndex is beyond current length
+              while (newRowData.length <= colIndex) newRowData.push('');
               newRowData[colIndex] = data[key];
             }
           }

@@ -80,6 +80,19 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
     party_type: '',
     negotiation_remark: '',
     negotiation_kit_url: '',
+
+    // Order Stage
+    order_copy_url: '',
+    delivery_in: '',
+    unloading: '',
+    motor_pump_requirement: '',
+    transport: '',
+    order_remark: '',
+    order_attachment_url: '',
+    order_status: '',
+    
+    close_reason: '',
+    close_remark: '',
   });
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -90,6 +103,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const [masterPaymentTerms, setMasterPaymentTerms] = useState<string[]>([]);
   const [masterPartyTypes, setMasterPartyTypes] = useState<string[]>([]);
   const [masterUnits, setMasterUnits] = useState<string[]>([]);
+  const [masterDeliveryIn, setMasterDeliveryIn] = useState<string[]>([]);
+  const [masterUnloading, setMasterUnloading] = useState<string[]>([]);
+  const [masterTransport, setMasterTransport] = useState<string[]>([]);
+  const [masterOrderStatus, setMasterOrderStatus] = useState<string[]>([]);
+  
+  const [motorPumpYesNo, setMotorPumpYesNo] = useState<'Yes' | 'No' | ''>('');
 
   useEffect(() => {
     async function loadMasterData() {
@@ -100,6 +119,10 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
           const paymentTerms = new Set<string>();
           const partyTypes = new Set<string>();
           const units = new Set<string>();
+          const deliveryInSet = new Set<string>();
+          const unloadingSet = new Set<string>();
+          const transportSet = new Set<string>();
+          const orderStatusSet = new Set<string>();
 
           res.forEach(row => {
             const p = String(row['Product details.'] || '');
@@ -113,12 +136,28 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
 
             const u = String(row['Unit'] || '');
             if (u.trim()) units.add(u.trim());
+            
+            const dIn = String(row['Delivery In'] || '');
+            if (dIn.trim()) deliveryInSet.add(dIn.trim());
+            
+            const unl = String(row['Unloading'] || '');
+            if (unl.trim()) unloadingSet.add(unl.trim());
+            
+            const trans = String(row[8] || row['Transport:'] || '');
+            if (trans.trim()) transportSet.add(trans.trim());
+
+            const ordStat = String(row[9] || row['Order Status'] || '');
+            if (ordStat.trim()) orderStatusSet.add(ordStat.trim());
           });
 
           setMasterProducts(Array.from(products));
           setMasterPaymentTerms(Array.from(paymentTerms));
           setMasterPartyTypes(Array.from(partyTypes));
           setMasterUnits(Array.from(units));
+          setMasterDeliveryIn(Array.from(deliveryInSet));
+          setMasterUnloading(Array.from(unloadingSet));
+          setMasterTransport(Array.from(transportSet));
+          setMasterOrderStatus(Array.from(orderStatusSet));
         }
       } catch (err) {
         console.error('Failed to load master data', err);
@@ -163,12 +202,34 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         party_type: lead.party_type || '',
         negotiation_remark: lead.negotiation_remark || '',
         negotiation_kit_url: lead.negotiation_kit_url || '',
+
+        order_copy_url: lead.order_copy_url || '',
+        delivery_in: lead.delivery_in || '',
+        unloading: lead.unloading || '',
+        motor_pump_requirement: lead.motor_pump_requirement || '',
+        transport: lead.transport || '',
+        order_remark: lead.order_remark || '',
+        order_attachment_url: lead.order_attachment_url || '',
+        order_status: lead.order_status || '',
+
+        close_reason: lead.close_reason || '',
+        close_remark: lead.close_remark || '',
       });
       setSelectedProducts(
         lead.product_details 
           ? lead.product_details.split(',').map(s => s.trim()).filter(Boolean) 
           : []
       );
+      
+      if (lead.motor_pump_requirement) {
+        if (lead.motor_pump_requirement.trim().toLowerCase() === 'no') {
+          setMotorPumpYesNo('No');
+        } else {
+          setMotorPumpYesNo('Yes');
+        }
+      } else {
+        setMotorPumpYesNo('');
+      }
       
       setTechProducts(lead.tech_products || []);
       
@@ -202,9 +263,14 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
 
       // Format any selected dates to DD/MM/YYYY
       if (payload.meeting_followup_date) payload.meeting_followup_date = formatDateToDMY(payload.meeting_followup_date);
-      if (payload.lead_planned_date) payload.lead_planned_date = formatDateToDMY(payload.lead_planned_date);
-      if (payload.meeting_planned_date) payload.meeting_planned_date = formatDateToDMY(payload.meeting_planned_date);
       if (payload.reschedule_date) payload.reschedule_date = formatDateToDMY(payload.reschedule_date);
+
+      // Do NOT send any planned dates as they are auto-generated in Google Sheets
+      delete payload.lead_planned_date;
+      delete payload.meeting_planned_date;
+      delete payload.tech_planned_date;
+      delete payload.negotiation_planned_date;
+      delete payload.order_planned_date;
       
       if (selectedStage) {
         payload.status = selectedStage;
@@ -215,6 +281,14 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         payload.lead_actual_date = nowDmy;
       } else if (selectedStage === LeadStatus.MEETING) {
         payload.meeting_actual_date = nowDmy;
+      } else if (selectedStage === LeadStatus.TECHNICAL_DISCUSSION) {
+        payload.tech_actual_date = nowDmy;
+      } else if (selectedStage === LeadStatus.NEGOTIATION) {
+        payload.negotiation_actual_date = nowDmy;
+      } else if (selectedStage === LeadStatus.ORDER) {
+        payload.order_actual_date = nowDmy;
+      } else if (selectedStage === LeadStatus.CLOSED) {
+        payload.closed_at = nowDmy;
       }
 
       await request(`/api/leads/${lead.id}`, {
@@ -233,6 +307,8 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
 
   const [uploadingQuotation, setUploadingQuotation] = useState(false);
   const [uploadingNegKit, setUploadingNegKit] = useState(false);
+  const [uploadingOrderCopy, setUploadingOrderCopy] = useState(false);
+  const [uploadingOrderAttachment, setUploadingOrderAttachment] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setUploadingState: (state: boolean) => void) => {
     const file = e.target.files?.[0];
@@ -292,6 +368,8 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const isMeetingFieldsVisible = selectedStage === LeadStatus.MEETING;
   const isTechFieldsVisible = selectedStage === LeadStatus.TECHNICAL_DISCUSSION;
   const isNegotiationFieldsVisible = selectedStage === LeadStatus.NEGOTIATION;
+  const isOrderFieldsVisible = selectedStage === LeadStatus.ORDER;
+  const isClosedFieldsVisible = selectedStage === LeadStatus.CLOSED;
 
   const STAGES_ORDER = [
     LeadStatus.COLD,
@@ -465,17 +543,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b pb-2">Meeting Stage Details</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-                      <CalendarClock size={12} /> Meeting Planned Date
-                    </Label>
-                    <Input 
-                      type="date"
-                      value={formData.meeting_planned_date}
-                      onChange={(e) => setFormData(p => ({ ...p, meeting_planned_date: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                    />
-                  </div>
+
                   
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -872,7 +940,150 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                 )}
               </div>
             )}
-            
+
+            {isOrderFieldsVisible && (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b pb-2">
+                  Order Punching Details
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Order Copy Attached (Url)</Label>
+                    <div className="relative">
+                      <input type="file" id="order-copy-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'order_copy_url', setUploadingOrderCopy)} disabled={uploadingOrderCopy} />
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_copy_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-copy-upload')?.click()}>
+                        {uploadingOrderCopy ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.order_copy_url ? <><FileCheck size={16}/><span>Order Copy Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Order Copy</span></>}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Delivery In</Label>
+                    <Select value={formData.delivery_in} onValueChange={(val) => setFormData(p => ({ ...p, delivery_in: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Delivery In" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white max-h-60">
+                        {masterDeliveryIn.map((d, i) => (
+                          <SelectItem key={i} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Unloading</Label>
+                    <Select value={formData.unloading} onValueChange={(val) => setFormData(p => ({ ...p, unloading: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Unloading" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white max-h-60">
+                        {masterUnloading.map((u, i) => (
+                          <SelectItem key={i} value={u}>{u}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Motor / Pump Requirement</Label>
+                    <div className="space-y-2">
+                      <Select value={motorPumpYesNo} onValueChange={(val) => {
+                        setMotorPumpYesNo(val as any);
+                        if (val === 'No') setFormData(p => ({ ...p, motor_pump_requirement: 'No' }));
+                        else setFormData(p => ({ ...p, motor_pump_requirement: '' }));
+                      }}>
+                        <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                          <SelectValue placeholder="Yes / No" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {motorPumpYesNo === 'Yes' && (
+                        <Input value={formData.motor_pump_requirement === 'No' ? '' : formData.motor_pump_requirement} onChange={e => setFormData(p => ({ ...p, motor_pump_requirement: e.target.value }))} className="h-11 text-sm bg-white" placeholder="Specify Requirement" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Transport</Label>
+                    <Select value={formData.transport} onValueChange={(val) => setFormData(p => ({ ...p, transport: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Transport" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white max-h-60">
+                        {masterTransport.map((t, i) => (
+                          <SelectItem key={i} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Order Status</Label>
+                    <Select value={formData.order_status} onValueChange={(val) => setFormData(p => ({ ...p, order_status: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Order Status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        {masterOrderStatus.map((o, i) => (
+                          <SelectItem key={i} value={o}>{o}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Any Specific Instructions / Remark</Label>
+                    <Textarea value={formData.order_remark} onChange={e => setFormData(p => ({ ...p, order_remark: e.target.value }))} className="bg-white border-slate-200 text-sm min-h-[80px]" placeholder="Enter Remarks" />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Attachment</Label>
+                    <div className="relative">
+                      <input type="file" id="order-attachment-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'order_attachment_url', setUploadingOrderAttachment)} disabled={uploadingOrderAttachment} />
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_attachment_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-attachment-upload')?.click()}>
+                        {uploadingOrderAttachment ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.order_attachment_url ? <><FileCheck size={16}/><span>Attachment Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Attachment</span></>}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isClosedFieldsVisible && (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                <h3 className="text-sm font-bold text-rose-600 uppercase tracking-widest border-b pb-2">
+                  Lead Closure Details
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Close Reason</Label>
+                    <Select value={formData.close_reason} onValueChange={(val) => setFormData(p => ({ ...p, close_reason: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Reason" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="Price Issue">Price Issue</SelectItem>
+                        <SelectItem value="Quality Issue">Quality Issue</SelectItem>
+                        <SelectItem value="Competitor">Competitor</SelectItem>
+                        <SelectItem value="Not Interested">Not Interested</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Close Remark</Label>
+                    <Textarea value={formData.close_remark} onChange={e => setFormData(p => ({ ...p, close_remark: e.target.value }))} className="min-h-[80px] text-sm bg-white" placeholder="Enter additional details for closure..." />
+                  </div>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

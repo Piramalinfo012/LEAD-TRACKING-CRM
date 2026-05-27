@@ -115,7 +115,21 @@ export default function KanbanBoard() {
   };
 
   const leadsByStage = STAGES.reduce((acc, stage) => {
-    let stageLeads = filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === stage);
+    let stageLeads = filteredLeads.filter(l => {
+      if (stage === LeadStatus.LEAD) {
+        return !!l.lead_planned_date && !l.lead_actual_date;
+      } else if (stage === LeadStatus.MEETING) {
+        return !!l.meeting_planned_date && !l.meeting_actual_date;
+      } else if (stage === LeadStatus.TECHNICAL_DISCUSSION) {
+        return !!l.tech_planned_date && !l.tech_actual_date;
+      } else if (stage === LeadStatus.NEGOTIATION) {
+        return !!l.negotiation_planned_date && !l.negotiation_actual_date;
+      } else if (stage === LeadStatus.ORDER) {
+        return !!l.order_planned_date && !l.order_actual_date;
+      } else {
+        return (l.status?.toUpperCase() || 'COLD') === stage;
+      }
+    });
     acc[stage] = stageLeads;
     return acc;
   }, {} as Record<string, Lead[]>);

@@ -102,11 +102,15 @@ export interface Lead {
   meeting_url?: string;
   
   // Technical Discussion Stage Data
+  tech_planned_date?: string;
+  tech_actual_date?: string;
   tech_status?: string;
   tech_products?: TechProduct[];
   tech_kit_url?: string;
 
   // Negotiation Stage Data
+  negotiation_planned_date?: string;
+  negotiation_actual_date?: string;
   negotiation_status?: string;
   quotation_url?: string;
   unit?: string;
@@ -117,6 +121,18 @@ export interface Lead {
   party_type?: string;
   negotiation_remark?: string;
   negotiation_kit_url?: string;
+
+  // Order Stage Data
+  order_planned_date?: string;
+  order_actual_date?: string;
+  order_copy_url?: string;
+  delivery_in?: string;
+  unloading?: string;
+  motor_pump_requirement?: string;
+  transport?: string;
+  order_remark?: string;
+  order_attachment_url?: string;
+  order_status?: string;
 }
 
 export interface TechProduct {

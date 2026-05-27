@@ -715,6 +715,10 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.lead_planned_date || lead['Lead Planned Date'] ? formatDateToDMY(lead.lead_planned_date || lead['Lead Planned Date']) : '-'}</p>
                                           </div>
                                           <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Lead Actual Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.lead_actual_date || lead['Lead Actual Date'] ? formatDateToDMY(lead.lead_actual_date || lead['Lead Actual Date']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Product Details</span>
                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.product_details || '-'}</p>
                                           </div>
@@ -741,8 +745,12 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                        </h4>
                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                           <div className="space-y-1">
-                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Planned</span>
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Planned Date</span>
                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_planned_date || lead['Meeting Planned'] ? formatDateToDMY(lead.meeting_planned_date || lead['Meeting Planned']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Actual Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.meeting_actual_date || lead['Meeting Actual Date'] || lead['Meeting Actual'] ? formatDateToDMY(lead.meeting_actual_date || lead['Meeting Actual Date'] || lead['Meeting Actual']) : '-'}</p>
                                           </div>
                                           <div className="space-y-1">
                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Meeting Status</span>
@@ -773,7 +781,146 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                        </div>
                                     </div>
                                  )}
-                              </div>
+
+                                 {stageIndex > 3 && (
+                                    <div className="space-y-4">
+                                       <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                          <FileText size={14} className="text-indigo-600" /> Technical Discussion Details
+                                       </h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Technical Planned Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.tech_planned_date || lead['Technical Discussion Planned'] ? formatDateToDMY(lead.tech_planned_date || lead['Technical Discussion Planned']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Technical Actual Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.tech_actual_date || lead['Technical Discussion Actual'] ? formatDateToDMY(lead.tech_actual_date || lead['Technical Discussion Actual']) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Technical Status</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.tech_status || lead['Technical Status'] || '-'}</p>
+                                          </div>
+                                          {lead.tech_kit_url && (
+                                            <div className="space-y-1 md:col-span-2">
+                                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Technical Kit Attachment</span>
+                                               <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.tech_kit_url)}</div>
+                                            </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+
+                                 {stageIndex > 4 && (
+                                    <div className="space-y-4">
+                                       <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                          <FileText size={14} className="text-indigo-600" /> Negotiation Stage Details
+                                       </h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Negotiation Planned Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.negotiation_planned_date ? formatDateToDMY(lead.negotiation_planned_date) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Negotiation Actual Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.negotiation_actual_date ? formatDateToDMY(lead.negotiation_actual_date) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Negotiation Status</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.negotiation_status || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Unit</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.unit || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Final Price</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.final_price || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Quantity</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.quantity || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Payment Terms</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.payment_terms || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Delivery Schedule</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.delivery_schedule || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Party Type</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.party_type || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1 md:col-span-2">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Negotiation Remarks</span>
+                                             <p className="text-sm font-sans font-medium text-slate-600">{lead.negotiation_remark || '-'}</p>
+                                          </div>
+                                          {lead.quotation_url && (
+                                            <div className="space-y-1 md:col-span-2">
+                                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Quotation Upload</span>
+                                               <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.quotation_url)}</div>
+                                            </div>
+                                          )}
+                                          {lead.negotiation_kit_url && (
+                                            <div className="space-y-1 md:col-span-2">
+                                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Kit Attachment</span>
+                                               <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.negotiation_kit_url)}</div>
+                                            </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+                                  {stageIndex > 5 && (
+                                     <div className="space-y-4">
+                                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                           <FileText size={14} className="text-indigo-600" /> Order Stage Details
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Order Planned Date</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.order_planned_date ? formatDateToDMY(lead.order_planned_date) : '-'}</p>
+                                           </div>
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Order Actual Date</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.order_actual_date ? formatDateToDMY(lead.order_actual_date) : '-'}</p>
+                                           </div>
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Delivery In</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.delivery_in || '-'}</p>
+                                           </div>
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Unloading</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.unloading || '-'}</p>
+                                           </div>
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Motor / Pump Requirement</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.motor_pump_requirement || '-'}</p>
+                                           </div>
+                                           <div className="space-y-1">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Transport</span>
+                                              <p className="text-sm font-sans font-semibold text-slate-700">{lead.transport || '-'}</p>
+                                           </div>
+                                           <div className="space-y-1 md:col-span-2">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Order Remarks</span>
+                                              <p className="text-sm font-sans font-medium text-slate-600">{lead.order_remark || '-'}</p>
+                                           </div>
+                                           {lead.order_copy_url && (
+                                             <div className="space-y-1 md:col-span-2">
+                                                <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Order Copy Attached</span>
+                                                <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.order_copy_url)}</div>
+                                             </div>
+                                           )}
+                                           {lead.order_attachment_url && (
+                                             <div className="space-y-1 md:col-span-2">
+                                                <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Order Attachment</span>
+                                                <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.order_attachment_url)}</div>
+                                             </div>
+                                           )}
+                                        </div>
+                                     </div>
+                                  )}
+                               </div>
                            );
                         })()}
                       </>

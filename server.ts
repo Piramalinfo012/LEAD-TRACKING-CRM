@@ -81,8 +81,8 @@ async function doLeadsFetch() {
         owner_id: l['Sales Person Name'] || 'SYSTEM',
         
         // Lead Stage Fields
-        lead_planned_date: l['Lead Planned Date'] || l['planned_date'] || '',
-        lead_actual_date: l['Lead Actual Date'] || l['actual_date'] || '',
+        lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
+        lead_actual_date: l['__col_16'] || l['Lead Actual Date'] || l['actual_date'] || '',
         lead_status: l['Lead Status'] || l['custom_status'] || '',
         product_details: l['Product details.'] || l['product_details'] || '',
         mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
@@ -91,15 +91,39 @@ async function doLeadsFetch() {
         meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
 
         // Meeting Stage Fields
-        meeting_planned_date: l['Meeting Planned Date'] || l['Meeting Planned'] || '',
-        meeting_actual_date: l['Meeting Actual Date'] || l['Meeting Actual'] || '',
+        meeting_planned_date: l['__col_23'] || l['Meeting Planned Date'] || l['Meeting Planned'] || '',
+        meeting_actual_date: l['__col_24'] || l['Meeting Actual Date'] || l['Meeting Actual'] || '',
         meeting_status: l['Meeting Status'] || '',
         reschedule_date: l['Reschedule Meeting Date'] || '',
         discussion_points: l['Discussion Points'] || l['Discussion Points.'] || '',
         meeting_person_name: l['Meeting Person Name'] || '',
         meeting_number: l['Contact Number'] || l['Contact No'] || l['Number'] || '',
         bullet_point_remarks: l['Bullet Point Remarks'] || l['Bullet Point Remarks.'] || '',
-        meeting_url: l['Picture of Meeting Url'] || ''
+        meeting_url: l['Picture of Meeting Url'] || '',
+
+        // Technical Discussion Stage Fields
+        tech_planned_date: l['__col_32'] || '',
+        tech_actual_date: l['__col_33'] || '',
+        tech_status: l['__col_34'] || l['Technical Status'] || '',
+        tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
+
+        // Negotiation Stage Fields
+        negotiation_planned_date: l['__col_46'] || '',
+        negotiation_actual_date: l['__col_47'] || '',
+        negotiation_status: l['__col_48'] || l['Status'] || '',
+        quotation_url: l['__col_49'] || l['Quotation Upload:'] || '',
+        unit: l['__col_50'] || l['Unit'] || '',
+        final_price: l['__col_51'] || l['Final Price'] || '',
+        quantity: l['__col_52'] || l['Quantity,'] || '',
+        payment_terms: l['__col_53'] || l['Payment Terms'] || '',
+        delivery_schedule: l['__col_54'] || l['Delivery Schedule.'] || '',
+        party_type: l['__col_55'] || l['Party Type classification:'] || '',
+        negotiation_remark: l['__col_56'] || l['Remark if-Any'] || '',
+        negotiation_kit_url: l['__col_57'] || l['Kit Attachment'] || '',
+
+        // Order Stage Fields
+        order_planned_date: l['__col_59'] || '',
+        order_actual_date: l['__col_60'] || ''
       }));
 
       const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => {
@@ -137,8 +161,8 @@ async function doLeadsFetch() {
           is_fms: true,
           
           // Lead Stage Fields
-          lead_planned_date: l['Lead Planned Date'] || l['planned_date'] || '',
-          lead_actual_date: l['Lead Actual Date'] || l['actual_date'] || '',
+          lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
+          lead_actual_date: l['__col_16'] || l['Lead Actual Date'] || l['actual_date'] || '',
           lead_status: l['Lead Status'] || l['custom_status'] || '',
           product_details: l['Product details.'] || l['product_details'] || '',
           mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
@@ -147,15 +171,52 @@ async function doLeadsFetch() {
           meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
   
           // Meeting Stage Fields
-          meeting_planned_date: l['Meeting Planned Date'] || l['Meeting Planned'] || '',
-          meeting_actual_date: l['Meeting Actual Date'] || l['Meeting Actual'] || '',
+          meeting_planned_date: l['__col_23'] || l['Meeting Planned Date'] || l['Meeting Planned'] || '',
+          meeting_actual_date: l['__col_24'] || l['Meeting Actual Date'] || l['Meeting Actual'] || '',
           meeting_status: l['Meeting Status'] || '',
           reschedule_date: l['Reschedule Meeting Date'] || '',
           discussion_points: l['Discussion Points.'] || '',
           meeting_person_name: l['Meeting Person Name'] || '',
           meeting_number: l['Number'] || '',
           bullet_point_remarks: l['Bullet Point Remarks.'] || '',
-          meeting_url: l['Picture of Meeting Url'] || ''
+          meeting_url: l['Picture of Meeting Url'] || '',
+
+          // Technical Discussion Stage Fields
+          tech_planned_date: l['__col_32'] || '',
+          tech_actual_date: l['__col_33'] || '',
+          tech_status: l['__col_34'] || l['Technical Status'] || '',
+          tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
+
+          // Negotiation Stage Fields
+          negotiation_planned_date: l['__col_46'] || '',
+          negotiation_actual_date: l['__col_47'] || '',
+          negotiation_status: l['__col_48'] || l['Status'] || '',
+          quotation_url: l['__col_49'] || l['Quotation Upload:'] || '',
+          unit: l['__col_50'] || l['Unit'] || '',
+          final_price: l['__col_51'] || l['Final Price'] || '',
+          quantity: l['__col_52'] || l['Quantity,'] || '',
+          payment_terms: l['__col_53'] || l['Payment Terms'] || '',
+          delivery_schedule: l['__col_54'] || l['Delivery Schedule.'] || '',
+          party_type: l['__col_55'] || l['Party Type classification:'] || '',
+          negotiation_remark: l['__col_56'] || l['Remark if-Any'] || '',
+          negotiation_kit_url: l['__col_57'] || l['Kit Attachment'] || '',
+
+          // Order Stage Fields
+          order_planned_date: l['__col_59'] || '',
+          order_actual_date: l['__col_60'] || '',
+          order_copy_url: l['__col_61'] || '',
+          delivery_in: l['__col_62'] || '',
+          unloading: l['__col_63'] || '',
+          motor_pump_requirement: l['__col_64'] || '',
+          transport: l['__col_65'] || '',
+          order_remark: l['__col_66'] || '',
+          order_attachment_url: l['__col_67'] || '',
+          order_status: l['__col_68'] || '',
+
+          // Closed Stage Fields
+          closed_at: l['__col_69'] || '',
+          close_reason: l['__col_70'] || '',
+          close_remark: l['__col_71'] || '',
         };
       });
 
@@ -713,21 +774,50 @@ app.use(express.json());
       }
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
-      // Map Negotiation Stage fields
-      if (updateData.negotiation_status !== undefined) {
-        if (updateData.status === 'NEGOTIATION') {
-          mappedUpdate['Status'] = updateData.negotiation_status;
+      // Map Technical Discussion Stage fields
+      if (updateData.tech_actual_date !== undefined) {
+        mappedUpdate['__col_33'] = updateData.tech_actual_date;
+      }
+      if (updateData.tech_status !== undefined) {
+        if (updateData.status === 'TECHNICAL_DISCUSSION') {
+          mappedUpdate['__col_34'] = updateData.tech_status;
         }
       }
-      if (updateData.quotation_url !== undefined) mappedUpdate['Quotation Upload:'] = updateData.quotation_url;
-      if (updateData.unit !== undefined) mappedUpdate['Unit'] = updateData.unit;
-      if (updateData.final_price !== undefined) mappedUpdate['Final Price'] = updateData.final_price;
-      if (updateData.quantity !== undefined) mappedUpdate['Quantity,'] = updateData.quantity;
-      if (updateData.payment_terms !== undefined) mappedUpdate['Payment Terms'] = updateData.payment_terms;
-      if (updateData.delivery_schedule !== undefined) mappedUpdate['Delivery Schedule.'] = updateData.delivery_schedule;
-      if (updateData.party_type !== undefined) mappedUpdate['Party Type classification:'] = updateData.party_type;
-      if (updateData.negotiation_remark !== undefined) mappedUpdate['Remark if-Any'] = updateData.negotiation_remark;
-      if (updateData.negotiation_kit_url !== undefined) mappedUpdate['Kit Attachment'] = updateData.negotiation_kit_url;
+
+      // Map Negotiation Stage fields
+      if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
+      if (updateData.negotiation_status !== undefined) {
+        if (updateData.status === 'NEGOTIATION') {
+          mappedUpdate['__col_48'] = updateData.negotiation_status;
+        }
+      }
+      if (updateData.quotation_url !== undefined) mappedUpdate['__col_49'] = updateData.quotation_url;
+      if (updateData.unit !== undefined) mappedUpdate['__col_50'] = updateData.unit;
+      if (updateData.final_price !== undefined) mappedUpdate['__col_51'] = updateData.final_price;
+      if (updateData.quantity !== undefined) mappedUpdate['__col_52'] = updateData.quantity;
+      if (updateData.payment_terms !== undefined) mappedUpdate['__col_53'] = updateData.payment_terms;
+      if (updateData.delivery_schedule !== undefined) mappedUpdate['__col_54'] = updateData.delivery_schedule;
+      if (updateData.party_type !== undefined) mappedUpdate['__col_55'] = updateData.party_type;
+      if (updateData.negotiation_remark !== undefined) mappedUpdate['__col_56'] = updateData.negotiation_remark;
+      if (updateData.negotiation_kit_url !== undefined) mappedUpdate['__col_57'] = updateData.negotiation_kit_url;
+
+      // Map Order Stage fields
+      if (updateData.order_actual_date !== undefined) mappedUpdate['__col_60'] = updateData.order_actual_date;
+      if (updateData.order_copy_url !== undefined) mappedUpdate['__col_61'] = updateData.order_copy_url;
+      if (updateData.delivery_in !== undefined) mappedUpdate['__col_62'] = updateData.delivery_in;
+      if (updateData.unloading !== undefined) mappedUpdate['__col_63'] = updateData.unloading;
+      if (updateData.motor_pump_requirement !== undefined) mappedUpdate['__col_64'] = updateData.motor_pump_requirement;
+      if (updateData.transport !== undefined) mappedUpdate['__col_65'] = updateData.transport;
+      if (updateData.order_remark !== undefined) mappedUpdate['__col_66'] = updateData.order_remark;
+      if (updateData.order_attachment_url !== undefined) mappedUpdate['__col_67'] = updateData.order_attachment_url;
+      if (updateData.order_status !== undefined) mappedUpdate['__col_68'] = updateData.order_status;
+
+      // Map Close Fields
+      if (updateData.status === 'CLOSED') {
+        if (updateData.closed_at !== undefined) mappedUpdate['__col_69'] = updateData.closed_at;
+        if (updateData.close_reason !== undefined) mappedUpdate['__col_70'] = updateData.close_reason;
+        if (updateData.close_remark !== undefined) mappedUpdate['__col_71'] = updateData.close_remark;
+      }
 
       await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
       
@@ -747,9 +837,11 @@ app.use(express.json());
       // Log Tech Products to 'Prodcut Negotiation'
       if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {
         for (const prod of updateData.tech_products) {
+          const d = new Date();
+          const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
           const productData = {
             'Id': id,
-            'Timetamp': new Date().toISOString(),
+            'Timetamp': formattedDate,
             'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
             'Product Name': prod.product_name || '',
             'Density': prod.density || '',
@@ -760,7 +852,8 @@ app.use(express.json());
             'Sulphur': prod.sulphur || '',
             'Remarks in Detail.': prod.remarks || '',
             'Sediment.': prod.sediment || '',
-            'Kit Attachment Url': updateData.tech_kit_url || ''
+            'Kit Attachment Url': updateData.tech_kit_url || '',
+            'Technical Status': updateData.tech_status || ''
           };
           await SheetsDB.addRow('Prodcut Negotiation', productData).catch(e => console.error("Error adding to Prodcut Negotiation sheet:", e));
         }
