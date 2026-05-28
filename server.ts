@@ -242,22 +242,22 @@ async function doLeadsFetch() {
 async function refreshLeadsCache(force = false) {
   const now = Date.now();
   
-  if (!force && LEADS_CACHE && (now - LAST_FETCH_LEADS < LEADS_STALE_LIMIT)) {
+  if (LEADS_CACHE) {
+    if (force || now - LAST_FETCH_LEADS >= LEADS_STALE_LIMIT) {
+      if (!activeLeadsFetchPromise) {
+        activeLeadsFetchPromise = doLeadsFetch().finally(() => {
+          activeLeadsFetchPromise = null;
+        });
+      }
+    }
     return LEADS_CACHE;
   }
 
-  if (activeLeadsFetchPromise) {
-    return activeLeadsFetchPromise;
-  }
-
-  activeLeadsFetchPromise = (async () => {
-    try {
-      return await doLeadsFetch();
-    } finally {
-      activeLeadsFetchPromise = null;
-    }
-  })();
-
+  if (activeLeadsFetchPromise) return activeLeadsFetchPromise;
+  
+  activeLeadsFetchPromise = doLeadsFetch().finally(() => {
+    activeLeadsFetchPromise = null;
+  });
   return activeLeadsFetchPromise;
 }
 
@@ -285,22 +285,22 @@ async function doUsersFetch() {
 async function refreshUsersCache(force = false) {
   const now = Date.now();
   
-  if (!force && USERS_CACHE && (now - LAST_FETCH_USERS < USERS_STALE_LIMIT)) {
+  if (USERS_CACHE) {
+    if (force || now - LAST_FETCH_USERS >= USERS_STALE_LIMIT) {
+      if (!activeUsersFetchPromise) {
+        activeUsersFetchPromise = doUsersFetch().finally(() => {
+          activeUsersFetchPromise = null;
+        });
+      }
+    }
     return USERS_CACHE;
   }
 
-  if (activeUsersFetchPromise) {
-    return activeUsersFetchPromise;
-  }
+  if (activeUsersFetchPromise) return activeUsersFetchPromise;
 
-  activeUsersFetchPromise = (async () => {
-    try {
-      return await doUsersFetch();
-    } finally {
-      activeUsersFetchPromise = null;
-    }
-  })();
-
+  activeUsersFetchPromise = doUsersFetch().finally(() => {
+    activeUsersFetchPromise = null;
+  });
   return activeUsersFetchPromise;
 }
 
@@ -327,22 +327,22 @@ async function doMasterFetch() {
 async function refreshMasterCache(force = false) {
   const now = Date.now();
   
-  if (!force && MASTER_CACHE && (now - LAST_FETCH_MASTER < MASTER_STALE_LIMIT)) {
+  if (MASTER_CACHE) {
+    if (force || now - LAST_FETCH_MASTER >= MASTER_STALE_LIMIT) {
+      if (!activeMasterFetchPromise) {
+        activeMasterFetchPromise = doMasterFetch().finally(() => {
+          activeMasterFetchPromise = null;
+        });
+      }
+    }
     return MASTER_CACHE;
   }
 
-  if (activeMasterFetchPromise) {
-    return activeMasterFetchPromise;
-  }
+  if (activeMasterFetchPromise) return activeMasterFetchPromise;
 
-  activeMasterFetchPromise = (async () => {
-    try {
-      return await doMasterFetch();
-    } finally {
-      activeMasterFetchPromise = null;
-    }
-  })();
-
+  activeMasterFetchPromise = doMasterFetch().finally(() => {
+    activeMasterFetchPromise = null;
+  });
   return activeMasterFetchPromise;
 }
 
