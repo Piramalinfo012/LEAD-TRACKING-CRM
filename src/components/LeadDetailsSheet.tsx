@@ -230,7 +230,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
       });
       setNewNote('');
       fetchExtraData();
-      toast.success('Followup added');
+      toast.success('⏱️ Follow-up note added successfully!');
     } catch (err: any) {
       toast.error(err.message);
     }

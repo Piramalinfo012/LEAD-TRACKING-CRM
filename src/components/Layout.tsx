@@ -31,9 +31,11 @@ import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './ui/sheet';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from './ui/dialog';
 import NewLeadDialog from './NewLeadDialog';
+import LeadDetailsSheet from './LeadDetailsSheet';
 import { useDebounce } from '../hooks/useDebounce';
 import { useApi } from '../lib/api';
 import { formatDateToDMY, getEmbeddableUrl } from '../lib/utils';
@@ -306,6 +308,19 @@ export function Shell({ children }: LayoutProps) {
   const [hasNotified, setHasNotified] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [noticeText, setNoticeText] = useState('Loading notice text...');
+  const [selectedSearchLead, setSelectedSearchLead] = useState<any | null>(null);
+
+  const searchResults = useMemo(() => {
+    if (!debouncedSearch || debouncedSearch.trim().length < 2) return [];
+    const lowerQ = debouncedSearch.toLowerCase().trim();
+    return leads.filter(l => {
+      const name = String(l.company_name || l['Party Name'] || '').toLowerCase();
+      const person = String(l.contact_person || l['Person Name'] || '').toLowerCase();
+      const mob = String(l.mobile || l['Mobile No. '] || '').toLowerCase();
+      const id = String(l.id || '').toLowerCase();
+      return name.includes(lowerQ) || person.includes(lowerQ) || mob.includes(lowerQ) || id.includes(lowerQ);
+    }).slice(0, 8); // show max 8 results
+  }, [debouncedSearch, leads]);
 
   useEffect(() => {
     async function fetchNotice() {
@@ -409,7 +424,7 @@ export function Shell({ children }: LayoutProps) {
             <div className="max-w-md w-full relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input 
-                placeholder="Search..." 
+                placeholder="Search leads by name, contact, phone..." 
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 className="pl-10 pr-10 bg-slate-50/50 border-none text-sm w-full focus-visible:ring-1 focus-visible:ring-indigo-500/20 shadow-none h-10 lg:h-11 rounded-xl"
@@ -422,6 +437,48 @@ export function Shell({ children }: LayoutProps) {
                   <X size={16} />
                 </button>
               )}
+              
+              {/* Search Dropdown */}
+              <AnimatePresence>
+                {searchValue && searchResults.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-[100]"
+                  >
+                    <div className="max-h-[60vh] overflow-y-auto p-2">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 py-2 mb-1">Search Results</p>
+                      {searchResults.map(result => (
+                        <div 
+                          key={result.id}
+                          onClick={() => {
+                            setSelectedSearchLead(result);
+                            setSearchValue('');
+                          }}
+                          className="flex items-center justify-between p-3 hover:bg-indigo-50/60 rounded-lg cursor-pointer transition-colors group"
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-slate-800 text-sm truncate group-hover:text-indigo-700 transition-colors">{result.company_name || result['Party Name']}</span>
+                            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                              <span className="truncate">{result.contact_person || result['Person Name']}</span>
+                              {result.mobile && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                  <span className="font-mono">{result.mobile}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className="ml-3 shrink-0 uppercase text-[9px] font-heading bg-indigo-50 text-indigo-700 border-none">
+                            {result.status?.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -606,13 +663,21 @@ export function Shell({ children }: LayoutProps) {
           Developed By <span className="text-indigo-600 font-heading font-bold">Deepak Sahu</span>
         </footer>
       </main>
-      
+
       <NewLeadDialog 
-         isOpen={isNewLeadOpen} 
-         onClose={() => setIsNewLeadOpen(false)} 
-         onSuccess={() => {
-            window.location.reload();
-         }}
+        isOpen={isNewLeadOpen} 
+        onClose={() => setIsNewLeadOpen(false)} 
+        onSuccess={() => {
+          setIsNewLeadOpen(false);
+          // fetchLeads will be triggered by socket or manual refresh
+        }}
+      />
+
+      <LeadDetailsSheet 
+        lead={selectedSearchLead}
+        isOpen={!!selectedSearchLead}
+        onClose={() => setSelectedSearchLead(null)}
+        onUpdate={() => {}}
       />
     </div>
   );

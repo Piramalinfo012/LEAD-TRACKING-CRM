@@ -295,7 +295,48 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
-      toast.success('Lead updated successfully!');
+
+      let successMsg = 'Lead updated successfully!';
+      let isPremium = false;
+
+      // Check for Final Order Received
+      if (selectedStage === LeadStatus.ORDER || payload.order_status === 'Recieved' || payload.order_status === 'Received') {
+        successMsg = '🎉 Congratulations! Final Order Received successfully! 🚀';
+        isPremium = true;
+      } 
+      // Check for Reschedule
+      else if (
+        payload.meeting_status === 'Reschedule' || 
+        payload.tech_status === 'Reschedule' || 
+        payload.negotiation_status === 'Reschedule' || 
+        payload.custom_status === 'Reschedule' || 
+        payload.order_status === 'Reschedule' ||
+        payload.reschedule_date
+      ) {
+        successMsg = '📅 Meeting Rescheduled successfully!';
+      }
+      // Check for Follow up
+      else if (
+        payload.custom_status === 'Follow up' || 
+        payload.meeting_status === 'Follow up' || 
+        payload.tech_status === 'Follow up' || 
+        payload.negotiation_status === 'Follow up' ||
+        payload.order_status === 'Follow up' ||
+        payload.meeting_followup_date ||
+        payload.followup_date
+      ) {
+        successMsg = '⏱️ Follow-up scheduled successfully!';
+      }
+
+      if (isPremium) {
+        toast.success(successMsg, {
+          duration: 6000,
+          className: 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-none shadow-[0_20px_40px_-15px_rgba(16,185,129,0.5)] !text-base',
+        });
+      } else {
+        toast.success(successMsg);
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -309,6 +350,8 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const [uploadingNegKit, setUploadingNegKit] = useState(false);
   const [uploadingOrderCopy, setUploadingOrderCopy] = useState(false);
   const [uploadingOrderAttachment, setUploadingOrderAttachment] = useState(false);
+  const [uploadingMCB, setUploadingMCB] = useState(false);
+  const [uploadingKit, setUploadingKit] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setUploadingState: (state: boolean) => void) => {
     const file = e.target.files?.[0];
@@ -488,13 +531,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <Label className="text-xs uppercase font-bold text-slate-700 tracking-wider flex items-center gap-1.5">
                       <Settings2 size={12} /> MCB According to Requirement (Url)
                     </Label>
-                    <Input 
-                      type="text"
-                      value={formData.mcb_requirement}
-                      onChange={(e) => setFormData(p => ({ ...p, mcb_requirement: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="Enter MCB details/url..."
-                    />
+                    <div className="relative">
+                      <input type="file" id="mcb-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'mcb_requirement', setUploadingMCB)} disabled={uploadingMCB} />
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.mcb_requirement ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('mcb-upload')?.click()}>
+                        {uploadingMCB ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.mcb_requirement ? <><FileCheck size={16}/><span>File Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload File</span></>}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -515,13 +557,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <Label className="text-xs uppercase font-bold text-slate-700 tracking-wider flex items-center gap-1.5">
                       <Briefcase size={12} /> KIT Url
                     </Label>
-                    <Input 
-                      type="text"
-                      value={formData.kit_details}
-                      onChange={(e) => setFormData(p => ({ ...p, kit_details: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
-                      placeholder="Enter KIT url..."
-                    />
+                    <div className="relative">
+                      <input type="file" id="kit-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'kit_details', setUploadingKit)} disabled={uploadingKit} />
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.kit_details ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('kit-upload')?.click()}>
+                        {uploadingKit ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.kit_details ? <><FileCheck size={16}/><span>File Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload KIT</span></>}
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">

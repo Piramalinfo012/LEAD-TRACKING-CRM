@@ -98,10 +98,8 @@ export default function LeadsTable() {
   
   const [sorting, setSorting] = useState<SortingState>([
     { 
-      id: stage?.toLowerCase() === 'lead' ? 'lead_planned_date' : 
-          stage?.toLowerCase() === 'meeting' ? 'meeting_planned_date' : 
-          'created_at', 
-      desc: true 
+      id: (stage?.toLowerCase() === 'lead' || stage?.toLowerCase() === 'meeting') ? 'company_name' : 'created_at', 
+      desc: false 
     }
   ]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -482,32 +480,7 @@ export default function LeadsTable() {
   }
 
   if (stage?.toLowerCase() === 'lead') {
-    const leadCols = [
-      ...defaultCols,
-      {
-        accessorKey: 'lead_planned_date',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Lead Planned',
-        sortingFn: customDateSortFn,
-        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.lead_planned_date || row.original['Lead Planned Date']) || '-'}</div>
-      }
-    ];
-
-    leadCols.push(
-      {
-        accessorKey: 'lead_actual_date',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Lead Actual',
-        sortingFn: customDateSortFn,
-        cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.lead_actual_date || row.original['Lead Actual Date']) || '-'}</div>
-      },
-      {
-        accessorKey: 'custom_status',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Lead Status',
-        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.custom_status || row.original['Lead Status'] || '-'}</div>
-      }
-    );
+    const leadCols = [...defaultCols];
 
     leadCols.push({
       id: 'actions',
@@ -519,32 +492,7 @@ export default function LeadsTable() {
   }
 
   if (stage?.toLowerCase() === 'meeting') {
-    const meetingCols = [
-      ...defaultCols,
-      {
-        accessorKey: 'meeting_planned_date',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Meeting Planned',
-        sortingFn: customDateSortFn,
-        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{formatDateToDMY(row.original.meeting_planned_date || row.original['Meeting Planned']) || '-'}</div>
-      }
-    ];
-
-    meetingCols.push(
-      {
-        accessorKey: 'meeting_actual_date',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Meeting Actual',
-        sortingFn: customDateSortFn,
-        cell: ({ row }: any) => <div className="text-xs font-bold text-indigo-700 tracking-tight">{formatDateToDMY(row.original.meeting_actual_date || row.original['Meeting Actual']) || '-'}</div>
-      },
-      {
-        accessorKey: 'meeting_status',
-        meta: { className: 'hidden sm:table-cell' },
-        header: 'Status',
-        cell: ({ row }: any) => <div className="text-xs font-bold text-slate-600 tracking-tight">{row.original.meeting_status || row.original['Status'] || '-'}</div>
-      }
-    );
+    const meetingCols = [...defaultCols];
 
     meetingCols.push({
       id: 'actions',
