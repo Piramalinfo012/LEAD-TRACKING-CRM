@@ -778,15 +778,7 @@ app.use(express.json());
       }
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
-      // Map Technical Discussion Stage fields
-      if (updateData.tech_actual_date !== undefined) {
-        mappedUpdate['__col_33'] = updateData.tech_actual_date;
-      }
-      if (updateData.tech_status !== undefined) {
-        if (updateData.status === 'TECHNICAL_DISCUSSION') {
-          mappedUpdate['__col_34'] = updateData.tech_status;
-        }
-      }
+      // Removed mapping of Technical Discussion Stage fields to NEW_FMS as requested
 
       // Map Negotiation Stage fields
       if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
@@ -845,7 +837,7 @@ app.use(express.json());
           const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
           const productData = {
             'Id': id,
-            'Timetamp': formattedDate,
+            'Timetamp': updateData.tech_actual_date || formattedDate,
             'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
             'Product Name': prod.product_name || '',
             'Density': prod.density || '',
