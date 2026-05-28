@@ -76,8 +76,10 @@ async function doLeadsFetch() {
         'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
         'Gmail ID': l['Gmail ID'],
         'Last Remarks': l['Last Remarks'],
-        created_at: l['Timestamp'] || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: l['Timestamp'] || '',
+        updated_at: (
+          l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
+        ),
         owner_id: l['Sales Person Name'] || 'SYSTEM',
         
         // Lead Stage Fields
@@ -155,8 +157,10 @@ async function doLeadsFetch() {
           'Gmail ID': l['Gmail ID'],
           'MCBs. (KIT) URl': l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'],
           'Last Remarks': l['Last Remarks'],
-          created_at: l['Timestamp'] || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: l['Timestamp'] || '',
+          updated_at: (
+            l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
+          ),
           owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
           is_fms: true,
           

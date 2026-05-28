@@ -120,14 +120,15 @@ export default function Dashboard() {
   }, [leads, selectedSalesPerson]);
 
   const stats = useMemo(() => {
+    const isWon = (l: any) => l.order_status && l.order_status.toLowerCase().trim() === 'recieved';
     return {
       totalLeads: filteredLeads.length,
       activeLeads: filteredLeads.filter((l: any) => {
         const st = l.status?.toUpperCase() || 'COLD';
-        return st !== 'CLOSED' && st !== 'ORDER';
+        return st !== 'CLOSED' && !isWon(l);
       }).length,
       closedLeads: filteredLeads.filter((l: any) => l.status?.toUpperCase() === 'CLOSED').length,
-      convertedOrders: filteredLeads.filter((l: any) => l.status?.toUpperCase() === 'ORDER').length,
+      convertedOrders: filteredLeads.filter(isWon).length,
     };
   }, [filteredLeads]);
 
@@ -161,7 +162,7 @@ export default function Dashboard() {
       { name: 'Meeting', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'MEETING').length },
       { name: 'Tech Talk', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'TECHNICAL_DISCUSSION').length },
       { name: 'Negotiation', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'NEGOTIATION').length },
-      { name: 'Order', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'ORDER').length },
+      { name: 'Won ✓', value: filteredLeads.filter(l => l.order_status && l.order_status.toLowerCase().trim() === 'recieved').length },
     ];
 
     return {
@@ -171,15 +172,38 @@ export default function Dashboard() {
   }, [filteredLeads]);
 
   const recentActivities = useMemo(() => {
+    const getLatestStage = (l: any) => {
+      if (l.order_actual_date) return { stage: 'Order', date: l.order_actual_date };
+      if (l.negotiation_actual_date) return { stage: 'Negotiation', date: l.negotiation_actual_date };
+      if (l.tech_actual_date) return { stage: 'Tech Talk', date: l.tech_actual_date };
+      if (l.meeting_actual_date) return { stage: 'Meeting', date: l.meeting_actual_date };
+      if (l.lead_actual_date) return { stage: 'Lead', date: l.lead_actual_date };
+      if (l.status === 'CLOSED') return { stage: 'Closed', date: l.closed_at || l.created_at };
+      return { stage: 'Cold', date: l.created_at };
+    };
+
+    const parseDMY = (d: string) => {
+      if (!d) return 0;
+      // Try dd/mm/yyyy
+      const parts = d.split('/');
+      if (parts.length === 3) {
+        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+      }
+      return new Date(d).getTime();
+    };
+
     return [...filteredLeads]
-      .sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime())
-      .slice(0, 5)
+      .filter(l => {
+        const { date } = getLatestStage(l);
+        return !!date;
+      })
+      .sort((a, b) => parseDMY(getLatestStage(b).date) - parseDMY(getLatestStage(a).date))
+      .slice(0, 8)
       .map(l => {
-        const rep = l['Sales Person Name'] || l.owner_id || 'Representative';
-        const company = l['Party Name'] || l.company_name || 'Prospect';
-        const action = l.status ? l.status.toLowerCase().replace('_', ' ') : 'Created';
-        const time = l.updated_at || l.created_at ? new Date(l.updated_at || l.created_at).toLocaleDateString() : 'Recently';
-        return { rep, company, action, time };
+        const rep = l.sales_person_name || l['Sales Person Name'] || l.owner_id || 'Representative';
+        const company = l.company_name || l['Party Name'] || 'Prospect';
+        const { stage, date } = getLatestStage(l);
+        return { rep, company, action: stage, time: date };
       });
   }, [filteredLeads]);
 

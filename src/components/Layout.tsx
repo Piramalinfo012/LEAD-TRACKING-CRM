@@ -21,7 +21,10 @@ import {
   ShoppingCart,
   X,
   Menu,
-  Home
+  Home,
+  Clock,
+  CheckCircle2,
+  PhoneCall
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
@@ -381,7 +384,7 @@ export function Shell({ children }: LayoutProps) {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 bg-background relative overflow-hidden">
-        <header className="h-16 lg:h-20 bg-white border-b border-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 flex-shrink-0 shadow-sm">
+        <header className="h-16 lg:h-20 bg-white border-b border-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-50 flex-shrink-0 shadow-sm">
           <div className="flex items-center gap-4 lg:gap-0 flex-1">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -441,39 +444,89 @@ export function Shell({ children }: LayoutProps) {
               {isNotificationsOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setIsNotificationsOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-3 z-40 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 font-heading uppercase tracking-wider">Notifications</span>
-                      {todayFollowups.length > 0 && (
-                        <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {todayFollowups.length} today
-                        </span>
-                      )}
-                    </div>
-                    <div className="max-h-72 overflow-y-auto pt-1">
-                      {todayFollowups.length > 0 ? (
-                        todayFollowups.map((l, index) => {
-                          const partyName = l['Party Name'] || l.company_name || 'Prospect';
-                          const spName = l['Sales Person Name'] || l.owner_id || 'Unassigned';
-                          return (
-                            <div key={l.id || index} className="px-4 py-3 hover:bg-slate-50/80 border-b border-dashed border-slate-100/80 last:border-none transition flex gap-3 items-start">
-                              <div className="w-2 h-2 bg-indigo-600 rounded-full mt-1.5 shrink-0 animate-pulse" />
-                              <div className="space-y-0.5 text-left">
-                                <p className="text-xs font-semibold text-slate-900 leading-snug">
-                                  Today follow up with <span className="text-indigo-600 font-bold">{partyName}</span>
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-sans font-medium">
-                                  Assigned to: {spName}
-                                </p>
-                              </div>
+                  <div className="fixed top-16 right-4 w-96 z-[9999] shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200">
+                    {/* Glass card */}
+                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="bg-white/20 rounded-xl p-1.5">
+                              <Bell size={16} className="text-white" />
                             </div>
-                          );
-                        })
-                      ) : (
-                        <div className="px-4 py-6 text-center text-slate-400 font-sans text-xs italic">
-                          No follow-ups scheduled for today.
+                            <div>
+                              <p className="text-white font-heading font-bold text-sm tracking-wide">Notifications</p>
+                              <p className="text-indigo-200 text-[10px] font-sans">
+                                {todayFollowups.length > 0 ? `${todayFollowups.length} follow-up${todayFollowups.length > 1 ? 's' : ''} due today` : 'All caught up!'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="text-white/70 hover:text-white hover:bg-white/20 rounded-lg p-1 transition-all"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Body */}
+                      <div className="max-h-80 overflow-y-auto">
+                        {todayFollowups.length > 0 ? (
+                          <div className="divide-y divide-slate-100">
+                            {todayFollowups.map((l, index) => {
+                              const partyName = l['Party Name'] || l.company_name || 'Prospect';
+                              const spName = l.sales_person_name || l['Sales Person Name'] || l.owner_id || 'Unassigned';
+                              const mobile = l['Mobile No. '] || l.mobile || '';
+                              const followupDate = l['Follow Up date'] || l.followup_date || '';
+                              return (
+                                <div key={l.id || index} className="px-5 py-3.5 hover:bg-indigo-50/50 transition-all group cursor-pointer">
+                                  <div className="flex gap-3 items-start">
+                                    {/* Icon */}
+                                    <div className="mt-0.5 bg-amber-100 text-amber-600 rounded-xl p-2 shrink-0 group-hover:bg-amber-200 transition-colors">
+                                      <PhoneCall size={13} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[13px] font-bold text-slate-800 leading-snug truncate">
+                                        {partyName}
+                                      </p>
+                                      <p className="text-[11px] text-slate-500 font-sans mt-0.5">
+                                        Follow-up by <span className="font-semibold text-indigo-600">{spName}</span>
+                                      </p>
+                                      {mobile && (
+                                        <p className="text-[10px] text-slate-400 font-mono mt-1">{mobile}</p>
+                                      )}
+                                    </div>
+                                    {/* Badge */}
+                                    <span className="shrink-0 bg-rose-50 text-rose-600 border border-rose-100 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
+                                      Today
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-10 px-4 gap-3">
+                            <div className="bg-emerald-50 rounded-full p-4">
+                              <CheckCircle2 size={28} className="text-emerald-500" />
+                            </div>
+                            <p className="text-slate-700 font-semibold text-sm">All caught up!</p>
+                            <p className="text-slate-400 text-xs text-center font-sans">No follow-ups scheduled for today.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="border-t border-slate-100 px-5 py-3 bg-slate-50/60 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <Clock size={11} />
+                          <span className="text-[10px] font-sans">Updates every 30s</span>
+                        </div>
+                        <span className="text-[10px] text-indigo-600 font-semibold font-heading uppercase tracking-wider cursor-pointer hover:text-indigo-800">
+                          View All Leads →
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </>

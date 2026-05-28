@@ -183,8 +183,8 @@ export default function Reports() {
         negotiation++;
       }
 
-      // Order Received
-      if (status === 'ORDER') {
+      // Order Received = WON (order_status === 'Recieved')
+      if (l.order_status && l.order_status.toLowerCase().trim() === 'recieved') {
         orderReceived++;
       }
     });
