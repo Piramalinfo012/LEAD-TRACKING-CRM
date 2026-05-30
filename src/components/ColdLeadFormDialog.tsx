@@ -26,7 +26,8 @@ import {
   Trash2,
   Loader2,
   Upload,
-  FileCheck
+  FileCheck,
+  Camera
 } from 'lucide-react';
 
 interface ColdLeadFormDialogProps {
@@ -352,6 +353,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const [uploadingOrderAttachment, setUploadingOrderAttachment] = useState(false);
   const [uploadingMCB, setUploadingMCB] = useState(false);
   const [uploadingKit, setUploadingKit] = useState(false);
+  const [uploadingMeeting, setUploadingMeeting] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setUploadingState: (state: boolean) => void) => {
     const file = e.target.files?.[0];
@@ -676,13 +678,16 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
                           <LinkIcon size={12} /> Meeting File / Image (Url)
                         </Label>
-                        <Input 
-                          type="url"
-                          value={formData.meeting_url}
-                          onChange={(e) => setFormData(p => ({ ...p, meeting_url: e.target.value }))}
-                          className="bg-white border-slate-200 text-sm h-11"
-                          placeholder="Drive link to meeting image or file..."
-                        />
+                        <div className="flex gap-2">
+                          <input type="file" id="meeting-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
+                          <input type="file" id="meeting-camera" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
+                          <Button type="button" variant="outline" className={`h-11 flex-1 flex items-center justify-center gap-2 ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-camera')?.click()} disabled={uploadingMeeting}>
+                            {uploadingMeeting ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.meeting_url ? <><FileCheck size={16}/><span>Photo Uploaded</span></> : <><Camera size={16} className="text-indigo-600" /><span>Take Photo</span></>}
+                          </Button>
+                          <Button type="button" variant="outline" className={`h-11 px-4 flex items-center justify-center ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-upload')?.click()} disabled={uploadingMeeting} title="Upload File from Device">
+                            <Upload size={18} className="text-slate-600" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </>

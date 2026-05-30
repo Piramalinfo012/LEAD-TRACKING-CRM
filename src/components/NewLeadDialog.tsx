@@ -113,6 +113,16 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   const [uploading, setUploading] = useState(false);
   const [masterData, setMasterData] = useState<any[]>([]);
   const [existingLeads, setExistingLeads] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('crm_user') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+  const isAdmin = user?.role === 'ADMIN';
   const [duplicateLead, setDuplicateLead] = useState<any>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredParties, setFilteredParties] = useState<string[]>([]);
@@ -164,8 +174,13 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   useEffect(() => {
     if (isOpen) {
       fetchMasterData();
+      if (isAdmin) {
+        request('/api/users').then(data => {
+          if (data && Array.isArray(data)) setUsers(data);
+        }).catch(err => console.error('Failed to fetch users:', err));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isAdmin, request]);
 
   const fetchMasterData = async () => {
     try {
@@ -485,43 +500,39 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="mcb_kit_url" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">MCBs. (KIT) Attachment</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input 
-                    id="mcb_kit_url" 
-                    placeholder="Link will appear here" 
-                    className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-[11px] font-mono pr-10 shadow-sm transition-all rounded-xl"
-                    value={formData.mcb_kit_url}
-                    onChange={(e) => setFormData({...formData, mcb_kit_url: e.target.value})}
-                  />
-                  {formData.mcb_kit_url && <FileCheck size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
-                </div>
-                <div className="relative">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                  />
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="h-12 px-4 md:px-5 bg-slate-50 border-slate-200 text-[10px] font-heading uppercase font-bold tracking-wider hover:bg-slate-100 shadow-sm rounded-xl"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <Loader2 size={18} className="animate-spin text-slate-400" />
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Upload size={16} className="text-indigo-600" />
-                        <span className="hidden sm:inline">Upload</span>
-                      </div>
-                    )}
-                  </Button>
-                </div>
+              <Label className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">MCBs. (KIT) Attachment</Label>
+              <div className="relative w-full">
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className={`w-full h-12 px-4 md:px-5 justify-center shadow-sm rounded-xl border-dashed border-2 text-sm font-sans transition-all ${formData.mcb_kit_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 size={18} className="animate-spin text-indigo-500" />
+                      <span>Uploading...</span>
+                    </div>
+                  ) : formData.mcb_kit_url ? (
+                    <div className="flex items-center gap-2">
+                      <FileCheck size={18} className="text-emerald-600" />
+                      <span className="font-semibold">File Uploaded Successfully</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Upload size={18} className="text-indigo-500" />
+                      <span className="font-medium">Click to Upload File</span>
+                    </div>
+                  )}
+                </Button>
               </div>
             </div>
             <div className="space-y-2.5">
@@ -558,12 +569,38 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
             </div>
             <div className="space-y-2.5">
                <Label htmlFor="sales_person" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Sales Person Name</Label>
-               <Input 
-                 id="sales_person" 
-                 value={formData.sales_person_name}
-                 disabled
-                 className="bg-slate-50 border-slate-200 text-slate-500 h-12 font-sans text-sm cursor-not-allowed font-medium shadow-none px-4 rounded-xl"
-               />
+               {isAdmin ? (
+                 <Select 
+                   value={formData.sales_person_name} 
+                   onValueChange={(val) => {
+                     const selectedUser = users.find(u => (u['USER NAME'] || u.name) === val);
+                     setFormData(prev => ({
+                       ...prev, 
+                       sales_person_name: val,
+                       owner_id: selectedUser?.ID || selectedUser?.id || prev.owner_id,
+                       senior_sales_id: selectedUser?.senior_sales_id || prev.senior_sales_id
+                     }));
+                   }}
+                 >
+                   <SelectTrigger className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl">
+                     <SelectValue placeholder="Select Sales Person" />
+                   </SelectTrigger>
+                   <SelectContent className="bg-white border-slate-200 shadow-xl rounded-xl z-[100] max-h-60">
+                     {users.map((u, idx) => {
+                       const name = u['USER NAME'] || u.name;
+                       if (!name) return null;
+                       return <SelectItem key={u.ID || u.id || idx} value={name}>{name}</SelectItem>
+                     })}
+                   </SelectContent>
+                 </Select>
+               ) : (
+                 <Input 
+                   id="sales_person" 
+                   value={formData.sales_person_name}
+                   disabled
+                   className="bg-slate-50 border-slate-200 text-slate-500 h-12 font-sans text-sm cursor-not-allowed font-medium shadow-none px-4 rounded-xl"
+                 />
+               )}
             </div>
 
             <div className="sm:col-span-2 space-y-2.5">
