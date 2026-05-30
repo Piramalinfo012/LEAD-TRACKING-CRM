@@ -216,24 +216,29 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     return [...matchedDistricts].sort();
   }, [formData.state]);
 
-  const handleMobileChange = (val: string) => {
-    // Basic number cleaning
-    const cleanNum = val.replace(/\D/g, '');
-    setFormData(prev => ({ ...prev, mobile_no: val }));
+  useEffect(() => {
+    const cleanNum = formData.mobile_no.replace(/\D/g, '');
+    const currentPartyName = (formData.party_name || '').trim().toLowerCase();
 
-    if (cleanNum.length >= 10) {
+    if (cleanNum.length >= 10 && currentPartyName.length > 0) {
       const match = combinedRecords.find(item => {
         const itemMob = String(item['Mobile No. '] || item.mobile || '').replace(/\D/g, '');
-        return itemMob.includes(cleanNum) || cleanNum.includes(itemMob);
+        const itemPartyName = String(item['Party Name'] || item.company_name || '').trim().toLowerCase();
+        
+        const isMobileMatch = itemMob.includes(cleanNum) || cleanNum.includes(itemMob);
+        const isNameMatch = itemPartyName === currentPartyName;
+        
+        return isMobileMatch && isNameMatch;
       });
-      if (match) {
-        setDuplicateLead(match);
-      } else {
-        setDuplicateLead(null);
-      }
+      setDuplicateLead(match || null);
     } else {
       setDuplicateLead(null);
     }
+  }, [formData.mobile_no, formData.party_name, combinedRecords]);
+
+  const handleMobileChange = (val: string) => {
+    // Basic number cleaning
+    setFormData(prev => ({ ...prev, mobile_no: val }));
   };
 
   const handlePartyNameChange = (name: string) => {
