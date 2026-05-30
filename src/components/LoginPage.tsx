@@ -183,58 +183,59 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-indigo-50 via-white to-slate-50 relative min-h-[100dvh] lg:min-h-screen overflow-hidden">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-indigo-50/50 via-white to-slate-50 relative min-h-[100dvh] lg:min-h-screen overflow-hidden">
         
         {/* Subtle mobile background decoration */}
-        <div className="lg:hidden absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-indigo-300/30 blur-[80px] rounded-full z-0" />
-        <div className="lg:hidden absolute bottom-[-10%] left-[-10%] w-[70%] h-[40%] bg-cyan-300/30 blur-[80px] rounded-full z-0" />
+        <div className="lg:hidden absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-indigo-300/20 blur-[80px] rounded-full z-0" />
+        <div className="lg:hidden absolute bottom-[-10%] left-[-10%] w-[70%] h-[40%] bg-cyan-300/20 blur-[80px] rounded-full z-0" />
 
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.97, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[480px] bg-white/70 sm:bg-white p-7 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-indigo-900/10 border border-white/60 sm:border-slate-100 relative z-10 backdrop-blur-2xl sm:backdrop-blur-none mt-4 sm:mt-0"
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-[420px] bg-white/80 sm:bg-white p-8 sm:p-10 rounded-[2rem] shadow-2xl shadow-indigo-900/5 border border-white sm:border-slate-100/80 relative z-10 backdrop-blur-2xl sm:backdrop-blur-none mt-4 sm:mt-0"
         >
           {/* Mobile Logo inside the card */}
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:hidden flex items-center justify-center gap-3 mb-8"
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="lg:hidden flex items-center justify-center gap-3 mb-6"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <LayoutDashboard className="text-white" size={20} />
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <LayoutDashboard className="text-white" size={16} />
             </div>
-            <span className="text-slate-900 font-heading font-black text-2xl tracking-widest uppercase">CRM</span>
+            <span className="text-slate-900 font-heading font-black text-xl tracking-widest uppercase">CRM</span>
           </motion.div>
-          <div className="space-y-3 text-center sm:text-left">
+          
+          <div className="space-y-2 text-center sm:text-left">
             <motion.h2 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-4xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight uppercase"
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="text-3xl font-black text-slate-900 font-heading tracking-tight uppercase"
             >
               Welcome Back
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
               className="text-slate-500 font-medium text-sm leading-relaxed"
             >
               Enter your credentials to securely access your workspace and manage your pipeline.
             </motion.p>
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-8 mt-10">
+          <form onSubmit={handleLogin} className="space-y-6 mt-8">
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-5"
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="space-y-4"
             >
-              <div className="space-y-2 group">
-                <Label htmlFor="email" className="text-xs uppercase font-bold text-slate-700 tracking-widest group-focus-within:text-indigo-600 transition-colors">User ID / Email</Label>
+              <div className="space-y-1.5 group">
+                <Label htmlFor="email" className="text-[11px] uppercase font-bold text-slate-500 tracking-widest group-focus-within:text-indigo-600 transition-colors">User ID / Email</Label>
                 <div className="relative">
                   <Input 
                     id="email" 
@@ -243,14 +244,14 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-slate-50 border-slate-200 text-slate-900 h-14 font-semibold px-4 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border-2 focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-base"
+                    className="bg-slate-50/50 border-slate-200 text-slate-900 h-12 font-medium px-4 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm"
                   />
                 </div>
               </div>
               
-              <div className="space-y-2 group">
+              <div className="space-y-1.5 group">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-xs uppercase font-bold text-slate-700 tracking-widest group-focus-within:text-indigo-600 transition-colors">Password</Label>
+                  <Label htmlFor="password" className="text-[11px] uppercase font-bold text-slate-500 tracking-widest group-focus-within:text-indigo-600 transition-colors">Password</Label>
                   <a href="#" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest transition-colors">Forgot Password?</a>
                 </div>
                 <div className="relative">
@@ -261,52 +262,52 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-slate-50 border-slate-200 text-slate-900 h-14 font-semibold px-4 pr-12 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border-2 focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-base tracking-widest"
+                    className="bg-slate-50/50 border-slate-200 text-slate-900 h-12 font-medium px-4 pr-12 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm tracking-widest"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3 pt-2">
+              <div className="flex items-center space-x-3 pt-1">
                 <Checkbox 
                   id="remember" 
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 rounded h-5 w-5"
+                  className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 rounded w-4 h-4"
                 />
-                <label htmlFor="remember" className="text-xs uppercase font-bold text-slate-600 tracking-wider cursor-pointer select-none">Remember me for 30 days</label>
+                <label htmlFor="remember" className="text-[11px] uppercase font-bold text-slate-500 tracking-wider cursor-pointer select-none">Remember me for 30 days</label>
               </div>
             </motion.div>
             
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="pt-4"
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="pt-2"
             >
               <Button 
                  type="submit" 
-                 className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold h-14 rounded-xl uppercase tracking-widest text-sm shadow-xl shadow-slate-900/10 hover:shadow-indigo-600/20 transition-all duration-300 border-0 group relative overflow-hidden"
+                 className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold h-12 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-slate-900/10 hover:shadow-indigo-600/20 transition-all duration-300 border-0 group relative overflow-hidden"
                  disabled={loading}
               >
                 {/* Button Hover Glow Effect */}
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-400 to-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
 
                 {loading ? (
-                  <div className="flex items-center gap-2 relative z-10">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="flex items-center justify-center gap-2 relative z-10 w-full">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span>Authenticating...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 relative z-10">
+                  <div className="flex items-center justify-center gap-2 relative z-10 w-full">
                     <span>Sign In to Workspace</span>
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 )}
               </Button>
@@ -316,7 +317,7 @@ export default function LoginPage() {
         
         {/* Mobile Footer inside the right panel flow */}
         <div className="lg:hidden absolute bottom-6 w-full text-center z-10">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
             Developed By <span className="text-indigo-600">Deepak Sahu</span>
           </p>
         </div>

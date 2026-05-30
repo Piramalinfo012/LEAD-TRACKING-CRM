@@ -115,7 +115,8 @@ export class SheetsDB {
           headers = result.data[headerRowIndex];
           
           if (headers.length > 0) {
-            const row = headers.map((header: string) => data[header] || '');
+            // Pass null instead of '' to avoid breaking ArrayFormulas when appending rows
+            const row = headers.map((header: string) => data[header] !== undefined && data[header] !== '' ? data[header] : null);
             console.log(`[SheetsDB.addRow] Sheet: ${sheetName}`);
             console.log(`[SheetsDB.addRow] Payload Keys:`, Object.keys(data));
             console.log(`[SheetsDB.addRow] First 5 Headers:`, headers.slice(0, 5));
@@ -173,7 +174,8 @@ export class SheetsDB {
     });
     
     headers = response.data.values?.[0] || [];
-    const row = headers.map(header => data[header] || '');
+    // Pass null instead of '' to avoid breaking ArrayFormulas
+    const row = headers.map(header => data[header] !== undefined && data[header] !== '' ? data[header] : null);
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
@@ -214,7 +216,14 @@ export class SheetsDB {
           // Construct the full rowData array
           // The App Script will read `rowData.length` columns, so we need to pass an array
           // that is at least as long as the headers length.
-          const newRowData = [...existingRow].map(val => {
+          const newRowData = [...existingRow].map((val, idx) => {
+            // Explicitly clear formula columns so ArrayFormula can expand
+            const header = headers[idx];
+            if (header === 'Lead Planned Date' || header === '__col_15' || 
+                header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23') {
+              return null;
+            }
+            
             // doGet converts Date objects to ISO strings. Convert them back to DD/MM/YYYY before saving.
             if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(val)) {
               const d = new Date(val);

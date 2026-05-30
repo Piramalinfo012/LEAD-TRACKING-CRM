@@ -156,22 +156,32 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 
   return (
     <div className={`flex flex-col h-full bg-[#0f172a] text-slate-400 ${!isMobile ? 'w-64 border-r border-slate-800' : 'w-full'} ${className}`}>
-      <div className="p-6 flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center font-heading font-bold text-indigo-600 shadow-sm border border-indigo-100">C</div>
-          <span className="text-white font-heading font-semibold text-xl tracking-tight uppercase">CRM</span>
-        </Link>
-      </div>
-      
-      <div className="px-4 mb-4">
-        <Button 
-          className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 py-6 font-heading font-medium"
-          onClick={onNewLead}
-        >
-          <PlusCircle size={20} />
-          <span className="text-sm tracking-wide">NEW LEAD</span>
-        </Button>
-      </div>
+        <div className="p-6 pb-4 flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
+              <div className="w-full h-full bg-slate-900/90 backdrop-blur-sm rounded-[11px] flex items-center justify-center">
+                <span className="font-heading font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-400 text-lg">C</span>
+              </div>
+            </div>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 font-heading font-black text-2xl tracking-tighter uppercase group-hover:to-slate-300 transition-colors">CRM</span>
+          </Link>
+        </div>
+        
+        <div className="px-5 mb-6 relative">
+          <div className="absolute inset-x-5 -top-4 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent opacity-50" />
+          <Button 
+            className="w-full relative overflow-hidden group justify-start gap-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-[0_0_20px_rgba(79,70,229,0.25)] hover:shadow-[0_0_25px_rgba(79,70,229,0.4)] py-6 rounded-xl transition-all duration-300 transform hover:-translate-y-[1px]"
+            onClick={onNewLead}
+          >
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0)_0%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0)_100%)] translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <div className="flex items-center gap-3 z-10 relative">
+              <div className="p-1.5 bg-white/10 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <PlusCircle size={18} strokeWidth={2.5} />
+              </div>
+              <span className="text-sm font-heading font-bold tracking-[0.1em]">NEW LEAD</span>
+            </div>
+          </Button>
+        </div>
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-hide">
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-2 border-l-2 border-indigo-500/50 ml-1 pl-2">Main Menu</div>
