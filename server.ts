@@ -48,8 +48,8 @@ async function doLeadsFetch() {
           return [];
         }),
         SheetsDB.getRows('NEW_FMS', undefined, 5, 8000).catch(err => {
-          console.warn('NEW_FMS fetch failed during cache refresh:', err);
-          return [];
+          console.error('NEW_FMS fetch failed during cache refresh:', err.message);
+          throw err; // Throw error so we don't wipe out the cache with an empty array!
         })
       ]);
 
@@ -248,6 +248,16 @@ async function doLeadsFetch() {
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
+    
+    // CRITICAL SAFEGUARD: Do not wipe out existing data with an empty array. 
+    // If the cache was populated, and this fetch returned 0 leads (due to API glitch or bad parsing),
+    // we keep the old data to prevent the UI from breaking down ("asie bitch me data show nahi hota hai").
+    if (leads.length === 0 && LEADS_CACHE && LEADS_CACHE.length > 0) {
+      console.warn(`[SAFEGUARD] Fetch returned 0 leads but cache has ${LEADS_CACHE.length} leads. Keeping old cache to prevent UI breakdown.`);
+      LAST_FETCH_LEADS = now; // update timer so we don't spam requests
+      return LEADS_CACHE;
+    }
+
     LEADS_CACHE = leads;
     LAST_FETCH_LEADS = now;
     console.log(`Leads Cache refreshed in background: ${leads.length} leads`);

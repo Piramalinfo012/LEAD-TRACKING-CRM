@@ -223,28 +223,34 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {[
-          { label: 'Leads In Hand', value: dashboardMetrics.inHand, color: 'from-indigo-600 via-indigo-500 to-indigo-700', shadow: 'shadow-indigo-500/30' },
-          { label: 'Meeting Done', value: dashboardMetrics.meetingDone, color: 'from-blue-600 via-blue-500 to-blue-700', shadow: 'shadow-blue-500/30' },
-          { label: 'Rate Shared', value: dashboardMetrics.rateShared, color: 'from-emerald-600 via-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/30' },
-          { label: 'Quotation Shared', value: dashboardMetrics.quotationShared, color: 'from-amber-500 via-amber-400 to-amber-600', shadow: 'shadow-amber-500/30' },
-          { label: 'Negotiation', value: dashboardMetrics.negotiation, color: 'from-purple-600 via-purple-500 to-purple-700', shadow: 'shadow-purple-500/30' },
-          { label: 'Order Received', value: dashboardMetrics.orderReceived, color: 'from-pink-600 via-pink-500 to-pink-700', shadow: 'shadow-pink-500/30' }
-        ].map((stat, i) => (
-          <Card key={i} className={`relative overflow-hidden bg-gradient-to-br ${stat.color} border-0 shadow-xl ${stat.shadow} text-white rounded-2xl group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}>
-            {/* Subtle light flare in the top right corner */}
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:opacity-20 transition-opacity"></div>
-            {/* Subtle glass line at the top edge */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
-            
-            <CardContent className="p-4 flex flex-col justify-center items-center text-center relative z-10 h-full">
-              <span className="text-4xl font-heading font-black mb-1 drop-shadow-md tracking-tight">{stat.value}</span>
-              <span className="text-[10px] uppercase font-bold tracking-[0.15em] opacity-90 leading-tight">{stat.label}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {[
+            { label: 'Leads In Hand', value: dashboardMetrics.inHand, color: 'from-indigo-600 via-indigo-500 to-indigo-800', shadow: 'shadow-indigo-900/40', border: 'border-indigo-400/30' },
+            { label: 'Meeting Done', value: dashboardMetrics.meetingDone, color: 'from-blue-600 via-blue-500 to-blue-800', shadow: 'shadow-blue-900/40', border: 'border-blue-400/30' },
+            { label: 'Rate Shared', value: dashboardMetrics.rateShared, color: 'from-emerald-500 via-emerald-400 to-emerald-700', shadow: 'shadow-emerald-900/40', border: 'border-emerald-300/30' },
+            { label: 'Quotation Shared', value: dashboardMetrics.quotationShared, color: 'from-amber-500 via-amber-400 to-amber-700', shadow: 'shadow-amber-900/40', border: 'border-amber-300/30' },
+            { label: 'Negotiation', value: dashboardMetrics.negotiation, color: 'from-purple-600 via-purple-500 to-purple-800', shadow: 'shadow-purple-900/40', border: 'border-purple-400/30' },
+            { label: 'Order Received', value: dashboardMetrics.orderReceived, color: 'from-pink-600 via-pink-500 to-pink-800', shadow: 'shadow-pink-900/40', border: 'border-pink-400/30' }
+          ].map((stat, i) => (
+            <Card key={i} className={`relative overflow-hidden bg-gradient-to-b ${stat.color} border-t ${stat.border} border-l-0 border-r-0 border-b-0 shadow-2xl ${stat.shadow} text-white rounded-[1.5rem] group transition-all duration-300 hover:-translate-y-2 hover:shadow-3xl hover:brightness-110`} style={{ boxShadow: 'inset 0px 4px 6px rgba(255, 255, 255, 0.2), 0px 10px 15px -3px rgba(0, 0, 0, 0.3), 0px 4px 6px -2px rgba(0, 0, 0, 0.15)' }}>
+              
+              {/* Dynamic 3D lighting effects */}
+              <div className="absolute top-0 right-0 -mt-6 -mr-6 w-28 h-28 bg-white opacity-20 rounded-full blur-[24px] group-hover:opacity-30 group-hover:scale-125 transition-all duration-500"></div>
+              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-20 h-20 bg-black opacity-20 rounded-full blur-[16px]"></div>
+              
+              {/* Subtle glass reflection line at the top */}
+              <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
+              
+              <CardContent className="p-5 flex flex-col justify-center items-center text-center relative z-10 h-full">
+                <span className="text-4xl md:text-5xl font-heading font-black mb-1 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] tracking-tighter" style={{ textShadow: '0 4px 6px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.2)' }}>{stat.value}</span>
+                <span className="text-[10px] md:text-[11px] uppercase font-bold tracking-[0.15em] opacity-90 leading-tight drop-shadow-sm mt-1">{stat.label}</span>
+              </CardContent>
+              
+              {/* 3D bottom bevel */}
+              <div className="absolute bottom-0 inset-x-0 h-2 bg-black/20 mix-blend-overlay"></div>
+            </Card>
+          ))}
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 bg-white border-border shadow-sm">
