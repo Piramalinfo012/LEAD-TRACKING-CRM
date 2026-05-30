@@ -320,6 +320,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         'Source': formData.source,
         'Gmail ID': formData.gmail_id,
         'Follow Up date': formatDateToDMY(formData.follow_up_date),
+        'Entry By Id': user?.employee_id || user?.id || '',
         // Also keep standard fields for compatibility if needed
         company_name: formData.party_name,
         contact_person: formData.person_name,

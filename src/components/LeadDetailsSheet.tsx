@@ -63,7 +63,6 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [history, setHistory] = useState<LeadHistory[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [newNote, setNewNote] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
@@ -214,27 +213,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
     }
   };
 
-  const handleAddFollowup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNote.trim()) return;
 
-    try {
-      await request('/api/followups', {
-        method: 'POST',
-        body: JSON.stringify({
-          lead_id: lead?.id,
-          type: 'NOTE',
-          notes: newNote,
-          date: new Date().toISOString()
-        }),
-      });
-      setNewNote('');
-      fetchExtraData();
-      toast.success('⏱️ Follow-up note added successfully!');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -926,164 +905,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                       </>
                     )}
 
-                    <div className="space-y-4 pt-6 mt-6 border-t border-slate-100">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest">Audit Activity Note</h4>
-                        <Badge variant="outline" className="text-[9px] font-heading font-medium text-slate-400 uppercase">Verified entry</Badge>
-                      </div>
-                      <div className="space-y-3">
-                        <Textarea 
-                          placeholder="Document transaction details, requirements, or meeting minutes..." 
-                          className="bg-slate-50 border-border text-slate-900 font-sans text-sm h-28 focus-visible:ring-indigo-500/20 shadow-inner"
-                          value={newNote}
-                          onChange={(e) => setNewNote(e.target.value)}
-                        />
-                        <Button 
-                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-heading font-medium text-xs uppercase tracking-widest h-11"
-                          onClick={handleAddFollowup}
-                          disabled={!newNote.trim()}
-                        >
-                          Commit Entry
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-6 mt-12 pt-12 border-t border-slate-200 animate-in slide-in-from-right-4">
-                    <h3 className="text-sm font-heading font-bold text-slate-900 uppercase tracking-widest mb-6">Activity Timeline</h3>
-                    {followups.length === 0 && history.length === 0 ? (
-                      <div className="text-center py-20 text-slate-300 font-heading font-semibold uppercase tracking-widest text-[10px]">No historical activity log</div>
-                    ) : (
-                      <div className="space-y-0 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 pb-8">
-                          {[
-                            ...followups.map(f => ({ ...f, tType: 'FOLLOWUP', sortDate: f.date })),
-                            ...history.map(h => ({ ...h, tType: 'HISTORY', sortDate: h.timestamp }))
-                          ].sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime()).map((item: any, i) => (
-                            <div key={item.id} className="relative pl-10 pb-8 last:pb-0">
-                              <div className={`absolute left-[11px] top-1.5 w-3.5 h-3.5 rounded-full border-2 bg-white flex items-center justify-center z-10 ${
-                                item.tType === 'HISTORY' ? 'border-indigo-600' : 'border-emerald-600'
-                              }`}>
-                                <div className={`w-1.5 h-1.5 rounded-full ${
-                                  item.tType === 'HISTORY' ? 'bg-indigo-600' : 'bg-emerald-600'
-                                }`} />
-                              </div>
-                              
-                              <div className="bg-white border border-border p-4 rounded-xl shadow-sm space-y-3 group hover:border-indigo-200 transition-all hover:shadow-md">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-sans font-semibold text-slate-400 font-mono">
-                                        {formatDateToDMY(item.sortDate)} {new Date(item.sortDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
-                                    </div>
-                                    <Badge variant="outline" className={`text-[9px] font-heading font-medium uppercase border-opacity-20 ${
-                                      item.tType === 'HISTORY' 
-                                        ? 'text-indigo-600 bg-indigo-50 border-indigo-600' 
-                                        : 'text-emerald-600 bg-emerald-50 border-emerald-600'
-                                    }`}>
-                                      {item.tType === 'HISTORY' ? 'Status Change' : 'Note'}
-                                    </Badge>
-                                </div>
-                                
-                                {item.tType === 'HISTORY' ? (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-heading font-semibold text-slate-900">
-                                        <span className="text-slate-400 capitalize">{item.prev_stage.replace('_', ' ')}</span>
-                                        <ArrowUpRight size={14} className="text-slate-300" />
-                                        <span className="text-indigo-600 capitalize">{item.next_stage.replace('_', ' ')}</span>
-                                    </div>
-                                    {item.remarks && <p className="text-xs text-slate-500 font-sans italic">"{item.remarks}"</p>}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-slate-700 font-sans leading-relaxed font-medium">{item.notes}</p>
-                                )}
-                                
-                                <div className="flex items-center gap-2 pt-1">
-                                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-sans font-bold text-slate-500">
-                                      {item.user_id?.substring(0, 1).toUpperCase() || 'S'}
-                                    </div>
-                                    <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-wider">User {item.user_id || 'System'}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-4 mt-12 pt-12 border-t border-slate-200 animate-in fade-in">
-                    <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest">Document Repository</h4>
-                        <div className="relative">
-                          <Input 
-                              type="file" 
-                              id="file-upload" 
-                              className="hidden" 
-                              onChange={handleFileUpload}
-                              disabled={isUploading}
-                            />
-                          <Button 
-                              asChild 
-                              variant="outline" 
-                              className="h-9 text-[10px] font-heading font-medium uppercase tracking-widest bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm"
-                              disabled={isUploading}
-                            >
-                              <label htmlFor="file-upload" className="cursor-pointer">
-                                <Upload size={12} className="mr-2" /> {isUploading ? 'Transferring...' : 'Upload Asset'}
-                              </label>
-                          </Button>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-3">
-                        {lead.attachments?.length ? (
-                          lead.attachments.map((link, i) => {
-                            const isObj = typeof link === 'object' && link !== null;
-                            const fileName = isObj ? (link as any).name : `Asset_${i+1}.pdf`;
-                            const fileUrl = isObj ? (link as any).url : link;
-                            
-                            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) || /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(fileUrl);
-                            
-                            return (
-                              <div key={i} className="flex flex-col gap-3 p-4 rounded-xl bg-white border border-border hover:border-indigo-300 transition-all group shadow-sm hover:shadow-md">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors shrink-0">
-                                      <FileText size={24} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-sans font-bold text-slate-800 group-hover:text-slate-900 transition-colors truncate mb-0.5">{fileName}</p>
-                                      <p className="text-[10px] text-slate-400 font-sans font-medium truncate uppercase flex items-center gap-1">
-                                        <Clock size={10} /> Static Archive
-                                      </p>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" asChild title="View File">
-                                        <a href={fileUrl} target="_blank" rel="noreferrer">
-                                          <ExternalLink size={16} />
-                                        </a>
-                                      </Button>
-                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" asChild title="Download File">
-                                        <a href={fileUrl} download={fileName}>
-                                          <Download size={16} />
-                                        </a>
-                                      </Button>
-                                  </div>
-                                </div>
-                                {isImage && (
-                                  <div className="mt-2 rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
-                                    <a href={fileUrl} target="_blank" rel="noreferrer">
-                                      <img src={fileUrl} alt={fileName} className="w-full max-h-[300px] object-contain hover:opacity-90 transition-opacity" />
-                                    </a>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="text-center py-20 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/30">
-                              <FileText size={32} className="mx-auto text-slate-200 mb-2" />
-                              <p className="text-[10px] font-heading text-slate-400 font-bold uppercase tracking-widest">No assets available</p>
-                          </div>
-                        )}
-                    </div>
+
                   </div>
                 </div>
               </ScrollArea>

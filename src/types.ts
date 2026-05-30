@@ -74,6 +74,8 @@ export interface Lead {
   'Sales Person Name'?: string;
   'Source'?: string;
   'Follow Up date'?: string;
+  'Entry By Id'?: string;
+  entry_by_id?: string;
   Timestamp?: string;
   
   // Close details if CLOSED

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   BarChart, 
   Bar, 
@@ -18,11 +19,15 @@ import {
   FileSpreadsheet, 
   FileText, 
   Share2,
-  Table as TableIcon
+  Table as TableIcon,
+  Calendar,
+  X
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { 
   Select, 
   SelectContent, 
@@ -39,23 +44,52 @@ export default function Reports() {
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
   const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportDateFrom, setExportDateFrom] = useState('');
+  const [exportDateTo, setExportDateTo] = useState('');
 
-  const handleExport = () => {
+  const handleExportWithDates = () => {
     if (!leads || leads.length === 0) {
       import('sonner').then(({ toast }) => toast.error('No data available to export'));
       return;
     }
 
+    // Filter leads by date range if dates are provided
+    let filtered = leads;
+    const dateFrom = exportDateFrom ? new Date(exportDateFrom) : null;
+    const dateTo = exportDateTo ? new Date(exportDateTo) : null;
+
+    if (dateFrom || dateTo) {
+      filtered = leads.filter(lead => {
+        const rawDate = lead.created_at || lead['Timestamp'] || lead.lead_actual_date || '';
+        if (!rawDate) return !dateFrom; // include if no date and no from filter
+        const leadDate = new Date(rawDate);
+        if (isNaN(leadDate.getTime())) return true; // include if date unparseable
+        if (dateFrom && leadDate < dateFrom) return false;
+        if (dateTo) {
+          // Make dateTo inclusive of the full day
+          const toEnd = new Date(dateTo);
+          toEnd.setHours(23, 59, 59, 999);
+          if (leadDate > toEnd) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        import('sonner').then(({ toast }) => toast.error('No leads found in the selected date range'));
+        return;
+      }
+    }
+
     // Extract all unique headers
-    const headers = Array.from(new Set(leads.flatMap(Object.keys)));
+    const headers = Array.from(new Set(filtered.flatMap(Object.keys)));
     
     // Create CSV content
     const csvContent = [
       headers.join(','),
-      ...leads.map(lead => 
+      ...filtered.map(lead => 
         headers.map(header => {
           let cell = lead[header] === null || lead[header] === undefined ? '' : String(lead[header]);
-          // Escape quotes and wrap in quotes if cell contains comma, quote or newline
           if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
             cell = `"${cell.replace(/"/g, '""')}"`;
           }
@@ -64,18 +98,20 @@ export default function Reports() {
       )
     ].join('\n');
 
-    // Create a blob and trigger download
+    const fromStr = exportDateFrom ? exportDateFrom.replace(/-/g, '') : 'ALL';
+    const toStr = exportDateTo ? exportDateTo.replace(/-/g, '') : 'ALL';
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `NEW_FMS_Data_${formatDateToDMY(new Date().toISOString())}.csv`);
+    link.setAttribute('download', `CRM_Export_${fromStr}_to_${toStr}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    import('sonner').then(({ toast }) => toast.success('Data exported successfully'));
+    setIsExportDialogOpen(false);
+    import('sonner').then(({ toast }) => toast.success(`Exported ${filtered.length} records successfully`));
   };
 
   useEffect(() => {
@@ -194,7 +230,8 @@ export default function Reports() {
 
 
   return (
-    <div className="space-y-6 lg:space-y-8 animate-in zoom-in-95 duration-500 pb-12 lg:pb-0">
+    <>
+      <div className="space-y-6 lg:space-y-8 animate-in zoom-in-95 duration-500 pb-12 lg:pb-0">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Lead Reports</h1>
@@ -215,10 +252,10 @@ export default function Reports() {
             </Select>
           </div>
           <Button 
-            onClick={handleExport}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0"
+            onClick={() => setIsExportDialogOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0 gap-1.5"
           >
-            <Download size={16} /> Export
+            <Calendar size={14} /> Export with Date
           </Button>
         </div>
       </div>
@@ -406,5 +443,80 @@ export default function Reports() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Date Range Export Dialog - rendered via Portal directly on body */}
+    {isExportDialogOpen && createPortal(
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '16px' }}
+        onClick={() => setIsExportDialogOpen(false)}
+      >
+        <div
+          style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setIsExportDialogOpen(false)}
+            style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+          >
+            <X size={18} />
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Download size={18} color="white" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>Export Data</h3>
+              <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Select date range to filter export</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>From Date</label>
+              <input
+                type="date"
+                value={exportDateFrom}
+                onChange={e => setExportDateFrom(e.target.value)}
+                style={{ width: '100%', height: '44px', padding: '0 16px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', color: '#334155', background: '#f8fafc', boxSizing: 'border-box', outline: 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>To Date</label>
+              <input
+                type="date"
+                value={exportDateTo}
+                min={exportDateFrom || undefined}
+                onChange={e => setExportDateTo(e.target.value)}
+                style={{ width: '100%', height: '44px', padding: '0 16px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', color: '#334155', background: '#f8fafc', boxSizing: 'border-box', outline: 'none' }}
+              />
+            </div>
+
+            <p style={{ fontSize: '11px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', padding: '10px', margin: 0 }}>
+              💡 Dates blank chhod do to <strong>saara data</strong> export hoga
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => { setExportDateFrom(''); setExportDateTo(''); }}
+                style={{ flex: 1, height: '40px', border: '1px solid #e2e8f0', borderRadius: '10px', background: 'white', cursor: 'pointer', fontSize: '13px', color: '#475569', fontWeight: '600' }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleExportWithDates}
+                style={{ flex: 1, height: '40px', border: 'none', borderRadius: '10px', background: '#4f46e5', cursor: 'pointer', fontSize: '13px', color: 'white', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Download size={13} /> Export CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
+
+

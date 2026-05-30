@@ -173,6 +173,8 @@ async function doLeadsFetch() {
           ),
           owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
           is_fms: true,
+          'Entry By Id': l['Entry By Id'] || '',
+          entry_by_id: l['Entry By Id'] || '',
           
           // Lead Stage Fields
           lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
@@ -668,6 +670,8 @@ app.use(express.json());
   app.post('/api/leads/entry', authenticateToken, async (req: any, res) => {
     try {
       const leadData = req.body;
+      const entryUserId = req.user.employee_id || req.user.id || '';
+      leadData['Entry By Id'] = entryUserId;
       
       // Save to 'NEW_FMS' sheet in background
       SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
@@ -702,6 +706,8 @@ app.use(express.json());
           'Gmail ID': l['Gmail ID'],
           'MCBs. (KIT) URl': l['MCBs. (KIT) URl'],
           'Last Remarks': l['Last Remarks'],
+          'Entry By Id': entryUserId,
+          entry_by_id: entryUserId,
           created_at: l['Timestamp'] || new Date().toISOString(),
           updated_at: new Date().toISOString(),
           is_fms: true
