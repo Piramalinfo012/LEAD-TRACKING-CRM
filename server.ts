@@ -740,7 +740,7 @@ app.use(express.json());
       if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
       
       // Map Lead Stage fields
-      if (updateData.lead_planned_date !== undefined) mappedUpdate['Lead Planned Date'] = updateData.lead_planned_date;
+      // Do NOT map Lead Planned Date as it is formula-generated
       if (updateData.lead_actual_date !== undefined) mappedUpdate['Lead Actual Date'] = updateData.lead_actual_date;
       if (updateData.custom_status !== undefined) mappedUpdate['Lead Status'] = updateData.custom_status;
       if (updateData.lead_status !== undefined && !updateData.custom_status) mappedUpdate['Lead Status'] = updateData.lead_status;
@@ -756,17 +756,10 @@ app.use(express.json());
       }
       if (updateData.meeting_followup_date !== undefined) {
         mappedUpdate['Meeting Follow-up Date.'] = updateData.meeting_followup_date;
-        if (updateData.meeting_planned_date === undefined) {
-          mappedUpdate['Meeting Planned'] = updateData.meeting_followup_date;
-          mappedUpdate['Meeting Planned Date'] = updateData.meeting_followup_date;
-        }
       }
 
       // Map Meeting Stage fields
-      if (updateData.meeting_planned_date !== undefined) {
-        mappedUpdate['Meeting Planned'] = updateData.meeting_planned_date;
-        mappedUpdate['Meeting Planned Date'] = updateData.meeting_planned_date;
-      }
+      // Do NOT map Meeting Planned or Meeting Planned Date as they are formula-generated
       if (updateData.meeting_actual_date !== undefined) {
         mappedUpdate['Meeting Actual'] = updateData.meeting_actual_date;
         mappedUpdate['Meeting Actual Date'] = updateData.meeting_actual_date;
