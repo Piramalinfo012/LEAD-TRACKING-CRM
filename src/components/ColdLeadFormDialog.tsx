@@ -92,6 +92,15 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
     order_attachment_url: '',
     order_status: '',
     
+    // Sample Stage
+    sample_actual_date: '',
+    sample_status: '',
+    sample_product_name: '',
+    sample_qty: '',
+    sample_dispatch_date: '',
+    sample_remark: '',
+    sample_attachment: '',
+    
     close_reason: '',
     close_remark: '',
   });
@@ -212,7 +221,15 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         order_remark: lead.order_remark || '',
         order_attachment_url: lead.order_attachment_url || '',
         order_status: lead.order_status || '',
-
+        
+        sample_actual_date: lead.sample_actual_date || '',
+        sample_status: lead.sample_status || '',
+        sample_product_name: lead.sample_product_name || '',
+        sample_qty: lead.sample_qty || '',
+        sample_dispatch_date: lead.sample_dispatch_date || '',
+        sample_remark: lead.sample_remark || '',
+        sample_attachment: lead.sample_attachment || '',
+        
         close_reason: lead.close_reason || '',
         close_remark: lead.close_remark || '',
       });
@@ -265,6 +282,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
       // Format any selected dates to DD/MM/YYYY
       if (payload.meeting_followup_date) payload.meeting_followup_date = formatDateToDMY(payload.meeting_followup_date);
       if (payload.reschedule_date) payload.reschedule_date = formatDateToDMY(payload.reschedule_date);
+      if (payload.sample_dispatch_date) payload.sample_dispatch_date = formatDateToDMY(payload.sample_dispatch_date);
 
       // Do NOT send any planned dates as they are auto-generated in Google Sheets
       delete payload.lead_planned_date;
@@ -282,6 +300,8 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         payload.lead_actual_date = nowDmy;
       } else if (selectedStage === LeadStatus.MEETING) {
         payload.meeting_actual_date = nowDmy;
+      } else if (selectedStage === LeadStatus.SAMPLE) {
+        payload.sample_actual_date = nowDmy;
       } else if (selectedStage === LeadStatus.TECHNICAL_DISCUSSION) {
         payload.tech_actual_date = nowDmy;
       } else if (selectedStage === LeadStatus.NEGOTIATION) {
@@ -311,7 +331,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         payload.tech_status === 'Reschedule' || 
         payload.negotiation_status === 'Reschedule' || 
         payload.custom_status === 'Reschedule' || 
-        payload.order_status === 'Reschedule' ||
+        payload.order_status === 'Reschedule' || 
         payload.reschedule_date
       ) {
         successMsg = '📅 Meeting Rescheduled successfully!';
@@ -348,9 +368,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   };
 
   const [uploadingQuotation, setUploadingQuotation] = useState(false);
+  const [uploadingMeetingUrl, setUploadingMeetingUrl] = useState(false);
+  const [uploadingTechKit, setUploadingTechKit] = useState(false);
   const [uploadingNegKit, setUploadingNegKit] = useState(false);
   const [uploadingOrderCopy, setUploadingOrderCopy] = useState(false);
   const [uploadingOrderAttachment, setUploadingOrderAttachment] = useState(false);
+  const [uploadingSampleAttachment, setUploadingSampleAttachment] = useState(false);
   const [uploadingMCB, setUploadingMCB] = useState(false);
   const [uploadingKit, setUploadingKit] = useState(false);
   const [uploadingMeeting, setUploadingMeeting] = useState(false);
@@ -411,6 +434,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
 
   const isLeadFieldsVisible = selectedStage === LeadStatus.LEAD || selectedStage === LeadStatus.COLD || !selectedStage;
   const isMeetingFieldsVisible = selectedStage === LeadStatus.MEETING;
+  const isSampleFieldsVisible = selectedStage === LeadStatus.SAMPLE;
   const isTechFieldsVisible = selectedStage === LeadStatus.TECHNICAL_DISCUSSION;
   const isNegotiationFieldsVisible = selectedStage === LeadStatus.NEGOTIATION;
   const isOrderFieldsVisible = selectedStage === LeadStatus.ORDER;
@@ -420,6 +444,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
     LeadStatus.COLD,
     LeadStatus.LEAD,
     LeadStatus.MEETING,
+    LeadStatus.SAMPLE,
     LeadStatus.TECHNICAL_DISCUSSION,
     LeadStatus.NEGOTIATION,
     LeadStatus.ORDER,
@@ -475,7 +500,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <SelectContent className="bg-white">
                     {allowedStages.map(stage => (
                       <SelectItem key={stage} value={stage} className="font-medium text-sm">
-                        {stage.replace('_', ' ')}
+                        {stage === LeadStatus.CLOSED ? 'LOST LEAD' : stage.replace('_', ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -867,6 +892,61 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
               </div>
             )}
 
+            {isSampleFieldsVisible && (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b pb-2">
+                  Sample Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sample Actual Date</Label>
+                    <Input type="date" value={formData.sample_actual_date || new Date().toISOString().split('T')[0]} disabled className="h-11 text-sm bg-slate-50 border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Product Name</Label>
+                    <Input value={formData.sample_product_name} onChange={e => setFormData(p => ({ ...p, sample_product_name: e.target.value }))} placeholder="Enter Product Name" className="h-11 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Qty</Label>
+                    <Input value={formData.sample_qty} onChange={e => setFormData(p => ({ ...p, sample_qty: e.target.value }))} placeholder="Enter Qty" className="h-11 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sample Dispatch Date</Label>
+                    <Input type="date" value={formData.sample_dispatch_date} onChange={e => setFormData(p => ({ ...p, sample_dispatch_date: e.target.value }))} className="h-11 text-sm bg-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sample Status</Label>
+                    <Select value={formData.sample_status} onValueChange={(val) => setFormData(p => ({ ...p, sample_status: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Dispatched">Dispatched</SelectItem>
+                        <SelectItem value="Received">Received</SelectItem>
+                        <SelectItem value="Testing in Progress">Testing in Progress</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Remark If-Any</Label>
+                    <Textarea value={formData.sample_remark} onChange={e => setFormData(p => ({ ...p, sample_remark: e.target.value }))} placeholder="Any remarks about sample" className="bg-white min-h-[80px] text-sm" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Attachment</Label>
+                    <div className="relative">
+                      <input type="file" id="sample-attachment-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'sample_attachment', setUploadingSampleAttachment)} disabled={uploadingSampleAttachment} />
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.sample_attachment ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('sample-attachment-upload')?.click()}>
+                        {uploadingSampleAttachment ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.sample_attachment ? <><FileCheck size={16}/><span>Attachment Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Attachment</span></>}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isNegotiationFieldsVisible && (
               <div className="space-y-6 animate-in fade-in duration-500">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b pb-2">
@@ -1103,12 +1183,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
             {isClosedFieldsVisible && (
               <div className="space-y-6 animate-in fade-in duration-500">
                 <h3 className="text-sm font-bold text-rose-600 uppercase tracking-widest border-b pb-2">
-                  Lead Closure Details
+                  Lost Lead Details
                 </h3>
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Close Reason</Label>
+                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Lost Reason</Label>
                     <Select value={formData.close_reason} onValueChange={(val) => setFormData(p => ({ ...p, close_reason: val }))}>
                       <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
                         <SelectValue placeholder="Select Reason" />

@@ -29,7 +29,7 @@ import {
   SelectValue 
 } from './ui/select';
 import { toast } from 'sonner';
-import { UserPlus, User as UserIcon, Shield, Mail, BadgeCheck, Edit2, Trash2 } from 'lucide-react';
+import { UserPlus, User as UserIcon, Shield, Mail, BadgeCheck, Edit2, Trash2, Key } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { getEmbeddableUrl } from '../lib/utils';
@@ -248,14 +248,18 @@ export default function UserManagement() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-slate-600">
-                        <Mail size={12} className="text-slate-400" />
-                        <span className="text-xs font-semibold">{u.email}</span>
+                    <TableCell className="py-4">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <Mail size={12} className="text-slate-400" />
+                          <span className="text-xs font-semibold">{u.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Key size={12} className="text-slate-400" />
+                          <span className="text-[11px] font-mono">{u.password || '••••••••'}</span>
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
                   <TableCell className="py-4">
                     <Badge variant="outline" className="font-mono text-[10px] text-slate-500 border-slate-100 bg-slate-50/50 uppercase">{u.employee_id}</Badge>
                   </TableCell>

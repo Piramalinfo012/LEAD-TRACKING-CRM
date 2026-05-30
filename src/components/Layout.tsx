@@ -1,4 +1,4 @@
-﻿import React, { ReactNode, useState, useEffect, useMemo, useRef } from 'react';
+import React, { ReactNode, useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -24,7 +24,9 @@ import {
   Home,
   Clock,
   CheckCircle2,
-  PhoneCall
+  PhoneCall,
+  Package,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
@@ -143,9 +145,11 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
     { name: 'Cold', icon: Snowflake, path: '/pipeline/cold' },
     { name: 'Lead', icon: UserPlus, path: '/pipeline/lead' },
     { name: 'Meeting', icon: Calendar, path: '/pipeline/meeting' },
+    { name: 'Sample', icon: Package, path: '/pipeline/sample' },
     { name: 'Technical Discussion', icon: Cpu, path: '/pipeline/tech' },
     { name: 'Negotiation', icon: Handshake, path: '/pipeline/negotiation' },
     { name: 'Order', icon: ShoppingCart, path: '/pipeline/order' },
+    { name: 'Lost Lead', icon: XCircle, path: '/pipeline/closed' },
   ];
 
   const filteredMenu = menuItems.filter(item => !item.roles || (user && item.roles.includes(user.role)));

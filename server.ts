@@ -191,6 +191,15 @@ async function doLeadsFetch() {
           tech_status: l['__col_34'] || l['Technical Status'] || '',
           tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
 
+          // Sample Stage Fields
+          sample_actual_date: l['__col_74'] || l['Sample Actule Date'] || '',
+          sample_status: l['__col_75'] || l['Sample Status'] || '',
+          sample_product_name: l['__col_76'] || l['Prodcut Name'] || l['Product Name'] || '',
+          sample_qty: l['__col_77'] || l['Qty'] || '',
+          sample_dispatch_date: l['__col_78'] || l['Sample Dispach Date'] || '',
+          sample_remark: l['__col_79'] || l['Remark If-Any'] || '',
+          sample_attachment: l['__col_80'] || l['Attachment'] || '',
+
           // Negotiation Stage Fields
           negotiation_planned_date: l['__col_46'] || '',
           negotiation_actual_date: l['__col_47'] || '',
@@ -563,7 +572,7 @@ app.use(express.json());
       const users = await refreshUsersCache();
       const avatars = users.map((u: any) => ({
         name: u['USER NAME'] || u.name || '',
-        profile_url: u['PROFILE URL'] || u.profile_url || ''
+        profile_url: u['PROFILE URL'] || u.profile_url || '', password: u.PASSWORD || u.password || ''
       }));
       res.json(avatars);
     } catch (error: any) {
@@ -618,9 +627,16 @@ app.use(express.json());
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      await SheetsDB.addRow('Entry Data', leadData);
-      // Update cache in background
-      refreshLeadsCache(true);
+      
+      // Background save to Sheets
+      SheetsDB.addRow('Entry Data', leadData).catch(e => console.error("Background Sheet Add Error:", e))
+        .finally(() => refreshLeadsCache(true));
+      
+      // Update cache optimistically
+      if (LEADS_CACHE) {
+        LEADS_CACHE.push(leadData);
+      }
+      
       res.status(201).json(leadData);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -632,8 +648,9 @@ app.use(express.json());
     try {
       const leadData = req.body;
       
-      // Save to 'NEW_FMS' sheet
-      await SheetsDB.addRow('NEW_FMS', leadData, 5);
+      // Save to 'NEW_FMS' sheet in background
+      SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
+        .finally(() => refreshLeadsCache(true));
       
       // Update cache optimistically
       if (LEADS_CACHE) {
@@ -778,8 +795,6 @@ app.use(express.json());
       }
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
-      // Removed mapping of Technical Discussion Stage fields to NEW_FMS as requested
-
       // Map Negotiation Stage fields
       if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
       if (updateData.negotiation_status !== undefined) {
@@ -807,6 +822,15 @@ app.use(express.json());
       if (updateData.order_remark !== undefined) mappedUpdate['__col_66'] = updateData.order_remark;
       if (updateData.order_attachment_url !== undefined) mappedUpdate['__col_67'] = updateData.order_attachment_url;
       if (updateData.order_status !== undefined) mappedUpdate['__col_68'] = updateData.order_status;
+      
+      // Map Sample Stage fields
+      if (updateData.sample_actual_date !== undefined) mappedUpdate['__col_74'] = updateData.sample_actual_date;
+      if (updateData.sample_status !== undefined) mappedUpdate['__col_75'] = updateData.sample_status;
+      if (updateData.sample_product_name !== undefined) mappedUpdate['__col_76'] = updateData.sample_product_name;
+      if (updateData.sample_qty !== undefined) mappedUpdate['__col_77'] = updateData.sample_qty;
+      if (updateData.sample_dispatch_date !== undefined) mappedUpdate['__col_78'] = updateData.sample_dispatch_date;
+      if (updateData.sample_remark !== undefined) mappedUpdate['__col_79'] = updateData.sample_remark;
+      if (updateData.sample_attachment !== undefined) mappedUpdate['__col_80'] = updateData.sample_attachment;
 
       // Map Close Fields
       if (updateData.status === 'CLOSED') {
@@ -815,49 +839,61 @@ app.use(express.json());
         if (updateData.close_remark !== undefined) mappedUpdate['__col_71'] = updateData.close_remark;
       }
 
-      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
-      
-      // Log to Reschedule sheet if status is Reschedule
-      if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
-        const rescheduleData = {
-          'Timestamp': new Date().toISOString(),
-          'Id': id,
-          'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
-          'Reschedule Date': updateData.reschedule_date || '',
-          'Remark': updateData.custom_status || '',
-          'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
-        };
-        await SheetsDB.addRow('Reschedule', rescheduleData).catch(e => console.error("Error adding to Reschedule sheet:", e));
+      // Optimistically update the cache immediately so frontend gets instant response
+      if (existingLeadObj) {
+        Object.assign(existingLeadObj, updateData);
       }
 
-      // Log Tech Products to 'Prodcut Negotiation'
-      if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {
-        for (const prod of updateData.tech_products) {
-          const d = new Date();
-          const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-          const productData = {
-            'Id': id,
-            'Timetamp': updateData.tech_actual_date || formattedDate,
-            'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
-            'Product Name': prod.product_name || '',
-            'Density': prod.density || '',
-            'GCV': prod.gcv || '',
-            'Flash Point': prod.flash_point || '',
-            'Moisture': prod.moisture || '',
-            'Carbon Content': prod.carbon_content || '',
-            'Sulphur': prod.sulphur || '',
-            'Remarks in Detail.': prod.remarks || '',
-            'Sediment.': prod.sediment || '',
-            'Kit Attachment Url': updateData.tech_kit_url || '',
-            'Technical Status': updateData.tech_status || ''
-          };
-          await SheetsDB.addRow('Prodcut Negotiation', productData).catch(e => console.error("Error adding to Prodcut Negotiation sheet:", e));
+      // Run Google Sheets updates in the background (fire and forget)
+      (async () => {
+        try {
+          await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
+          
+          if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
+            const rescheduleData = {
+              'Timestamp': new Date().toISOString(),
+              'Id': id,
+              'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
+              'Reschedule Date': updateData.reschedule_date || '',
+              'Remark': updateData.custom_status || '',
+              'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
+            };
+            await SheetsDB.addRow('Reschedule', rescheduleData);
+          }
+    
+          if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {
+            for (const prod of updateData.tech_products) {
+              const d = new Date();
+              const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+              const productData = {
+                'Id': id,
+                'Timetamp': updateData.tech_actual_date || formattedDate,
+                'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
+                'Product Name': prod.product_name || '',
+                'Density': prod.density || '',
+                'GCV': prod.gcv || '',
+                'Flash Point': prod.flash_point || '',
+                'Moisture': prod.moisture || '',
+                'Carbon Content': prod.carbon_content || '',
+                'Sulphur': prod.sulphur || '',
+                'Remarks in Detail.': prod.remarks || '',
+                'Sediment.': prod.sediment || '',
+                'Kit Attachment Url': updateData.tech_kit_url || '',
+                'Technical Status': updateData.tech_status || ''
+              };
+              await SheetsDB.addRow('Prodcut Negotiation', productData);
+            }
+          }
+        } catch (err) {
+          console.error("Background Sheet Update Error:", err);
+        } finally {
+          // Re-sync cache from sheets after all background updates complete
+          refreshLeadsCache(true);
         }
-      }
-
-      // Update cache in background
-      refreshLeadsCache(true);
-      res.json({ success: true });
+      })();
+      
+      // Return instantly so UI is fast
+      res.json({ success: true, ...existingLeadObj });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -995,7 +1031,7 @@ app.use(express.json());
         email: u.GMAIL || u.Gmail || u.email || '',
         role: (u.ROLE || u.role || 'SALES').toUpperCase(),
         employee_id: u.ID || u.employee_id || '',
-        profile_url: u['PROFILE URL'] || u.profile_url || ''
+        profile_url: u['PROFILE URL'] || u.profile_url || '', password: u.PASSWORD || u.password || ''
       }));
       res.json(safeUsers);
     } catch (error: any) {

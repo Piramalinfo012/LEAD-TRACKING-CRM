@@ -222,10 +222,11 @@ export default function LeadsTable() {
           const hasActual = !!(lead.order_actual_date);
           if (!hasPlanned || hasActual) return false;
         } else {
-          // cold and closed stages
+          // cold, closed, sample stages
           const stageMap: Record<string, string> = {
             'cold': 'COLD',
-            'closed': 'CLOSED'
+            'closed': 'CLOSED',
+            'sample': 'SAMPLE'
           };
           const targetStatus = stageMap[stageKey];
           if (targetStatus && (lead.status?.toUpperCase() || 'COLD') !== targetStatus) return false;
@@ -348,7 +349,7 @@ export default function LeadsTable() {
         accessorKey: 'id',
         meta: { className: 'hidden md:table-cell' },
         header: 'Lead ID',
-        cell: ({ row }) => <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tight">{row.getValue('id')}</div>,
+        cell: ({ row }) => <div className="text-[10px] font-bold text-slate-600 font-mono tracking-tight">{row.getValue('id')}</div>,
       },
       {
         accessorKey: 'company_name',
@@ -365,7 +366,7 @@ export default function LeadsTable() {
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span className="text-slate-900 font-sans font-medium">{row.original['Person Name'] || row.getValue('contact_person')}</span>
-            <span className="text-xs text-slate-400 font-sans font-normal tracking-tight">{row.original['Gmail ID'] || row.original.email}</span>
+            <span className="text-xs text-slate-600 font-sans font-normal tracking-tight">{row.original['Gmail ID'] || row.original.email}</span>
           </div>
         ),
       },
@@ -377,17 +378,17 @@ export default function LeadsTable() {
           const mobileNumber = row.original['Mobile No. '] || row.original.mobile;
           return (
             <div className="flex items-center gap-2">
-              <span className="text-slate-600 font-sans font-medium">{mobileNumber}</span>
               {mobileNumber && (
                 <a 
                   href={`tel:${String(mobileNumber).replace(/\D/g, '')}`} 
-                  className="p-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors"
+                  className="p-1.5 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                   title="Click to call"
                 >
                   <Phone size={14} />
                 </a>
               )}
+              <span className="text-slate-600 font-sans font-medium">{mobileNumber}</span>
             </div>
           );
         },
@@ -400,7 +401,7 @@ export default function LeadsTable() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+            className="h-8 w-8 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
             onClick={(e) => { e.stopPropagation(); setSelectedLead(row.original); }}
           >
             <Eye size={16} />
@@ -530,7 +531,7 @@ export default function LeadsTable() {
       header: 'Timestamp',
       sortingFn: customDateSortFn,
       cell: ({ row }) => {
-        return <div className="text-[10px] text-slate-400 font-sans font-medium uppercase tracking-tight">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
+        return <div className="text-[10px] text-slate-600 font-sans font-medium uppercase tracking-tight">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
       },
     },
     {
@@ -604,7 +605,7 @@ const table = useReactTable({
         <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
           {stage ? `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List` : 'Lead Management'}
         </h2>
-        <p className="text-xs text-slate-400 font-sans font-medium tracking-tight">
+        <p className="text-xs text-slate-600 font-sans font-medium tracking-tight">
           Manage and track leads in the {stage || 'total'} pipeline.
         </p>
       </div>
@@ -614,7 +615,7 @@ const table = useReactTable({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:max-w-2xl">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
           <Input
             placeholder="Search leads..."
             value={globalFilter}
@@ -657,7 +658,7 @@ const table = useReactTable({
         <Button 
           variant="outline" 
           size="icon" 
-          className="bg-white border-border text-slate-400 hover:text-slate-900 shadow-sm grow sm:grow-0 h-11 sm:h-10"
+          className="bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm grow sm:grow-0 h-11 sm:h-10"
           onClick={handleDownloadCSV}
           title="Download CSV"
         >
@@ -799,7 +800,7 @@ const table = useReactTable({
             <TableRow>
               <TableCell colSpan={columns.length} className="h-40 text-center py-8">
                 <div className="flex flex-col items-center justify-center space-y-2">
-                  <span className="text-slate-400 italic text-sm font-medium">No prospects found in pipeline.</span>
+                  <span className="text-slate-600 italic text-sm font-medium">No prospects found in pipeline.</span>
                   {activeFiltersCount > 0 && (
                     <Button 
                       variant="outline" 
@@ -859,13 +860,13 @@ const table = useReactTable({
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-1">
                  {(row.original['Mobile No. '] || row.original.mobile) && (
                     <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Phone size={12} className="text-slate-400" />
+                       <Phone size={12} className="text-emerald-600" />
                        {(row.original['Mobile No. '] || row.original.mobile)}
                     </div>
                  )}
                  
                  <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <Calendar size={12} className="text-slate-400" />
+                    <Calendar size={12} className="text-slate-600" />
                     {formatDateToDMY(row.original.created_at || row.original.Timestamp) || '-'}
                  </div>
 
@@ -878,21 +879,21 @@ const table = useReactTable({
                  
                  {stage?.toLowerCase() === 'lead' && (row.original['Lead Planned Date'] || row.original.lead_planned_date) && (
                     <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Calendar size={12} className="text-slate-400" />
+                       <Calendar size={12} className="text-slate-600" />
                        Planned: {formatDateToDMY(row.original['Lead Planned Date'] || row.original.lead_planned_date)}
                     </div>
                  )}
                  
                  {stage?.toLowerCase() === 'meeting' && (row.original['Meeting Planned'] || row.original.meeting_planned_date) && (
                     <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Calendar size={12} className="text-slate-400" />
+                       <Calendar size={12} className="text-slate-600" />
                        Planned: {formatDateToDMY(row.original['Meeting Planned'] || row.original.meeting_planned_date)}
                     </div>
                  )}
                  
                  {row.original.District && (
                     <div className="flex items-center gap-1.5 text-slate-600 font-medium uppercase tracking-tight">
-                       <span className="font-bold text-[10px] text-slate-400">DIST:</span> {row.original.District}
+                       <span className="font-bold text-[10px] text-slate-600">DIST:</span> {row.original.District}
                     </div>
                  )}
 
@@ -913,7 +914,7 @@ const table = useReactTable({
           ))
         ) : (
           <div className="p-8 flex flex-col items-center justify-center space-y-3">
-             <span className="text-slate-400 italic text-sm font-medium">No prospects found in pipeline.</span>
+             <span className="text-slate-600 italic text-sm font-medium">No prospects found in pipeline.</span>
              {activeFiltersCount > 0 && (
                 <Button 
                   variant="outline" 
@@ -935,7 +936,7 @@ const table = useReactTable({
     </div>
     
     <div className="flex items-center justify-between px-2">
-      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+      <div className="text-[10px] uppercase font-bold text-slate-600 tracking-widest">
         Showing {table.getFilteredRowModel().rows.length} Active Records
       </div>
       <div className="flex items-center space-x-2">

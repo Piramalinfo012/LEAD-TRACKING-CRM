@@ -17,12 +17,14 @@ export interface User {
   reporting_manager_id?: string;
   senior_sales_id?: string;
   profile_url?: string;
+  password?: string;
 }
 
 export enum LeadStatus {
   COLD = 'COLD',
   LEAD = 'LEAD',
   MEETING = 'MEETING',
+  SAMPLE = 'SAMPLE',
   TECHNICAL_DISCUSSION = 'TECHNICAL_DISCUSSION',
   NEGOTIATION = 'NEGOTIATION',
   ORDER = 'ORDER',
@@ -107,6 +109,15 @@ export interface Lead {
   tech_status?: string;
   tech_products?: TechProduct[];
   tech_kit_url?: string;
+
+  // Sample Stage Data
+  sample_actual_date?: string;
+  sample_status?: string;
+  sample_product_name?: string;
+  sample_qty?: string;
+  sample_dispatch_date?: string;
+  sample_remark?: string;
+  sample_attachment?: string;
 
   // Negotiation Stage Data
   negotiation_planned_date?: string;
