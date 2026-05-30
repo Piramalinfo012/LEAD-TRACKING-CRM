@@ -94,16 +94,17 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-      <Toaster 
-        position="top-right" 
-        toastOptions={{
-          className: 'bg-slate-900/95 backdrop-blur-lg text-white border border-slate-800 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.2)] rounded-2xl p-4 font-sans',
-          descriptionClassName: 'text-slate-300 font-medium',
-          style: {
-            fontFamily: 'inherit',
-          }
-        }} 
-      />
+        <Toaster 
+          position="top-right" 
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              fontFamily: 'inherit',
+              borderRadius: '16px',
+            }
+          }} 
+        />
     </AuthProvider>
   );
 }
