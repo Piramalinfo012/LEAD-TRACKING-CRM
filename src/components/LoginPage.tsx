@@ -5,11 +5,10 @@ import { useApi } from '../lib/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Checkbox } from './ui/checkbox';
-import { LayoutDashboard, Eye, EyeOff } from 'lucide-react';
+import { LayoutDashboard, Eye, EyeOff, TrendingUp, Users, Target, BarChart3, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -35,96 +34,224 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f8fafc] relative overflow-hidden">
-      {/* Background Animated Blobs */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2 }}
-        className="absolute inset-0 z-0"
-      >
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.1, 1],
-            x: [0, 50, 0],
-            y: [0, -30, 0]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[120px] rounded-full"
-        />
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            x: [0, -40, 0],
-            y: [0, 60, 0]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/5 blur-[120px] rounded-full"
-        />
-      </motion.div>
+  // Animation Variants
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
 
-      <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="z-10 w-full max-w-md"
-      >
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200 shadow-2xl p-4 overflow-hidden relative">
-          <CardHeader className="space-y-4 pt-4 pb-8">
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
-              className="mx-auto w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30"
-            >
-              <LayoutDashboard className="text-white" size={24} />
-            </motion.div>
-            <div className="text-center space-y-1">
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-              >
-                <CardTitle className="text-2xl font-black tracking-tighter text-slate-950 uppercase">
-                  CRM
-                </CardTitle>
-                <CardDescription className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">
-                  Lead Management System
-                </CardDescription>
-              </motion.div>
-            </div>
-          </CardHeader>
+  const fadeUpVariant = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+  };
+
+  return (
+    <div className="min-h-screen w-full flex bg-white font-sans overflow-hidden">
+      
+      {/* Left Panel - Branding (Hidden on Mobile) */}
+      <div className="hidden lg:flex w-1/2 bg-[#09090b] relative flex-col justify-between p-12 overflow-hidden">
+        {/* Dynamic Abstract Background */}
+        <div className="absolute inset-0 z-0">
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/30 blur-[120px] rounded-full mix-blend-screen" 
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.3, 1],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-cyan-600/20 blur-[120px] rounded-full mix-blend-screen" 
+          />
+        </div>
+        
+        {/* Floating Grid Pattern */}
+        <div className="absolute inset-0 z-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+        {/* Logo Section */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="z-10 flex items-center gap-3"
+        >
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/40 border border-indigo-400/20">
+            <LayoutDashboard className="text-white" size={20} />
+          </div>
+          <span className="text-white font-heading font-black text-2xl tracking-widest uppercase">CRM</span>
+        </motion.div>
+
+        {/* Main Content & Text Animation */}
+        <div className="z-10 w-full max-w-lg relative">
           
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-6">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="mb-8"
+          >
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-5xl xl:text-6xl font-black text-white leading-[1.1] font-heading uppercase tracking-tight">
+              <motion.span variants={fadeUpVariant}>Accelerate</motion.span>
+              <motion.span variants={fadeUpVariant} className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Your Sales</motion.span>
+              <motion.span variants={fadeUpVariant}>Pipeline.</motion.span>
+            </div>
+          </motion.div>
+
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-slate-400 text-lg leading-relaxed font-medium max-w-md"
+          >
+            An enterprise-grade platform to track, analyze, and convert leads with powerful AI-driven insights.
+          </motion.p>
+
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="mt-12 grid grid-cols-2 gap-4"
+          >
+            {[
+              { icon: TrendingUp, label: "Analytics" },
+              { icon: Users, label: "Team Sync" },
+              { icon: Target, label: "Conversion" },
+              { icon: Zap, label: "Automation" }
+            ].map((item, idx) => (
               <motion.div 
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 }}
-                className="space-y-2"
+                key={idx}
+                variants={fadeUpVariant}
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 backdrop-blur-md cursor-pointer transition-colors"
               >
-                <Label htmlFor="email" className="text-xs uppercase font-bold text-slate-700 tracking-widest pl-1">User ID / Email</Label>
-                <Input 
-                  id="email" 
-                  type="text" 
-                  placeholder="Enter your ID or Email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-white border-slate-300 text-slate-950 h-12 font-bold px-4 rounded-xl focus-visible:ring-indigo-500/20 transition-all border-2 focus-visible:border-indigo-600 shadow-sm placeholder:text-slate-400"
-                />
+                <div className="p-2 bg-indigo-500/20 rounded-lg"><item.icon className="text-indigo-400" size={18} /></div>
+                <span className="text-slate-200 text-sm font-semibold uppercase tracking-wider">{item.label}</span>
               </motion.div>
+            ))}
+          </motion.div>
+          
+          {/* Floating Glassmorphic CRM Preview Card */}
+          <motion.div 
+            initial={{ opacity: 0, x: 50, y: 20 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 1, delay: 0.8, type: "spring", stiffness: 100 }}
+            className="absolute -right-16 -bottom-12 w-64 p-4 bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl hidden xl:block"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-white text-xs font-bold uppercase tracking-wider">Conversion Rate</span>
+              <span className="text-emerald-400 text-xs font-bold bg-emerald-400/10 px-2 py-1 rounded-md">+14.2%</span>
+            </div>
+            <div className="flex items-end gap-2 h-16 w-full">
+              {[40, 70, 45, 90, 65, 100, 85].map((height, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${height}%` }}
+                  transition={{ duration: 1, delay: 1 + (i * 0.1) }}
+                  className="flex-1 bg-indigo-500 rounded-sm opacity-80"
+                />
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 1 }}
+          className="z-10 flex items-center justify-between w-full border-t border-white/10 pt-6 mt-12"
+        >
+          <div className="flex items-center gap-2 text-slate-500">
+            <ShieldCheck size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Enterprise Security</span>
+          </div>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.2em]">
+            Developed By <span className="text-indigo-400">Deepak Sahu</span>
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-indigo-50 via-white to-slate-50 relative min-h-[100dvh] lg:min-h-screen overflow-hidden">
+        
+        {/* Subtle mobile background decoration */}
+        <div className="lg:hidden absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-indigo-300/30 blur-[80px] rounded-full z-0" />
+        <div className="lg:hidden absolute bottom-[-10%] left-[-10%] w-[70%] h-[40%] bg-cyan-300/30 blur-[80px] rounded-full z-0" />
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-[480px] bg-white/70 sm:bg-white p-7 sm:p-12 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-indigo-900/10 border border-white/60 sm:border-slate-100 relative z-10 backdrop-blur-2xl sm:backdrop-blur-none mt-4 sm:mt-0"
+        >
+          {/* Mobile Logo inside the card */}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:hidden flex items-center justify-center gap-3 mb-8"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <LayoutDashboard className="text-white" size={20} />
+            </div>
+            <span className="text-slate-900 font-heading font-black text-2xl tracking-widest uppercase">CRM</span>
+          </motion.div>
+          <div className="space-y-3 text-center sm:text-left">
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-4xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight uppercase"
+            >
+              Welcome Back
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-slate-500 font-medium text-sm leading-relaxed"
+            >
+              Enter your credentials to securely access your workspace and manage your pipeline.
+            </motion.p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-8 mt-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-5"
+            >
+              <div className="space-y-2 group">
+                <Label htmlFor="email" className="text-xs uppercase font-bold text-slate-700 tracking-widest group-focus-within:text-indigo-600 transition-colors">User ID / Email</Label>
+                <div className="relative">
+                  <Input 
+                    id="email" 
+                    type="text" 
+                    placeholder="Enter your ID or Email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-slate-50 border-slate-200 text-slate-900 h-14 font-semibold px-4 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border-2 focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-base"
+                  />
+                </div>
+              </div>
               
-              <motion.div 
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-2"
-              >
-                <div className="flex items-center justify-between pl-1">
-                  <Label htmlFor="password" className="text-xs uppercase font-bold text-slate-700 tracking-widest">Password</Label>
-                  <a href="#" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest">Forgot?</a>
+              <div className="space-y-2 group">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs uppercase font-bold text-slate-700 tracking-widest group-focus-within:text-indigo-600 transition-colors">Password</Label>
+                  <a href="#" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest transition-colors">Forgot Password?</a>
                 </div>
                 <div className="relative">
                   <Input 
@@ -134,68 +261,66 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-white border-slate-300 text-slate-950 h-12 font-bold px-4 pr-12 rounded-xl focus-visible:ring-indigo-500/20 transition-all border-2 focus-visible:border-indigo-600 shadow-sm placeholder:text-slate-400"
+                    className="bg-slate-50 border-slate-200 text-slate-900 h-14 font-semibold px-4 pr-12 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border-2 focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-base tracking-widest"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-600 transition-colors p-2"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-              </motion.div>
+              </div>
               
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.25 }}
-                className="flex items-center space-x-3 pl-1"
-              >
+              <div className="flex items-center space-x-3 pt-2">
                 <Checkbox 
                   id="remember" 
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  className="border-slate-400 data-[state=checked]:bg-indigo-600 rounded-md h-5 w-5"
+                  className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 rounded h-5 w-5"
                 />
-                <label htmlFor="remember" className="text-xs uppercase font-bold text-slate-700 tracking-widest cursor-pointer select-none">Remember Me</label>
-              </motion.div>
-            </CardContent>
+                <label htmlFor="remember" className="text-xs uppercase font-bold text-slate-600 tracking-wider cursor-pointer select-none">Remember me for 30 days</label>
+              </div>
+            </motion.div>
             
-            <CardFooter className="pt-6 pb-4">
-              <motion.div 
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full"
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="pt-4"
+            >
+              <Button 
+                 type="submit" 
+                 className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold h-14 rounded-xl uppercase tracking-widest text-sm shadow-xl shadow-slate-900/10 hover:shadow-indigo-600/20 transition-all duration-300 border-0 group relative overflow-hidden"
+                 disabled={loading}
               >
-                <Button 
-                   type="submit" 
-                   className="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold h-14 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl shadow-slate-950/20 transition-all border-0"
-                   disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Verifying...</span>
-                    </div>
-                  ) : 'Sign In'}
-                </Button>
-              </motion.div>
-            </CardFooter>
+                {/* Button Hover Glow Effect */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-400 to-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+
+                {loading ? (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Authenticating...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 relative z-10">
+                    <span>Sign In to Workspace</span>
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                )}
+              </Button>
+            </motion.div>
           </form>
-        </Card>
-      </motion.div>
-      
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="absolute bottom-10 w-full text-center"
-      >
-        <p className="text-xs text-slate-600 font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-2">
-          Developed By <span className="text-indigo-600 font-black">Deepak Sahu</span>
-        </p>
-      </motion.div>
+        </motion.div>
+        
+        {/* Mobile Footer inside the right panel flow */}
+        <div className="lg:hidden absolute bottom-6 w-full text-center z-10">
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
+            Developed By <span className="text-indigo-600">Deepak Sahu</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
