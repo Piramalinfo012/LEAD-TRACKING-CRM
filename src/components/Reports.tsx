@@ -224,47 +224,26 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 border-0 shadow-lg shadow-indigo-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.inHand}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Leads In Hand</span>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-lg shadow-blue-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.meetingDone}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Meeting Done</span>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 border-0 shadow-lg shadow-emerald-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.rateShared}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Rate Shared</span>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 border-0 shadow-lg shadow-amber-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.quotationShared}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Quotation Shared</span>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 shadow-lg shadow-purple-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.negotiation}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Negotiation</span>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-pink-500 to-pink-600 border-0 shadow-lg shadow-pink-500/20 text-white">
-          <CardContent className="p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-3xl font-heading font-bold mb-1">{dashboardMetrics.orderReceived}</span>
-            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Order Received</span>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Leads In Hand', value: dashboardMetrics.inHand, color: 'from-indigo-600 via-indigo-500 to-indigo-700', shadow: 'shadow-indigo-500/30' },
+          { label: 'Meeting Done', value: dashboardMetrics.meetingDone, color: 'from-blue-600 via-blue-500 to-blue-700', shadow: 'shadow-blue-500/30' },
+          { label: 'Rate Shared', value: dashboardMetrics.rateShared, color: 'from-emerald-600 via-emerald-500 to-emerald-700', shadow: 'shadow-emerald-500/30' },
+          { label: 'Quotation Shared', value: dashboardMetrics.quotationShared, color: 'from-amber-500 via-amber-400 to-amber-600', shadow: 'shadow-amber-500/30' },
+          { label: 'Negotiation', value: dashboardMetrics.negotiation, color: 'from-purple-600 via-purple-500 to-purple-700', shadow: 'shadow-purple-500/30' },
+          { label: 'Order Received', value: dashboardMetrics.orderReceived, color: 'from-pink-600 via-pink-500 to-pink-700', shadow: 'shadow-pink-500/30' }
+        ].map((stat, i) => (
+          <Card key={i} className={`relative overflow-hidden bg-gradient-to-br ${stat.color} border-0 shadow-xl ${stat.shadow} text-white rounded-2xl group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}>
+            {/* Subtle light flare in the top right corner */}
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:opacity-20 transition-opacity"></div>
+            {/* Subtle glass line at the top edge */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+            
+            <CardContent className="p-4 flex flex-col justify-center items-center text-center relative z-10 h-full">
+              <span className="text-4xl font-heading font-black mb-1 drop-shadow-md tracking-tight">{stat.value}</span>
+              <span className="text-[10px] uppercase font-bold tracking-[0.15em] opacity-90 leading-tight">{stat.label}</span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

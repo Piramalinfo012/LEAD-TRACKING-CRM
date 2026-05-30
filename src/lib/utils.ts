@@ -107,3 +107,16 @@ export function customDateSortFn(rowA: any, rowB: any, columnId: string) {
   if (msA === msB) return 0;
   return msA > msB ? 1 : -1;
 }
+
+export function customIdSortFn(rowA: any, rowB: any, columnId: string) {
+  const a = String(rowA.getValue(columnId) || '');
+  const b = String(rowB.getValue(columnId) || '');
+  
+  const numA = parseInt(a.split('-').pop() || '0', 10);
+  const numB = parseInt(b.split('-').pop() || '0', 10);
+
+  if (!isNaN(numA) && !isNaN(numB) && a.includes('-') && b.includes('-')) {
+    return numA < numB ? -1 : numA > numB ? 1 : 0;
+  }
+  return a.localeCompare(b);
+}

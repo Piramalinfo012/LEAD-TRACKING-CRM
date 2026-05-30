@@ -111,6 +111,7 @@ export interface Lead {
   tech_kit_url?: string;
 
   // Sample Stage Data
+  sample_planned_date?: string;
   sample_actual_date?: string;
   sample_status?: string;
   sample_product_name?: string;

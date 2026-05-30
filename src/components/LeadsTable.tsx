@@ -49,7 +49,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { toast } from 'sonner';
-import { formatDateToDMY, customDateSortFn } from '../lib/utils';
+import { formatDateToDMY, customDateSortFn, customIdSortFn } from '../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 import { 
   Select, 
@@ -98,8 +98,8 @@ export default function LeadsTable() {
   
   const [sorting, setSorting] = useState<SortingState>([
     { 
-      id: (stage?.toLowerCase() === 'lead' || stage?.toLowerCase() === 'meeting') ? 'company_name' : 'created_at', 
-      desc: false 
+      id: 'id', 
+      desc: true 
     }
   ]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -221,12 +221,17 @@ export default function LeadsTable() {
           const hasPlanned = !!(lead.order_planned_date);
           const hasActual = !!(lead.order_actual_date);
           if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'sample') {
+          const hasPlanned = !!(lead.sample_planned_date);
+          const hasActual = !!(lead.sample_actual_date);
+          if (!hasPlanned || hasActual) return false;
+        } else if (stageKey === 'closed') {
+          // If BS Col (closed_at) is NOT null, show it
+          if (!lead.closed_at) return false;
         } else {
-          // cold, closed, sample stages
+          // cold stage
           const stageMap: Record<string, string> = {
-            'cold': 'COLD',
-            'closed': 'CLOSED',
-            'sample': 'SAMPLE'
+            'cold': 'COLD'
           };
           const targetStatus = stageMap[stageKey];
           if (targetStatus && (lead.status?.toUpperCase() || 'COLD') !== targetStatus) return false;
@@ -265,6 +270,7 @@ export default function LeadsTable() {
       LeadStatus.COLD,
       LeadStatus.LEAD,
       LeadStatus.MEETING,
+      LeadStatus.SAMPLE,
       LeadStatus.TECHNICAL_DISCUSSION,
       LeadStatus.NEGOTIATION,
       LeadStatus.ORDER,
@@ -348,7 +354,12 @@ export default function LeadsTable() {
       {
         accessorKey: 'id',
         meta: { className: 'hidden md:table-cell' },
-        header: 'Lead ID',
+        sortingFn: customIdSortFn,
+        header: ({ column }) => (
+          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 hover:bg-slate-50 group font-heading font-semibold">
+            Lead ID <ArrowUpDown className="ml-2 h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Button>
+        ),
         cell: ({ row }) => <div className="text-[10px] font-bold text-slate-600 font-mono tracking-tight">{row.getValue('id')}</div>,
       },
       {
@@ -480,6 +491,49 @@ export default function LeadsTable() {
     ];
   }
 
+  if (stage?.toLowerCase() === 'closed') {
+    const closedCols = [...defaultCols];
+
+    closedCols.push({
+      accessorKey: 'close_reason',
+      header: 'Lost Reason',
+      cell: ({ row }) => (
+        <div className="text-[10px] uppercase font-bold text-rose-600 tracking-wider">
+          {row.original.close_reason || '-'}
+        </div>
+      )
+    });
+
+    closedCols.push({
+      accessorKey: 'close_remark',
+      header: 'Remark',
+      cell: ({ row }) => (
+        <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider line-clamp-2 max-w-[150px]">
+          {row.original.close_remark || '-'}
+        </div>
+      )
+    });
+
+    closedCols.push({
+      accessorKey: 'closed_at',
+      header: 'Closed Date',
+      sortingFn: customDateSortFn,
+      cell: ({ row }) => (
+        <div className="text-[10px] uppercase font-bold text-slate-600 tracking-wider whitespace-nowrap">
+          {formatDateToDMY(row.original.closed_at) || '-'}
+        </div>
+      )
+    });
+
+    closedCols.push({
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => renderActions(row)
+    });
+
+    return closedCols as ColumnDef<Lead>[];
+  }
+
   if (stage?.toLowerCase() === 'lead') {
     const leadCols = [...defaultCols];
 
@@ -603,10 +657,12 @@ const table = useReactTable({
     <div className="space-y-6 animate-in fade-in duration-700 pb-12">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
-          {stage ? `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List` : 'Lead Management'}
+          {stage 
+            ? (stage.toLowerCase() === 'closed' ? 'Lost Lead List' : `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List`) 
+            : 'Lead Management'}
         </h2>
         <p className="text-xs text-slate-600 font-sans font-medium tracking-tight">
-          Manage and track leads in the {stage || 'total'} pipeline.
+          Manage and track leads in the {stage?.toLowerCase() === 'closed' ? 'lost' : (stage || 'total')} pipeline.
         </p>
       </div>
 

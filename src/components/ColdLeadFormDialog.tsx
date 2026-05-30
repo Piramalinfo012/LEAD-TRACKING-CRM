@@ -295,22 +295,42 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         payload.status = selectedStage;
       }
 
-      // Automatically store actual dates based on stage movement or if they are missing
-      if (selectedStage === LeadStatus.LEAD && (lead.status !== LeadStatus.LEAD || !lead.lead_actual_date)) {
-        payload.lead_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.MEETING) {
-        payload.meeting_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.SAMPLE) {
-        payload.sample_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.TECHNICAL_DISCUSSION) {
-        payload.tech_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.NEGOTIATION) {
-        payload.negotiation_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.ORDER) {
-        payload.order_actual_date = nowDmy;
-      } else if (selectedStage === LeadStatus.CLOSED) {
-        payload.closed_at = nowDmy;
-      }
+        // Automatically store actual dates based on stage movement or if they are missing
+        const stagesSeq = [
+          LeadStatus.LEAD,
+          LeadStatus.MEETING,
+          LeadStatus.SAMPLE,
+          LeadStatus.TECHNICAL_DISCUSSION,
+          LeadStatus.NEGOTIATION,
+          LeadStatus.ORDER,
+          LeadStatus.CLOSED
+        ];
+
+        if (selectedStage) {
+          const selectedIndex = stagesSeq.indexOf(selectedStage as LeadStatus);
+          
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.LEAD)) {
+            if (!lead.lead_actual_date) payload.lead_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.MEETING)) {
+            if (!lead.meeting_actual_date) payload.meeting_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.SAMPLE)) {
+            if (!lead.sample_actual_date) payload.sample_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.TECHNICAL_DISCUSSION)) {
+            if (!lead.tech_actual_date) payload.tech_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.NEGOTIATION)) {
+            if (!lead.negotiation_actual_date) payload.negotiation_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.ORDER)) {
+            if (!lead.order_actual_date) payload.order_actual_date = nowDmy;
+          }
+          if (selectedIndex >= stagesSeq.indexOf(LeadStatus.CLOSED)) {
+            if (!lead.closed_at) payload.closed_at = nowDmy;
+          }
+        }
 
       await request(`/api/leads/${lead.id}`, {
         method: 'PATCH',

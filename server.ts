@@ -63,7 +63,7 @@ async function doLeadsFetch() {
         state: l['State'] || '',
         district: l['District'] || '',
         source: l['Source'] || '',
-        status: 'COLD',
+        status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
         sales_person_name: l['Sales Person Name'] || '',
         mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
         last_remarks: l['Last Remarks'] || '',
@@ -109,6 +109,16 @@ async function doLeadsFetch() {
         tech_status: l['__col_34'] || l['Technical Status'] || '',
         tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
 
+        // Sample Stage Fields
+        sample_planned_date: l['__col_73'] || l['Sample Planned Date'] || '',
+        sample_actual_date: l['__col_74'] || l['Sample Actule Date'] || '',
+        sample_status: l['__col_75'] || l['Sample Status'] || '',
+        sample_product_name: l['__col_76'] || l['Prodcut Name'] || l['Product Name'] || '',
+        sample_qty: l['__col_77'] || l['Qty'] || '',
+        sample_dispatch_date: l['__col_78'] || l['Sample Dispach Date'] || '',
+        sample_remark: l['__col_79'] || l['Remark If-Any'] || '',
+        sample_attachment: l['__col_80'] || l['Attachment'] || '',
+
         // Negotiation Stage Fields
         negotiation_planned_date: l['__col_46'] || '',
         negotiation_actual_date: l['__col_47'] || '',
@@ -143,7 +153,7 @@ async function doLeadsFetch() {
           state: l['State'] || '',
           district: l['District'] || '',
           source: l['Source'] || '',
-          status: 'COLD',
+          status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
           sales_person_name: l['Sales Person Name'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
           last_remarks: l['Last Remarks'] || '',
@@ -192,6 +202,7 @@ async function doLeadsFetch() {
           tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
 
           // Sample Stage Fields
+          sample_planned_date: l['__col_73'] || l['Sample Planned Date'] || '',
           sample_actual_date: l['__col_74'] || l['Sample Actule Date'] || '',
           sample_status: l['__col_75'] || l['Sample Status'] || '',
           sample_product_name: l['__col_76'] || l['Prodcut Name'] || l['Product Name'] || '',
@@ -227,9 +238,9 @@ async function doLeadsFetch() {
           order_status: l['__col_68'] || '',
 
           // Closed Stage Fields
-          closed_at: l['__col_69'] || '',
-          close_reason: l['__col_70'] || '',
-          close_remark: l['__col_71'] || '',
+          closed_at: l['lead Closed date'] || l['__col_70'] || '',
+          close_reason: l['Reason'] || l['__col_71'] || '',
+          close_remark: l['Remark'] || l['__col_72'] || '',
         };
       });
 
@@ -669,7 +680,7 @@ app.use(express.json());
           follow_up_date: l['Follow Up date'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || '',
           last_remarks: l['Last Remarks'] || '',
-          status: 'COLD',
+          status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
           sales_person_name: l['Sales Person Name'] || '',
           followup_date: l['Follow Up date'] || '',
           'District': l['District'],
@@ -827,9 +838,18 @@ app.use(express.json());
 
       // Map Close Fields
       if (updateData.status === 'CLOSED') {
-        if (updateData.closed_at !== undefined) mappedUpdate['__col_69'] = updateData.closed_at;
-        if (updateData.close_reason !== undefined) mappedUpdate['__col_70'] = updateData.close_reason;
-        if (updateData.close_remark !== undefined) mappedUpdate['__col_71'] = updateData.close_remark;
+        if (updateData.closed_at !== undefined) {
+           mappedUpdate['lead Closed date'] = updateData.closed_at;
+           mappedUpdate['__col_70'] = updateData.closed_at;
+        }
+        if (updateData.close_reason !== undefined) {
+           mappedUpdate['Reason'] = updateData.close_reason;
+           mappedUpdate['__col_71'] = updateData.close_reason;
+        }
+        if (updateData.close_remark !== undefined) {
+           mappedUpdate['Remark'] = updateData.close_remark;
+           mappedUpdate['__col_72'] = updateData.close_remark;
+        }
       }
 
       // Optimistically update the cache immediately so frontend gets instant response
@@ -1277,6 +1297,20 @@ app.use(express.json());
       }).then(viteServer => {
         app.use(viteServer.middlewares);
         console.log('--- VITE DEV SERVER READY ---');
+        
+        // SPA fallback for dev to support React Router refresh on nested paths
+        app.use('*', async (req, res, next) => {
+          if (req.originalUrl.startsWith('/api')) return next();
+          try {
+            const fs = await import('fs');
+            let template = await fs.promises.readFile(path.resolve('index.html'), 'utf-8');
+            template = await viteServer.transformIndexHtml(req.originalUrl, template);
+            res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+          } catch (e) {
+            viteServer.ssrFixStacktrace(e as Error);
+            next(e);
+          }
+        });
       }).catch(err => {
         console.error('Failed to start Vite server:', err);
       });
