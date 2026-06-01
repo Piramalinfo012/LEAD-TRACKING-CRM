@@ -933,8 +933,15 @@ const table = useReactTable({
                 <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
                    {(row.original['Mobile No. '] || row.original.mobile) && (
                       <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                         <Phone size={12} className="text-emerald-600" />
-                         {(row.original['Mobile No. '] || row.original.mobile)}
+                         <a 
+                           href={`tel:${String(row.original['Mobile No. '] || row.original.mobile).replace(/\D/g, '')}`}
+                           className="p-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition-colors flex items-center justify-center shrink-0"
+                           onClick={(e) => e.stopPropagation()}
+                           title="Click to call"
+                         >
+                           <Phone size={12} />
+                         </a>
+                         <span>{(row.original['Mobile No. '] || row.original.mobile)}</span>
                       </div>
                    )}
                    
