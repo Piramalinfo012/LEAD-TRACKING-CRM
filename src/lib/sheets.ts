@@ -67,7 +67,7 @@ export class SheetsDB {
     const sheets = await getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: rangeOverride || `${sheetName}!A:Z`,
+      range: rangeOverride || `${sheetName}!A:CE`,
     });
 
     const rows = response.data.values || [];
@@ -170,7 +170,7 @@ export class SheetsDB {
     const rowNum = headerRowIndex + 1;
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A${rowNum}:BZ${rowNum}`,
+      range: `${sheetName}!A${rowNum}:CE${rowNum}`,
     });
     
     headers = response.data.values?.[0] || [];
@@ -289,7 +289,7 @@ export class SheetsDB {
     const sheets = await getSheetsClient();
     const allRows = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:Z`,
+      range: `${sheetName}!A:CE`,
     });
 
     const rows = allRows.data.values || [];
@@ -305,6 +305,16 @@ export class SheetsDB {
         return data[header] !== undefined ? data[header] : rows[rowIndex][index];
     });
 
+    for (const key of Object.keys(data)) {
+      if (!key.startsWith('__col_')) continue;
+
+      const colIndex = parseInt(key.replace('__col_', ''), 10);
+      if (isNaN(colIndex)) continue;
+
+      while (updatedRow.length <= colIndex) updatedRow.push('');
+      updatedRow[colIndex] = data[key];
+    }
+
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A${rowIndex + 1}`,
@@ -317,13 +327,66 @@ export class SheetsDB {
 
   static async deleteRow(sheetName: string, idField: string, idValue: string, headerRowIndex: number = 0) {
     const spreadsheetId = this.spreadsheetId;
-    if (!spreadsheetId || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) return;
+    
+    // Check if we need to use App Script Fallback
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+      if (scriptUrl) {
+        try {
+          // 1. Fetch all rows to find the rowIndex
+          const getResponse = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`);
+          const getResult = await getResponse.json();
+          
+          if (!getResult.success || !getResult.data) throw new Error('Failed to fetch data for delete');
+          
+          const allRows = getResult.data;
+          if (allRows.length <= headerRowIndex) throw new Error('Sheet is empty or missing headers');
+          
+          const headers = allRows[headerRowIndex];
+          const idColIndex = headers.indexOf(idField);
+          if (idColIndex === -1) throw new Error(`Id field ${idField} not found in headers`);
+          
+          const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
+          if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+          
+          // 2. Call the 'delete' action with the 1-based rowIndex
+          const rowIndex1Based = rowIndex0Based + 1;
+          const params = new URLSearchParams();
+          params.append('action', 'delete');
+          params.append('sheetName', sheetName);
+          params.append('rowIndex', rowIndex1Based.toString());
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const postResponse = await fetch(scriptUrl, {
+            method: 'POST',
+            body: params,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          const result = await postResponse.json();
+          if (!result.success) throw new Error(result.error || 'Delete failed via App Script');
+          console.log(`[SheetsDB.deleteRow] Successfully deleted ${idValue} in ${sheetName} via App Script`);
+          return;
+        } catch (e: any) {
+          console.error('[SheetsDB.deleteRow] App Script fallback failed:', e.message);
+          throw e; // Throw so server.ts can catch it
+        }
+      } else {
+        console.warn('No GOOGLE_SERVICE_ACCOUNT_EMAIL and no GOOGLE_SCRIPT_URL. Cannot delete.');
+        return;
+      }
+    }
+
+    if (!spreadsheetId) return;
 
     const sheets = await getSheetsClient();
     
     const allRows = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:Z`,
+      range: `${sheetName}!A:CE`,
     });
 
     const rows = allRows.data.values || [];

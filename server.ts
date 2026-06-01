@@ -78,6 +78,49 @@ let activeLeadsFetchPromise: Promise<any[]> | null = null;
 let activeUsersFetchPromise: Promise<any[]> | null = null;
 let activeMasterFetchPromise: Promise<any[]> | null = null;
 
+const normalizeLeadId = (value: any) => String(value ?? '').trim().toLowerCase();
+
+const isDeletedMarker = (value: any) => {
+  const marker = String(value ?? '').trim().toLowerCase();
+  return marker === 'deleted' || marker === 'true' || marker === 'yes' || marker === '1';
+};
+
+const getDeletedIdFromRow = (row: any) => {
+  const candidates = [
+    row.Id,
+    row.ID,
+    row.id,
+    row['Lead ID'],
+    row['Lead Id'],
+    row.LeadID,
+    row.DELETE,
+    row.Delete,
+    row.delete,
+    row.__col_0,
+    row.__col_1,
+  ];
+
+  for (const candidate of candidates) {
+    const id = normalizeLeadId(candidate);
+    if (id && id !== 'id' && id !== 'delete' && id !== 'deleted') return id;
+  }
+
+  return '';
+};
+
+const isLeadDeleted = (lead: any, deletedLeadIds: Set<string>) => {
+  const id = normalizeLeadId(lead.id);
+  const deleteValue = normalizeLeadId(lead.DELETE || lead.Delete || lead.delete);
+
+  return (
+    (id && deletedLeadIds.has(id)) ||
+    isDeletedMarker(lead.is_deleted) ||
+    isDeletedMarker(lead.delete_marker) ||
+    isDeletedMarker(lead.__col_82) ||
+    (id && deleteValue === id)
+  );
+};
+
 async function doLeadsFetch() {
   const now = Date.now();
   console.log('Refreshing Leads Cache from Sheets (Fetch)...');
@@ -86,7 +129,7 @@ async function doLeadsFetch() {
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       
       // Fetch both sheets in parallel to cut loading time in half, with 8s timeout safeguard
-      const [rawMain, fmsRows] = await Promise.all([
+      const [rawMain, fmsRows, deletedRows] = await Promise.all([
         SheetsDB.getRows('Entry Data', undefined, 0, 8000).catch(err => {
           console.warn('Leads sheet fetch failed (Entry Data):', err);
           return [];
@@ -94,8 +137,18 @@ async function doLeadsFetch() {
         SheetsDB.getRows('NEW_FMS', undefined, 5, 8000).catch(err => {
           console.error('NEW_FMS fetch failed during cache refresh:', err.message);
           throw err; // Throw error so we don't wipe out the cache with an empty array!
+        }),
+        SheetsDB.getRows('Deleted', undefined, 0, 8000).catch(err => {
+          console.warn('Deleted sheet fetch failed during cache refresh:', err.message || err);
+          return [];
         })
       ]);
+
+      const deletedLeadIds = new Set<string>(
+        (deletedRows as any[])
+          .map((row: any) => getDeletedIdFromRow(row))
+          .filter((id: string) => id.length > 0)
+      );
 
       const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => ({
         id: l['Id'] || `LD-MAIN-${index}`,
@@ -125,6 +178,10 @@ async function doLeadsFetch() {
           l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
         ),
         owner_id: l['Sales Person Name'] || 'SYSTEM',
+        is_deleted: l['is_deleted'] || l['Is Deleted'] || l['__col_82'] || '',
+        delete_marker: l['DELETE'] || l['Delete'] || l['__col_82'] || '',
+        DELETE: l['DELETE'] || l['Delete'] || '',
+        __col_82: l['__col_82'] || '',
         
         // Lead Stage Fields
         lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
@@ -219,6 +276,10 @@ async function doLeadsFetch() {
           is_fms: true,
           'Entry By Id': l['Entry By Id'] || '',
           entry_by_id: l['Entry By Id'] || '',
+          is_deleted: l['is_deleted'] || l['Is Deleted'] || l['__col_82'] || '',
+          delete_marker: l['DELETE'] || l['Delete'] || l['__col_82'] || '',
+          DELETE: l['DELETE'] || l['Delete'] || '',
+          __col_82: l['__col_82'] || '',
           
           // Lead Stage Fields
           lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
@@ -290,7 +351,7 @@ async function doLeadsFetch() {
         };
       });
 
-      leads = [...mainLeads, ...fmsLeads].filter((l: any) => l.is_deleted !== 'true' && l.is_deleted !== true);
+      leads = [...mainLeads, ...fmsLeads].filter((l: any) => !isLeadDeleted(l, deletedLeadIds));
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
@@ -972,7 +1033,7 @@ app.use(express.json());
   app.delete('/api/leads/:id', authenticateToken, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { role } = req.user;
+      const { role, employee_id, name: deleterName } = req.user;
       if (role !== 'ADMIN' && role !== 'CRM') {
         return res.status(403).json({ error: 'Only ADMIN and CRM roles are allowed to delete leads.' });
       }
@@ -987,10 +1048,34 @@ app.use(express.json());
         LEADS_CACHE = LEADS_CACHE.filter((l: any) => l.id !== id);
       }
 
-      // Update in background
+      // Capture delete timestamp
+      const deletedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+      // Delete in background
       (async () => {
         try {
-          await SheetsDB.updateRow(sheetName, 'Id', id, { 'is_deleted': 'true' }, isFms ? 5 : 0);
+          // 1. First, log deletion to 'Deleted' sheet for record-keeping
+          const deletedRowData: any = {
+            'Id': id,
+            'DELETE': id,
+            'Entry By Id': employee_id || deleterName || 'SYSTEM',
+            'Deleted By': deleterName || employee_id || 'SYSTEM',
+            'Deleted At': deletedAt,
+            'Party Name': targetLead?.company_name || targetLead?.['Party Name'] || '',
+            'Person Name': targetLead?.contact_person || targetLead?.['Person Name'] || '',
+            'Mobile No. ': targetLead?.mobile || targetLead?.['Mobile No. '] || '',
+            'Owner': targetLead?.owner_id || '',
+            'Status': targetLead?.status || '',
+            'Source': targetLead?.source || targetLead?.['Source'] || '',
+            'Sheet': sheetName,
+          };
+          await SheetsDB.addRow('Deleted', deletedRowData).catch(e =>
+            console.error('Failed to log deletion to Deleted sheet:', e)
+          );
+
+          // 2. Actually DELETE the row from the data sheet
+          await SheetsDB.deleteRow(sheetName, 'Id', id, isFms ? 5 : 0);
+          console.log(`[DELETE] Successfully deleted lead ${id} from ${sheetName}`);
         } catch (err) {
           console.error("Background Sheet Delete Error:", err);
         } finally {
