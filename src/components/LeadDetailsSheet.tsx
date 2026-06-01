@@ -653,6 +653,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                               LeadStatus.COLD,
                               LeadStatus.LEAD,
                               LeadStatus.MEETING,
+                              LeadStatus.SAMPLE,
                               LeadStatus.TECHNICAL_DISCUSSION,
                               LeadStatus.NEGOTIATION,
                               LeadStatus.ORDER,
@@ -660,8 +661,9 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                            ];
                            let calculatedStageStr = (lead.status as string) || 'COLD';
                            if (currentStageView) {
-                             calculatedStageStr = currentStageView.toUpperCase().replace('-', '_');
+                             calculatedStageStr = currentStageView.toUpperCase().replace(/-/g, '_');
                              if (calculatedStageStr === 'TECH') calculatedStageStr = 'TECHNICAL_DISCUSSION';
+                             if (calculatedStageStr === 'TECHNICAL__DISCUSSION') calculatedStageStr = 'TECHNICAL_DISCUSSION';
                            } else if (!lead.status) {
                              calculatedStageStr = 'COLD';
                            }
@@ -683,7 +685,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
 
                            return (
                               <div className="space-y-6 pt-2">
-                                 {stageIndex > 1 && (
+                                 {stageIndex >= 1 && (
                                     <div className="space-y-4">
                                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                                           <FileText size={14} className="text-indigo-600" /> Lead Stage Details
@@ -717,7 +719,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                     </div>
                                  )}
 
-                                 {stageIndex > 2 && (
+                                 {stageIndex >= 2 && (
                                     <div className="space-y-4">
                                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                                           <FileText size={14} className="text-indigo-600" /> Meeting Stage Details
@@ -761,7 +763,51 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                     </div>
                                  )}
 
-                                 {stageIndex > 3 && (
+                                 {stageIndex >= 3 && (
+                                    <div className="space-y-4">
+                                       <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
+                                          <FileText size={14} className="text-indigo-600" /> Sample Stage Details
+                                       </h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Sample Planned Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_planned_date ? formatDateToDMY(lead.sample_planned_date) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Sample Actual Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_actual_date ? formatDateToDMY(lead.sample_actual_date) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Sample Status</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_status || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Product Name</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_product_name || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Quantity</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_qty || '-'}</p>
+                                          </div>
+                                          <div className="space-y-1">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Dispatch Date</span>
+                                             <p className="text-sm font-sans font-semibold text-slate-700">{lead.sample_dispatch_date ? formatDateToDMY(lead.sample_dispatch_date) : '-'}</p>
+                                          </div>
+                                          <div className="space-y-1 md:col-span-2">
+                                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Sample Remarks</span>
+                                             <p className="text-sm font-sans font-medium text-slate-600">{lead.sample_remark || '-'}</p>
+                                          </div>
+                                          {lead.sample_attachment && (
+                                            <div className="space-y-1 md:col-span-2">
+                                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Sample Attachment</span>
+                                               <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.sample_attachment)}</div>
+                                            </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+
+                                 {stageIndex >= 4 && (
                                     <div className="space-y-4">
                                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                                           <FileText size={14} className="text-indigo-600" /> Technical Discussion Details
@@ -789,7 +835,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                     </div>
                                  )}
 
-                                 {stageIndex > 4 && (
+                                 {stageIndex >= 5 && (
                                     <div className="space-y-4">
                                        <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                                           <FileText size={14} className="text-indigo-600" /> Negotiation Stage Details
@@ -850,7 +896,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                        </div>
                                     </div>
                                  )}
-                                  {stageIndex > 5 && (
+                                  {stageIndex >= 6 && (
                                      <div className="space-y-4">
                                         <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                                            <FileText size={14} className="text-indigo-600" /> Order Stage Details
