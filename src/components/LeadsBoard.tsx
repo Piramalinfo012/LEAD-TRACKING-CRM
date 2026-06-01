@@ -48,6 +48,7 @@ const STAGE_LABELS: Record<LeadStatus, string> = {
   [LeadStatus.COLD]: 'Cold',
   [LeadStatus.LEAD]: 'Lead',
   [LeadStatus.MEETING]: 'Meeting',
+  [LeadStatus.SAMPLE]: 'Sample',
   [LeadStatus.TECHNICAL_DISCUSSION]: 'Tech Talk',
   [LeadStatus.NEGOTIATION]: 'Negotiation',
   [LeadStatus.ORDER]: 'Order',

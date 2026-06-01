@@ -315,6 +315,13 @@ export function Shell({ children }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const debouncedSearch = useDebounce(searchValue, 300);
   const location = useLocation();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   const { request } = useApi();
   const { user } = useAuth();
@@ -685,7 +692,7 @@ export function Shell({ children }: LayoutProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide pb-32 lg:pb-8 bg-slate-50/50">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide pb-32 lg:pb-8 bg-slate-50/50">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

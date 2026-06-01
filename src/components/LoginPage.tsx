@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { LayoutDashboard, Eye, EyeOff, TrendingUp, Users, Target, BarChart3, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -35,7 +35,7 @@ export default function LoginPage() {
   };
 
   // Animation Variants
-  const staggerContainer = {
+  const staggerContainer: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -46,9 +46,17 @@ export default function LoginPage() {
     },
   };
 
-  const fadeUpVariant = {
+  const fadeUpVariant: Variants = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        type: 'spring' as const, 
+        stiffness: 300, 
+        damping: 24 
+      } 
+    },
   };
 
   return (
