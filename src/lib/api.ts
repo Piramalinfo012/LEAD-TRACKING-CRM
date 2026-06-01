@@ -7,8 +7,9 @@ export function useApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const request = useCallback(async (endpoint: string, options: RequestInit = {}) => {
-    setLoading(true);
+  const request = useCallback(async (endpoint: string, options: RequestInit & { silent?: boolean } = {}) => {
+    const silent = options.silent ?? false;
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('crm_token');
@@ -61,19 +62,23 @@ export function useApi() {
         console.error('Expected JSON but got:', text);
         if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
            const errMsg = 'Received HTML instead of JSON. The API route might not be found.';
-           toast.error(errMsg);
+           if (!silent) toast.error(errMsg);
            throw new Error(errMsg);
         }
         const errJson = 'Response was not JSON';
-        toast.error(errJson);
+        if (!silent) toast.error(errJson);
         throw new Error(errJson);
       }
     } catch (err: any) {
       setError(err.message);
-      toast.error('API Error: ' + err.message);
+      if (!silent) {
+        toast.error('API Error: ' + err.message);
+      } else {
+        console.warn('Silent API Error (background):', err.message);
+      }
       throw err;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 

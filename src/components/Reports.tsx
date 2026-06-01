@@ -47,6 +47,55 @@ export default function Reports() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportDateFrom, setExportDateFrom] = useState('');
   const [exportDateTo, setExportDateTo] = useState('');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filterMonth, setFilterMonth] = useState<string>(String(new Date().getMonth()));
+  const [filterYear, setFilterYear] = useState<string>(String(new Date().getFullYear()));
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const updateMonthWiseDates = (month: string, year: string) => {
+    const m = parseInt(month, 10);
+    const y = parseInt(year, 10);
+    const firstDayStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const lastDayStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    setFromDate(firstDayStr);
+    setToDate(lastDayStr);
+  };
+
+  const handlePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    const today = new Date();
+    
+    if (preset === 'ALL') {
+      setFromDate('');
+      setToDate('');
+    } else if (preset === 'THIS_MONTH') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      setFromDate(firstDay.toISOString().split('T')[0]);
+      setToDate(lastDay.toISOString().split('T')[0]);
+    } else if (preset === 'LAST_MONTH') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+      setFromDate(firstDay.toISOString().split('T')[0]);
+      setToDate(lastDay.toISOString().split('T')[0]);
+    } else if (preset === 'LAST_30_DAYS') {
+      const past30 = new Date();
+      past30.setDate(today.getDate() - 30);
+      setFromDate(past30.toISOString().split('T')[0]);
+      setToDate(today.toISOString().split('T')[0]);
+    } else if (preset === 'LAST_90_DAYS') {
+      const past90 = new Date();
+      past90.setDate(today.getDate() - 90);
+      setFromDate(past90.toISOString().split('T')[0]);
+      setToDate(today.toISOString().split('T')[0]);
+    } else if (preset === 'MONTH_WISE') {
+      updateMonthWiseDates(filterMonth, filterYear);
+    }
+  };
 
   const handleExportWithDates = () => {
     if (!leads || leads.length === 0) {
@@ -121,13 +170,16 @@ export default function Reports() {
         if (cached) {
           try { setLeads(JSON.parse(cached)); } catch(e) {}
         }
-        const data = await request('/api/leads');
+        setIsSyncing(true);
+        const data = await request('/api/leads', { silent: !!cached });
         if (data && Array.isArray(data)) {
           setLeads(data);
           localStorage.setItem('crm_leads_cache', JSON.stringify(data));
         }
       } catch (err) {
         console.error('Failed to load report data:', err);
+      } finally {
+        setIsSyncing(false);
       }
     }
     async function loadAvatars() {
@@ -144,6 +196,14 @@ export default function Reports() {
     }
     loadData();
     loadAvatars();
+
+    const handleSync = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setLeads(e.detail);
+      }
+    };
+    window.addEventListener('crm_leads_updated', handleSync);
+    return () => window.removeEventListener('crm_leads_updated', handleSync);
   }, []);
 
   const salesPersonsList = useMemo(() => {
@@ -157,14 +217,39 @@ export default function Reports() {
     return Array.from(list).sort();
   }, [leads]);
 
+  const filteredLeads = useMemo(() => {
+    return leads.filter(l => {
+      // 1. Sales Person filter
+      if (selectedSalesPerson && selectedSalesPerson !== 'ALL') {
+        const spName = (l['Sales Person Name'] || l.owner_id || 'Unassigned').toLowerCase().trim();
+        if (spName !== selectedSalesPerson.toLowerCase().trim()) return false;
+      }
+
+      // 2. Date range filter
+      const rawDate = l.created_at || l['Timestamp'] || '';
+      if (rawDate) {
+        const leadDate = new Date(rawDate);
+        if (!isNaN(leadDate.getTime())) {
+          if (fromDate) {
+            const start = new Date(fromDate);
+            start.setHours(0, 0, 0, 0);
+            if (leadDate < start) return false;
+          }
+          if (toDate) {
+            const end = new Date(toDate);
+            end.setHours(23, 59, 59, 999);
+            if (leadDate > end) return false;
+          }
+        }
+      }
+      return true;
+    });
+  }, [leads, selectedSalesPerson, fromDate, toDate]);
+
   const leadStats = useMemo(() => {
     const groups: Record<string, any> = {};
     
-    const filtered = selectedSalesPerson === 'ALL' 
-      ? leads 
-      : leads.filter(l => (l['Sales Person Name'] || l.owner_id || 'Unassigned').toLowerCase().trim() === selectedSalesPerson.toLowerCase().trim());
-
-    filtered.forEach((l: any) => {
+    filteredLeads.forEach((l: any) => {
       const name = l['Sales Person Name'] || l.owner_id || 'Unassigned';
       if (!groups[name]) {
         groups[name] = { name, leads: 0, conversions: 0, value: 0 };
@@ -177,7 +262,7 @@ export default function Reports() {
     });
 
     return Object.values(groups).sort((a: any, b: any) => b.leads - a.leads);
-  }, [leads, selectedSalesPerson]);
+  }, [filteredLeads]);
 
   const dashboardMetrics = useMemo(() => {
     let inHand = 0;
@@ -187,11 +272,7 @@ export default function Reports() {
     let negotiation = 0;
     let orderReceived = 0;
 
-    const filtered = selectedSalesPerson === 'ALL' 
-      ? leads 
-      : leads.filter(l => (l['Sales Person Name'] || l.owner_id || 'Unassigned').toLowerCase().trim() === selectedSalesPerson.toLowerCase().trim());
-
-    filtered.forEach((l: any) => {
+    filteredLeads.forEach((l: any) => {
       const status = l.status?.toUpperCase();
       
       // Active Leads in hand (not closed)
@@ -226,7 +307,7 @@ export default function Reports() {
     });
 
     return { inHand, quotationShared, meetingDone, rateShared, negotiation, orderReceived };
-  }, [leads, selectedSalesPerson]);
+  }, [filteredLeads]);
 
 
   return (
@@ -234,11 +315,19 @@ export default function Reports() {
       <div className="space-y-6 lg:space-y-8 animate-in zoom-in-95 duration-500 pb-12 lg:pb-0">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Lead Reports</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Lead Reports</h1>
+            {isSyncing && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-sans font-bold uppercase tracking-wider animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+                Syncing
+              </div>
+            )}
+          </div>
           <p className="text-slate-500 font-sans text-xs mt-1">Detailed statistics on lead conversion and performance.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-64">
+        <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:w-64">
             <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
               <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-sm">
                 <SelectValue placeholder="All Sales Persons" />
@@ -252,6 +341,18 @@ export default function Reports() {
             </Select>
           </div>
           <Button 
+            variant={showFilters ? "default" : "outline"}
+            onClick={() => setShowFilters(!showFilters)}
+            className={`h-10 px-3 shadow-sm rounded-xl flex items-center justify-center gap-1.5 transition-all shrink-0 ${
+              showFilters 
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100'
+                : 'bg-white border-border text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Filter size={16} />
+            <span className="hidden sm:inline text-xs font-semibold">Filters</span>
+          </Button>
+          <Button 
             onClick={() => setIsExportDialogOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0 gap-1.5"
           >
@@ -259,6 +360,109 @@ export default function Reports() {
           </Button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="bg-white border border-slate-200/85 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-4 duration-300 shadow-sm">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">Date Range Preset</Label>
+            <Select value={datePreset} onValueChange={handlePresetChange}>
+              <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-xs">
+                <SelectValue placeholder="Select Preset" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="ALL">All Time</SelectItem>
+                <SelectItem value="THIS_MONTH">This Month</SelectItem>
+                <SelectItem value="LAST_MONTH">Last Month</SelectItem>
+                <SelectItem value="LAST_30_DAYS">Last 30 Days</SelectItem>
+                <SelectItem value="LAST_90_DAYS">Last 90 Days</SelectItem>
+                <SelectItem value="MONTH_WISE">Month-wise Filter</SelectItem>
+                <SelectItem value="CUSTOM">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {datePreset === 'MONTH_WISE' ? (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">Select Month</Label>
+                <Select 
+                  value={filterMonth} 
+                  onValueChange={(val) => {
+                    setFilterMonth(val);
+                    updateMonthWiseDates(val, filterYear);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-xs">
+                    <SelectValue placeholder="Select Month" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="0">January</SelectItem>
+                    <SelectItem value="1">February</SelectItem>
+                    <SelectItem value="2">March</SelectItem>
+                    <SelectItem value="3">April</SelectItem>
+                    <SelectItem value="4">May</SelectItem>
+                    <SelectItem value="5">June</SelectItem>
+                    <SelectItem value="6">July</SelectItem>
+                    <SelectItem value="7">August</SelectItem>
+                    <SelectItem value="8">September</SelectItem>
+                    <SelectItem value="9">October</SelectItem>
+                    <SelectItem value="10">November</SelectItem>
+                    <SelectItem value="11">December</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">Select Year</Label>
+                <Select 
+                  value={filterYear} 
+                  onValueChange={(val) => {
+                    setFilterYear(val);
+                    updateMonthWiseDates(filterMonth, val);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-xs">
+                    <SelectValue placeholder="Select Year" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {Array.from({ length: new Date().getFullYear() - 2024 + 2 }, (_, i) => String(2024 + i)).map(y => (
+                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">From Date</Label>
+                <Input 
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setDatePreset('CUSTOM');
+                  }}
+                  className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus-visible:ring-indigo-500/20 font-sans text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">To Date</Label>
+                <Input 
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setDatePreset('CUSTOM');
+                  }}
+                  className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus-visible:ring-indigo-500/20 font-sans text-xs"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           {[

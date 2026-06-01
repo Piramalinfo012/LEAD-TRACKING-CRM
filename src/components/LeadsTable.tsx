@@ -68,6 +68,7 @@ export default function LeadsTable() {
   const { user } = useAuth();
   const { stage } = useParams<{ stage: string }>();
   const [data, setData] = useState<Lead[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleDeleteLead = async (id: string) => {
     if (confirm("Are you sure you want to delete this lead?")) {
@@ -253,17 +254,30 @@ export default function LeadsTable() {
         try { applyData(JSON.parse(cached)); } catch(e) {}
       }
 
-      const leads = await request('/api/leads');
+      setIsSyncing(true);
+      const leads = await request('/api/leads', { silent: !!cached });
       applyData(leads);
       localStorage.setItem('crm_leads_cache', JSON.stringify(leads));
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
     fetchData();
   }, [stage]);
+
+  useEffect(() => {
+    const handleSync = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setData(e.detail);
+      }
+    };
+    window.addEventListener('crm_leads_updated', handleSync);
+    return () => window.removeEventListener('crm_leads_updated', handleSync);
+  }, []);
 
   const columns = useMemo<ColumnDef<Lead>[]>(() => {
     const STAGES_ORDER = [
@@ -656,11 +670,19 @@ const table = useReactTable({
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-12">
       <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
-          {stage 
-            ? (stage.toLowerCase() === 'closed' ? 'Lost Lead List' : `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List`) 
-            : 'Lead Management'}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
+            {stage 
+              ? (stage.toLowerCase() === 'closed' ? 'Lost Lead List' : `${stage.charAt(0).toUpperCase() + stage.slice(1).replace('-', ' ')} List`) 
+              : 'Lead Management'}
+          </h2>
+          {isSyncing && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-sans font-bold uppercase tracking-wider animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+              Syncing
+            </div>
+          )}
+        </div>
         <p className="text-xs text-slate-600 font-sans font-medium tracking-tight">
           Manage and track leads in the {stage?.toLowerCase() === 'closed' ? 'lost' : (stage || 'total')} pipeline.
         </p>

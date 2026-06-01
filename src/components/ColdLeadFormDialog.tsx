@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
@@ -398,6 +398,103 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
   const [uploadingKit, setUploadingKit] = useState(false);
   const [uploadingMeeting, setUploadingMeeting] = useState(false);
 
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const startCamera = async () => {
+    setIsCameraActive(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.error("Camera access failed:", err);
+      toast.error("Unable to access camera directly. Opening device camera...");
+      setIsCameraActive(false);
+      // Fallback to native capture input
+      document.getElementById('meeting-camera')?.click();
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (video) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            
+            // Upload photo
+            setUploadingMeeting(true);
+            const uploadData = new FormData();
+            uploadData.append('file', file);
+            
+            const toastId = toast.loading('Uploading captured photo...');
+            try {
+              const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('crm_token')}`
+                },
+                body: uploadData
+              });
+              const result = await response.json();
+              if (result.webViewLink) {
+                setFormData(prev => ({ ...prev, meeting_url: result.webViewLink }));
+                toast.success('Photo captured and uploaded successfully!', { id: toastId });
+              } else {
+                throw new Error(result.error || 'Upload failed');
+              }
+            } catch (err: any) {
+              toast.error('Photo upload failed: ' + err.message, { id: toastId });
+            } finally {
+              setUploadingMeeting(false);
+            }
+          }
+        }, 'image/jpeg', 0.85);
+      }
+    }
+    stopCamera();
+    setIsCameraActive(false);
+  };
+
+  // Bind video stream to ref when camera becomes active
+  useEffect(() => {
+    if (isCameraActive && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(err => {
+        console.error("Video play failed:", err);
+      });
+    }
+  }, [isCameraActive, cameraStream]);
+
+  // Clean up camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setUploadingState: (state: boolean) => void) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -726,7 +823,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <div className="flex gap-2">
                           <input type="file" id="meeting-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
                           <input type="file" id="meeting-camera" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
-                          <Button type="button" variant="outline" className={`h-11 flex-1 flex items-center justify-center gap-2 ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-camera')?.click()} disabled={uploadingMeeting}>
+                          <Button type="button" variant="outline" className={`h-11 flex-1 flex items-center justify-center gap-2 ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={startCamera} disabled={uploadingMeeting}>
                             {uploadingMeeting ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.meeting_url ? <><FileCheck size={16}/><span>Photo Uploaded</span></> : <><Camera size={16} className="text-indigo-600" /><span>Take Photo</span></>}
                           </Button>
                           <Button type="button" variant="outline" className={`h-11 px-4 flex items-center justify-center ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-upload')?.click()} disabled={uploadingMeeting} title="Upload File from Device">
@@ -1251,6 +1348,48 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
             {isSaving ? "Saving..." : "Save Data"}
           </Button>
         </div>
+
+        {isCameraActive && (
+          <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col items-center justify-between p-6">
+            <div className="w-full max-w-md flex justify-between items-center text-white mt-4">
+              <span className="font-heading font-semibold text-lg">Take Meeting Photo</span>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => {
+                  stopCamera();
+                  setIsCameraActive(false);
+                }}
+                className="text-white hover:bg-white/10 hover:text-white rounded-lg px-3"
+              >
+                Cancel
+              </Button>
+            </div>
+            
+            <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-[4/3] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex items-center justify-center">
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted
+                className="w-full h-full object-cover"
+               />
+            </div>
+            
+            <div className="w-full flex justify-center pb-8">
+              <button 
+                type="button"
+                onClick={capturePhoto}
+                disabled={uploadingMeeting}
+                className="w-20 h-20 bg-white hover:bg-slate-100 rounded-full border-8 border-slate-300/40 flex items-center justify-center shadow-lg active:scale-95 transition-all disabled:opacity-50"
+              >
+                <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                  <Camera className="text-white" size={24} />
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

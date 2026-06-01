@@ -61,6 +61,7 @@ export default function KanbanBoard() {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
   const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const salesPersonsList = useMemo(() => {
     const list = new Set<string>();
@@ -89,16 +90,29 @@ export default function KanbanBoard() {
       if (cached) {
         try { setLeads(JSON.parse(cached)); } catch(e) {}
       }
-      const data = await request('/api/leads');
+      setIsSyncing(true);
+      const data = await request('/api/leads', { silent: !!cached });
       setLeads(data);
       localStorage.setItem('crm_leads_cache', JSON.stringify(data));
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
     fetchLeads();
+  }, []);
+
+  useEffect(() => {
+    const handleSync = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setLeads(e.detail);
+      }
+    };
+    window.addEventListener('crm_leads_updated', handleSync);
+    return () => window.removeEventListener('crm_leads_updated', handleSync);
   }, []);
 
   const moveLead = async (leadId: string, nextStage: LeadStatus) => {
@@ -138,7 +152,15 @@ export default function KanbanBoard() {
     <div className="h-full flex flex-col gap-6 animate-in slide-in-from-bottom-4 duration-700 pb-12 lg:pb-0">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Lead Stages</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Lead Stages</h1>
+            {isSyncing && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-sans font-bold uppercase tracking-wider animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+                Syncing
+              </div>
+            )}
+          </div>
           <p className="text-slate-500 font-sans text-xs mt-1">Track where each lead is in the process.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">

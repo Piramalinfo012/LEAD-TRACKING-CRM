@@ -354,22 +354,30 @@ export function Shell({ children }: LayoutProps) {
   }, [request]);
 
   useEffect(() => {
-    async function fetchLeads() {
+    async function fetchLeads(silent = false) {
       try {
         const cached = localStorage.getItem('crm_leads_cache');
-        if (cached) {
+        if (cached && !silent) {
           try { setLeads(JSON.parse(cached)); } catch(e) {}
         }
-        const data = await request('/api/leads');
+        const data = await request('/api/leads', { silent });
         if (data && Array.isArray(data)) {
           setLeads(data);
           localStorage.setItem('crm_leads_cache', JSON.stringify(data));
+          window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: data }));
         }
       } catch (err) {
         console.error('Error fetching leads for layout notifications:', err);
       }
     }
-    fetchLeads();
+    
+    fetchLeads(false);
+    
+    const interval = setInterval(() => {
+      fetchLeads(true);
+    }, 20000);
+    
+    return () => clearInterval(interval);
   }, [request]);
 
   const todayFollowups = useMemo(() => {
@@ -405,11 +413,7 @@ export function Shell({ children }: LayoutProps) {
     if (leads.length > 0 && !hasNotified) {
       if (todayFollowups.length > 0) {
         toast.info(`🔔 You have ${todayFollowups.length} follow-up(s) scheduled for today!`, {
-          duration: 8000,
-          action: {
-            label: 'View',
-            onClick: () => setIsNotificationsOpen(true)
-          }
+          duration: 8000
         });
       }
       setHasNotified(true);

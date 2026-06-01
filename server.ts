@@ -1,5 +1,5 @@
 import express from 'express';
-
+import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -23,12 +23,61 @@ const USERS_STALE_LIMIT = 30 * 60 * 1000; // 30 minutes limit to ever block
 const MASTER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes background refresh trigger
 const MASTER_STALE_LIMIT = 60 * 60 * 1000; // 60 minutes limit to ever block
 
+const CACHE_DIR = path.resolve('.cache');
+if (!fs.existsSync(CACHE_DIR)) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
+
+const LEADS_CACHE_FILE = path.join(CACHE_DIR, 'leads.json');
+const USERS_CACHE_FILE = path.join(CACHE_DIR, 'users.json');
+const MASTER_CACHE_FILE = path.join(CACHE_DIR, 'master.json');
+
 let LEADS_CACHE: any[] | null = null;
 let USERS_CACHE: any[] | null = null;
 let MASTER_CACHE: any[] | null = null;
 let LAST_FETCH_LEADS = 0;
 let LAST_FETCH_USERS = 0;
 let LAST_FETCH_MASTER = 0;
+
+// Load from disk on startup
+try {
+  if (fs.existsSync(LEADS_CACHE_FILE)) {
+    LEADS_CACHE = JSON.parse(fs.readFileSync(LEADS_CACHE_FILE, 'utf-8'));
+    LAST_FETCH_LEADS = Date.now();
+    console.log(`Loaded ${LEADS_CACHE?.length} leads from disk cache.`);
+  }
+} catch (e) {
+  console.error('Failed to load leads from disk cache:', e);
+}
+
+try {
+  if (fs.existsSync(USERS_CACHE_FILE)) {
+    const rawUsers = JSON.parse(fs.readFileSync(USERS_CACHE_FILE, 'utf-8'));
+    USERS_CACHE = rawUsers.filter((u: any) => {
+      const uId = String(u.ID || u.id || '').trim();
+      const uEmail = String(u.GMAIL || u.Gmail || u.email || '').trim();
+      const uName = String(u['USER NAME'] || u.name || '').trim();
+      return uId !== '' || uEmail !== '' || uName !== '';
+    });
+    LAST_FETCH_USERS = Date.now();
+    console.log(`Loaded ${USERS_CACHE?.length} users from disk cache.`);
+  }
+} catch (e) {
+  console.error('Failed to load users from disk cache:', e);
+}
+
+try {
+  if (fs.existsSync(MASTER_CACHE_FILE)) {
+    const rawMaster = JSON.parse(fs.readFileSync(MASTER_CACHE_FILE, 'utf-8'));
+    MASTER_CACHE = rawMaster.filter((row: any) => {
+      return Object.values(row).some(val => val !== undefined && String(val).trim() !== '');
+    });
+    LAST_FETCH_MASTER = Date.now();
+    console.log(`Loaded ${MASTER_CACHE?.length} master records from disk cache.`);
+  }
+} catch (e) {
+  console.error('Failed to load master records from disk cache:', e);
+}
 
 let activeLeadsFetchPromise: Promise<any[]> | null = null;
 let activeUsersFetchPromise: Promise<any[]> | null = null;
@@ -263,6 +312,8 @@ async function doLeadsFetch() {
     LEADS_CACHE = leads;
     LAST_FETCH_LEADS = now;
     console.log(`Leads Cache refreshed in background: ${leads.length} leads`);
+    fs.promises.writeFile(LEADS_CACHE_FILE, JSON.stringify(leads, null, 2), 'utf-8')
+      .catch(err => console.error('Failed to save leads cache to disk:', err));
     return leads;
   } catch (error: any) {
     console.error('Failed to fetch and cache Leads:', error);
@@ -299,13 +350,22 @@ async function doUsersFetch() {
   try {
     let users = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
-      users = await SheetsDB.getRows('Login');
+      const rawUsers = await SheetsDB.getRows('Login');
+      users = rawUsers.filter((u: any) => {
+        // Filter out completely blank/deleted rows
+        const uId = String(u.ID || u.id || '').trim();
+        const uEmail = String(u.GMAIL || u.Gmail || u.email || '').trim();
+        const uName = String(u['USER NAME'] || u.name || '').trim();
+        return uId !== '' || uEmail !== '' || uName !== '';
+      });
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
     USERS_CACHE = users;
     LAST_FETCH_USERS = now;
     console.log(`Users Cache refreshed: ${users.length} users`);
+    fs.promises.writeFile(USERS_CACHE_FILE, JSON.stringify(users, null, 2), 'utf-8')
+      .catch(err => console.error('Failed to save users cache to disk:', err));
     return users;
   } catch (error: any) {
     console.error('Failed to fetch and cache Users:', error);
@@ -342,13 +402,19 @@ async function doMasterFetch() {
   try {
     let data = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
-      data = await SheetsDB.getRows('Master');
+      const rawData = await SheetsDB.getRows('Master');
+      data = rawData.filter((row: any) => {
+        // Filter out completely blank rows
+        return Object.values(row).some(val => val !== undefined && String(val).trim() !== '');
+      });
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
     MASTER_CACHE = data;
     LAST_FETCH_MASTER = now;
     console.log(`Master Cache refreshed: ${data.length} records`);
+    fs.promises.writeFile(MASTER_CACHE_FILE, JSON.stringify(data, null, 2), 'utf-8')
+      .catch(err => console.error('Failed to save master cache to disk:', err));
     return data;
   } catch (error) {
     console.error('Failed to fetch and cache Master Data:', error);
@@ -937,10 +1003,27 @@ app.use(express.json());
         return res.status(403).json({ error: 'Only ADMIN and CRM roles are allowed to delete leads.' });
       }
 
-      const sheetName = 'Entry Data';
-      await SheetsDB.updateRow(sheetName, 'Id', id, { 'is_deleted': 'true' });
-      // Update cache in background
-      refreshLeadsCache(true);
+      const leads = await refreshLeadsCache();
+      const targetLead = leads.find((l: any) => l.id === id);
+      const isFms = targetLead?.is_fms ?? false;
+      const sheetName = isFms ? 'NEW_FMS' : 'Entry Data';
+
+      // Optimistically remove from cache
+      if (LEADS_CACHE) {
+        LEADS_CACHE = LEADS_CACHE.filter((l: any) => l.id !== id);
+      }
+
+      // Update in background
+      (async () => {
+        try {
+          await SheetsDB.updateRow(sheetName, 'Id', id, { 'is_deleted': 'true' }, isFms ? 5 : 0);
+        } catch (err) {
+          console.error("Background Sheet Delete Error:", err);
+        } finally {
+          refreshLeadsCache(true);
+        }
+      })();
+
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1083,9 +1166,17 @@ app.use(express.json());
         'PROFILE URL': '',
         'LAST LOGIN DATE AND TIME': ''
       };
-      await SheetsDB.addRow('Login', newUser);
-      // Refresh cache
-      refreshUsersCache(true);
+      
+      // Optimistic update
+      if (USERS_CACHE) {
+        USERS_CACHE.push(newUser);
+      }
+
+      // Background write
+      SheetsDB.addRow('Login', newUser)
+        .catch(err => console.error('Failed to add user to Sheets:', err))
+        .finally(() => refreshUsersCache(true));
+        
       const { PASSWORD: _, password: __, ...safeUser } = newUser as any;
       res.status(201).json(safeUser);
     } catch (error: any) {
@@ -1104,34 +1195,51 @@ app.use(express.json());
       }
 
       if (userIndex !== -1) {
+        // Optimistic update
+        const u = USERS_CACHE[userIndex];
+        u['USER NAME'] = userData.name;
+        u.ROLE = userData.role;
+        u.GMAIL = userData.email;
+        if (password && password.trim() !== '') {
+          u.PASSWORD = await bcrypt.hash(password, 10);
+        }
+
         const rowIndex = userIndex + 2;
         const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
         if (scriptUrl) {
-          const updates = [
-            { col: '3', val: userData.name },
-            { col: '4', val: userData.role },
-            { col: '5', val: userData.email }
-          ];
+          // Perform updates in background
+          (async () => {
+            try {
+              const updates = [
+                { col: '3', val: userData.name },
+                { col: '4', val: userData.role },
+                { col: '5', val: userData.email }
+              ];
 
-          if (password && password.trim() !== '') {
-            updates.push({ col: '2', val: await bcrypt.hash(password, 10) });
-          }
+              if (password && password.trim() !== '') {
+                updates.push({ col: '2', val: await bcrypt.hash(password, 10) });
+              }
 
-          for (const u of updates) {
-            const params = new URLSearchParams();
-            params.append('action', 'updateCell');
-            params.append('sheetName', 'Login');
-            params.append('rowIndex', rowIndex.toString());
-            params.append('columnIndex', u.col);
-            params.append('value', u.val);
-            await fetch(scriptUrl, { method: 'POST', body: params });
-          }
+              for (const u of updates) {
+                const params = new URLSearchParams();
+                params.append('action', 'updateCell');
+                params.append('sheetName', 'Login');
+                params.append('rowIndex', rowIndex.toString());
+                params.append('columnIndex', u.col);
+                params.append('value', u.val);
+                await fetch(scriptUrl, { method: 'POST', body: params });
+              }
+            } catch (err) {
+              console.error('Failed to update user in Sheets:', err);
+            } finally {
+              refreshUsersCache(true);
+            }
+          })();
         }
       } else {
         console.warn('User not found in cache for PUT');
       }
 
-      refreshUsersCache(true);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1148,22 +1256,34 @@ app.use(express.json());
 
       if (userIndex !== -1) {
         const rowIndex = userIndex + 2;
+        
+        // Optimistic update
+        USERS_CACHE.splice(userIndex, 1);
+        
         const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
         if (scriptUrl) {
-          const updates = ['1', '2', '3', '4', '5', '6', '7', '8'];
-          for (const col of updates) {
-            const params = new URLSearchParams();
-            params.append('action', 'updateCell');
-            params.append('sheetName', 'Login');
-            params.append('rowIndex', rowIndex.toString());
-            params.append('columnIndex', col);
-            params.append('value', '');
-            await fetch(scriptUrl, { method: 'POST', body: params });
-          }
+          // Perform updates in background
+          (async () => {
+            try {
+              const updates = ['1', '2', '3', '4', '5', '6', '7', '8'];
+              for (const col of updates) {
+                const params = new URLSearchParams();
+                params.append('action', 'updateCell');
+                params.append('sheetName', 'Login');
+                params.append('rowIndex', rowIndex.toString());
+                params.append('columnIndex', col);
+                params.append('value', '');
+                await fetch(scriptUrl, { method: 'POST', body: params });
+              }
+            } catch (err) {
+              console.error('Failed to delete user in Sheets:', err);
+            } finally {
+              refreshUsersCache(true);
+            }
+          })();
         }
       }
 
-      refreshUsersCache(true);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
