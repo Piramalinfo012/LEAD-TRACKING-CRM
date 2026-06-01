@@ -24,7 +24,8 @@ import {
   Plus,
   Calendar,
   ArrowRight,
-  XCircle
+  XCircle,
+  MapPin
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Lead, LeadStatus, Priority } from '../types';
@@ -903,7 +904,7 @@ const table = useReactTable({
       </div>
 
       {/* Mobile Card Layout */}
-      <div className="md:hidden flex flex-col divide-y divide-slate-100 text-slate-900">
+      <div className="md:hidden flex flex-col py-2 text-slate-900">
         {loading && data.length === 0 ? (
           [1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="p-4 space-y-3">
@@ -912,94 +913,124 @@ const table = useReactTable({
             </div>
           ))
         ) : table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => (
-            <div
-              key={row.id}
-              className="p-4 flex flex-col gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-colors"
-              onClick={() => setSelectedLead(row.original)}
-            >
-              <div>
-                <div className="font-heading font-semibold text-slate-900 text-sm">
-                  {row.original['Party Name'] || row.original.company_name}
-                </div>
-                <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  {row.original['Person Name'] || row.original.contact_person}
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-100 my-1" />
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
-                   {(row.original['Mobile No. '] || row.original.mobile) && (
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                         <a 
-                           href={`tel:${String(row.original['Mobile No. '] || row.original.mobile).replace(/\D/g, '')}`}
-                           className="p-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition-colors flex items-center justify-center shrink-0"
-                           onClick={(e) => e.stopPropagation()}
-                           title="Click to call"
-                         >
-                           <Phone size={12} />
-                         </a>
-                         <span>{(row.original['Mobile No. '] || row.original.mobile)}</span>
-                      </div>
-                   )}
-                   
-                   <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                      <Calendar size={12} className="text-slate-600" />
-                      {formatDateToDMY(row.original.created_at || row.original.Timestamp) || '-'}
-                   </div>
-
-                   {stage?.toLowerCase() === 'cold' && (row.original['Follow Up date'] || row.original.followup_date) && (
-                      <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
-                         <Calendar size={12} className="text-indigo-400" />
-                         Follow Up: {formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date)}
-                      </div>
-                   )}
-                   
-                   {stage?.toLowerCase() === 'lead' && (row.original['Lead Planned Date'] || row.original.lead_planned_date) && (
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                         <Calendar size={12} className="text-slate-600" />
-                         Planned: {formatDateToDMY(row.original['Lead Planned Date'] || row.original.lead_planned_date)}
-                      </div>
-                   )}
-                   
-                   {stage?.toLowerCase() === 'meeting' && (row.original['Meeting Planned'] || row.original.meeting_planned_date) && (
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                         <Calendar size={12} className="text-slate-600" />
-                         Planned: {formatDateToDMY(row.original['Meeting Planned'] || row.original.meeting_planned_date)}
-                      </div>
-                   )}
-                   
-                   {row.original.District && (
-                      <div className="flex items-center gap-1.5 text-slate-600 font-medium uppercase tracking-tight">
-                         <span className="font-bold text-[10px] text-slate-600">DIST:</span> {row.original.District}
-                      </div>
-                   )}
-
-                   {!stage && row.getValue('status') && (
-                      <div className="flex items-center gap-1.5">
-                         <Badge className={`
-                           capitalize font-heading font-medium text-[9px] border-none px-2 py-0.5 rounded-full
-                           ${row.getValue('status') === 'ORDER' ? 'bg-emerald-50 text-emerald-600' : 
-                             row.getValue('status') === 'CLOSED' ? 'bg-rose-50 text-rose-600' :
-                             'bg-indigo-50 text-indigo-600'}
-                         `}>
-                            {(row.getValue('status') as string).toLowerCase().replace('_', ' ')}
-                         </Badge>
-                      </div>
-                   )}
+          table.getRowModel().rows.map((row) => {
+            const company = row.original['Party Name'] || row.original.company_name || 'Unknown';
+            const contact = row.original['Person Name'] || row.original.contact_person || '';
+            const mobileNo = row.original['Mobile No. '] || row.original.mobile || '';
+            const district = row.original.District || '';
+            const status = row.getValue('status') as string;
+            const priority = row.original.priority || '';
+            const createdAt = formatDateToDMY(row.original.created_at || row.original.Timestamp);
+            const followUpDate = row.original['Follow Up date'] || row.original.followup_date;
+            const plannedDate =
+              stage?.toLowerCase() === 'lead' ? (row.original['Lead Planned Date'] || row.original.lead_planned_date) :
+              stage?.toLowerCase() === 'meeting' ? (row.original['Meeting Planned'] || row.original.meeting_planned_date) :
+              null;
+            const priorityColors: Record<string, string> = {
+              CRITICAL: 'bg-rose-100 text-rose-700',
+              HIGH: 'bg-orange-100 text-orange-700',
+              MEDIUM: 'bg-amber-100 text-amber-700',
+              LOW: 'bg-slate-100 text-slate-500',
+            };
+            const stageColors: Record<string, string> = {
+              COLD: 'bg-slate-100 text-slate-600',
+              LEAD: 'bg-blue-100 text-blue-700',
+              MEETING: 'bg-violet-100 text-violet-700',
+              SAMPLE: 'bg-teal-100 text-teal-700',
+              TECHNICAL_DISCUSSION: 'bg-cyan-100 text-cyan-700',
+              NEGOTIATION: 'bg-amber-100 text-amber-700',
+              ORDER: 'bg-emerald-100 text-emerald-700',
+              CLOSED: 'bg-rose-100 text-rose-700',
+            };
+            return (
+              <div
+                key={row.id}
+                className="mx-3 my-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
+                onClick={() => setSelectedLead(row.original)}
+              >
+                {/* Card Header */}
+                <div className="px-4 pt-3.5 pb-3 flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-heading font-bold text-slate-900 text-[15px] leading-tight truncate">{company}</div>
+                    {contact && <div className="text-xs text-slate-500 font-medium mt-0.5 truncate">{contact}</div>}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {!stage && status && (
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${stageColors[status] || 'bg-indigo-100 text-indigo-700'}`}>
+                        {status.replace('_', ' ')}
+                      </span>
+                    )}
+                    {priority && (
+                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${priorityColors[priority] || 'bg-slate-100 text-slate-500'}`}>
+                        {priority}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 ml-auto sm:ml-0 shrink-0" onClick={(e) => e.stopPropagation()}>
+                {/* Divider */}
+                <div className="h-px bg-slate-100 mx-4" />
+
+                {/* Info Row */}
+                <div className="px-4 py-3 flex flex-wrap gap-x-4 gap-y-2">
+                  {mobileNo && (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`tel:${String(mobileNo).replace(/\D/g, '')}`}
+                        className="flex items-center justify-center w-7 h-7 bg-emerald-500 text-white rounded-full shadow-sm shadow-emerald-200 active:scale-95 transition-transform"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Call"
+                      >
+                        <Phone size={13} />
+                      </a>
+                      <span className="text-sm font-semibold text-slate-700 tracking-tight">{mobileNo}</span>
+                    </div>
+                  )}
+                  {createdAt && (
+                    <div className="flex items-center gap-1 text-xs text-slate-400">
+                      <Calendar size={11} className="shrink-0" />
+                      <span>{createdAt}</span>
+                    </div>
+                  )}
+                  {district && (
+                    <div className="flex items-center gap-1 text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                      <MapPin size={10} className="shrink-0 text-slate-400" />
+                      {district}
+                    </div>
+                  )}
+                </div>
+
+                {/* Follow-up / Stage date row */}
+                {(followUpDate || plannedDate) && (
+                  <div className="px-4 pb-3 flex flex-wrap gap-2">
+                    {stage?.toLowerCase() === 'cold' && followUpDate && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-full">
+                        <Calendar size={11} />
+                        Follow Up: {formatDateToDMY(followUpDate)}
+                      </div>
+                    )}
+                    {plannedDate && (
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                        <Calendar size={11} />
+                        Planned: {formatDateToDMY(plannedDate)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Row */}
+                <div
+                  className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-end gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {(() => {
                     const actionCell = row.getVisibleCells().find(c => c.column.id === 'actions');
                     return actionCell ? flexRender(actionCell.column.columnDef.cell, actionCell.getContext()) : null;
                   })()}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="p-8 flex flex-col items-center justify-center space-y-3">
              <span className="text-slate-600 italic text-sm font-medium">No prospects found in pipeline.</span>
