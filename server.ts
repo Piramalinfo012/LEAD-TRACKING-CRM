@@ -14,14 +14,9 @@ import { SheetsDB } from './src/lib/sheets.js';
 import { getDriveClient } from './src/lib/google-auth.js';
 
 // --- Server Side Caching ---
-const LEADS_CACHE_TTL = 30 * 1000; // 30 seconds for background refresh triggers
-const LEADS_STALE_LIMIT = 45 * 1000; // 45 seconds limit to ever block
-
-const USERS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes background refresh trigger
-const USERS_STALE_LIMIT = 30 * 60 * 1000; // 30 minutes limit to ever block
-
-const MASTER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes background refresh trigger
-const MASTER_STALE_LIMIT = 60 * 60 * 1000; // 60 minutes limit to ever block
+const LEADS_CACHE_TTL = 10 * 1000; // 10 seconds cache TTL
+const USERS_CACHE_TTL = 15 * 1000; // 15 seconds cache TTL
+const MASTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 const CACHE_DIR = path.resolve('.cache');
 if (!fs.existsSync(CACHE_DIR)) {
@@ -325,23 +320,16 @@ async function doLeadsFetch() {
 async function refreshLeadsCache(force = false) {
   const now = Date.now();
   
-  if (LEADS_CACHE) {
-    if (force || now - LAST_FETCH_LEADS >= LEADS_STALE_LIMIT) {
-      if (!activeLeadsFetchPromise) {
-        activeLeadsFetchPromise = doLeadsFetch().finally(() => {
-          activeLeadsFetchPromise = null;
-        });
-      }
+  if (force || !LEADS_CACHE || now - LAST_FETCH_LEADS >= LEADS_CACHE_TTL) {
+    if (!activeLeadsFetchPromise) {
+      activeLeadsFetchPromise = doLeadsFetch().finally(() => {
+        activeLeadsFetchPromise = null;
+      });
     }
-    return LEADS_CACHE;
+    return activeLeadsFetchPromise;
   }
 
-  if (activeLeadsFetchPromise) return activeLeadsFetchPromise;
-  
-  activeLeadsFetchPromise = doLeadsFetch().finally(() => {
-    activeLeadsFetchPromise = null;
-  });
-  return activeLeadsFetchPromise;
+  return LEADS_CACHE;
 }
 
 async function doUsersFetch() {
@@ -377,23 +365,16 @@ async function doUsersFetch() {
 async function refreshUsersCache(force = false) {
   const now = Date.now();
   
-  if (USERS_CACHE) {
-    if (force || now - LAST_FETCH_USERS >= USERS_STALE_LIMIT) {
-      if (!activeUsersFetchPromise) {
-        activeUsersFetchPromise = doUsersFetch().finally(() => {
-          activeUsersFetchPromise = null;
-        });
-      }
+  if (force || !USERS_CACHE || now - LAST_FETCH_USERS >= USERS_CACHE_TTL) {
+    if (!activeUsersFetchPromise) {
+      activeUsersFetchPromise = doUsersFetch().finally(() => {
+        activeUsersFetchPromise = null;
+      });
     }
-    return USERS_CACHE;
+    return activeUsersFetchPromise;
   }
 
-  if (activeUsersFetchPromise) return activeUsersFetchPromise;
-
-  activeUsersFetchPromise = doUsersFetch().finally(() => {
-    activeUsersFetchPromise = null;
-  });
-  return activeUsersFetchPromise;
+  return USERS_CACHE;
 }
 
 async function doMasterFetch() {
@@ -425,23 +406,16 @@ async function doMasterFetch() {
 async function refreshMasterCache(force = false) {
   const now = Date.now();
   
-  if (MASTER_CACHE) {
-    if (force || now - LAST_FETCH_MASTER >= MASTER_STALE_LIMIT) {
-      if (!activeMasterFetchPromise) {
-        activeMasterFetchPromise = doMasterFetch().finally(() => {
-          activeMasterFetchPromise = null;
-        });
-      }
+  if (force || !MASTER_CACHE || now - LAST_FETCH_MASTER >= MASTER_CACHE_TTL) {
+    if (!activeMasterFetchPromise) {
+      activeMasterFetchPromise = doMasterFetch().finally(() => {
+        activeMasterFetchPromise = null;
+      });
     }
-    return MASTER_CACHE;
+    return activeMasterFetchPromise;
   }
 
-  if (activeMasterFetchPromise) return activeMasterFetchPromise;
-
-  activeMasterFetchPromise = doMasterFetch().finally(() => {
-    activeMasterFetchPromise = null;
-  });
-  return activeMasterFetchPromise;
+  return MASTER_CACHE;
 }
 
 function getSubordinateIdentifiers(currentUser: any, users: any[]) {
