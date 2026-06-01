@@ -1021,7 +1021,18 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Product Name</Label>
-                    <Input value={formData.sample_product_name} onChange={e => setFormData(p => ({ ...p, sample_product_name: e.target.value }))} placeholder="Enter Product Name" className="h-11 text-sm bg-white" />
+                    <Select value={formData.sample_product_name} onValueChange={(val) => setFormData(p => ({ ...p, sample_product_name: val }))}>
+                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectValue placeholder="Select Product" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white max-h-60">
+                        {masterProducts.length > 0 ? masterProducts.map(p => (
+                          <SelectItem key={p} value={p} className="text-sm font-medium">{p}</SelectItem>
+                        )) : (
+                          <div className="p-2 text-xs text-slate-500 text-center">Loading products...</div>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Qty</Label>
