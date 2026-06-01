@@ -360,24 +360,24 @@ export function Shell({ children }: LayoutProps) {
     return () => clearInterval(interval);
   }, [request]);
 
-  useEffect(() => {
-    async function fetchLeads(silent = false) {
-      try {
-        const cached = localStorage.getItem('crm_leads_cache');
-        if (cached && !silent) {
-          try { setLeads(JSON.parse(cached)); } catch(e) {}
-        }
-        const data = await request('/api/leads', { silent });
-        if (data && Array.isArray(data)) {
-          setLeads(data);
-          localStorage.setItem('crm_leads_cache', JSON.stringify(data));
-          window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: data }));
-        }
-      } catch (err) {
-        console.error('Error fetching leads for layout notifications:', err);
+  const fetchLeads = async (silent = false) => {
+    try {
+      const cached = localStorage.getItem('crm_leads_cache');
+      if (cached && !silent) {
+        try { setLeads(JSON.parse(cached)); } catch(e) {}
       }
+      const data = await request('/api/leads', { silent });
+      if (data && Array.isArray(data)) {
+        setLeads(data);
+        localStorage.setItem('crm_leads_cache', JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: data }));
+      }
+    } catch (err) {
+      console.error('Error fetching leads for layout notifications:', err);
     }
-    
+  };
+
+  useEffect(() => {
     fetchLeads(false);
     
     const interval = setInterval(() => {
@@ -385,6 +385,14 @@ export function Shell({ children }: LayoutProps) {
     }, 20000);
     
     return () => clearInterval(interval);
+  }, [request]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchLeads(true);
+    };
+    window.addEventListener('crm_leads_refresh', handleRefresh);
+    return () => window.removeEventListener('crm_leads_refresh', handleRefresh);
   }, [request]);
 
   const todayFollowups = useMemo(() => {

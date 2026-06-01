@@ -302,6 +302,32 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     }
   };
 
+  const resetForm = () => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('crm_user') || '{}');
+      setFormData({
+        party_name: '',
+        person_name: '',
+        mobile_no: '',
+        gmail_id: '',
+        address: '',
+        district: '',
+        state: '',
+        mcb_kit_url: '',
+        last_remarks: '',
+        source: '',
+        follow_up_date: '',
+        id: '',
+        owner_id: currentUser.id || '',
+        sales_person_name: currentUser.name || '',
+        senior_sales_id: currentUser.senior_sales_id || ''
+      });
+      setDuplicateLead(null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -333,9 +359,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
       });
       toast.success(`Lead added with ID: ${formData.id}`);
       
-      // Reset form ID to force regeneration next time
-      setFormData(prev => ({...prev, id: ''}));
-      
+      resetForm();
+      window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
       onSuccess();
       onClose();
     } catch (err: any) {
