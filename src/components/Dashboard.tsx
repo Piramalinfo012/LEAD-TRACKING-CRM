@@ -21,7 +21,8 @@ import {
   Clock, 
   ArrowUpRight, 
   ArrowDownRight,
-  Filter
+  Filter,
+  XCircle
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { getEmbeddableUrl } from '../lib/utils';
@@ -64,6 +65,37 @@ const itemVariants = {
       damping: 20
     }
   }
+};
+
+const formatDateTime = (dateInput: any) => {
+  if (!dateInput) return '';
+  const valStr = String(dateInput).trim();
+  if (!valStr) return '';
+
+  // Check if it's already a formatted date like DD/MM/YYYY with optional time
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(valStr)) {
+    return valStr;
+  }
+
+  const date = new Date(valStr);
+  if (!isNaN(date.getTime())) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    // Check if it has time part (i.e. contains 'T' or a colon, or is ISO string)
+    if (valStr.includes('T') || valStr.includes(':')) {
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day}/${month}/${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    }
+    
+    return `${day}/${month}/${year}`;
+  }
+  return valStr;
 };
 
 export default function Dashboard() {
@@ -231,13 +263,26 @@ export default function Dashboard() {
 
     const trends = last5MonthsIndices.map(idx => {
       const monthLeads = filteredLeads.filter(l => {
-        if (!l.created_at) return false;
-        const d = new Date(l.created_at);
-        return d.getMonth() === idx;
+        const rawDate = l.created_at || l['Timestamp'] || '';
+        if (!rawDate) return false;
+        
+        let leadDate: Date;
+        if (typeof rawDate === 'string' && rawDate.includes('/')) {
+          const parts = rawDate.split('/');
+          if (parts.length === 3) {
+            leadDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+          } else {
+            leadDate = new Date(rawDate);
+          }
+        } else {
+          leadDate = new Date(rawDate);
+        }
+
+        return !isNaN(leadDate.getTime()) && leadDate.getMonth() === idx;
       });
       return {
         month: months[idx],
-        sales: monthLeads.length,
+        leadsCount: monthLeads.length,
       };
     });
 
@@ -295,7 +340,7 @@ export default function Dashboard() {
   const statCards = [
     { title: 'Total Leads', value: stats?.totalLeads, icon: Users, bgGradient: 'from-blue-50/80 to-indigo-50/30', iconGradient: 'from-blue-500 to-indigo-600', shadowColor: 'shadow-blue-500/20', change: 'Active' },
     { title: 'Active Leads', value: stats?.activeLeads, icon: Clock, bgGradient: 'from-purple-50/80 to-fuchsia-50/30', iconGradient: 'from-purple-500 to-fuchsia-600', shadowColor: 'shadow-purple-500/20', change: 'In Progress' },
-    { title: 'Closed Leads', value: stats?.closedLeads, icon: ArrowDownRight, bgGradient: 'from-rose-50/80 to-orange-50/30', iconGradient: 'from-rose-500 to-orange-500', shadowColor: 'shadow-rose-500/20', change: 'Lost/Inactive' },
+    { title: 'Lost Leads', value: stats?.closedLeads, icon: XCircle, bgGradient: 'from-rose-50/80 to-orange-50/30', iconGradient: 'from-rose-500 to-orange-500', shadowColor: 'shadow-rose-500/20', change: 'Lost/Inactive' },
     { title: 'Converted Orders', value: stats?.convertedOrders, icon: CheckCircle2, bgGradient: 'from-emerald-50/80 to-teal-50/30', iconGradient: 'from-emerald-500 to-teal-600', shadowColor: 'shadow-emerald-500/20', change: 'Won' },
   ];
 
@@ -521,8 +566,8 @@ export default function Dashboard() {
         <motion.div variants={itemVariants} className="flex flex-col gap-6">
           <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300 flex-1">
             <CardHeader className="pb-2">
-              <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Revenue Trend</CardTitle>
-              <CardDescription className="text-slate-500 font-sans">Monthly conversion growth</CardDescription>
+              <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Month-wise Analysis</CardTitle>
+              <CardDescription className="text-slate-500 font-sans">New lead entries per month</CardDescription>
             </CardHeader>
             <CardContent className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -531,12 +576,14 @@ export default function Dashboard() {
                   <XAxis dataKey="month" stroke="#1e293b" fontSize={11} fontWeight={700} tickLine={false} axisLine={false} />
                   <YAxis stroke="#1e293b" fontSize={11} fontWeight={700} tickLine={false} axisLine={false} width={40} />
                   <Tooltip 
+                    formatter={(value: any) => [value, 'New Leads']}
                     contentStyle={{ backgroundColor: '#fff', border: '2px solid #1e293b', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
                     itemStyle={{ fontSize: '12px' }}
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="sales" 
+                    dataKey="leadsCount" 
+                    name="New Leads"
                     stroke="#6366f1" 
                     strokeWidth={2} 
                     dot={{ r: 3, fill: '#6366f1' }}
@@ -632,7 +679,7 @@ export default function Dashboard() {
                         <p className="text-xs text-slate-300 leading-snug font-sans">
                           <span className="font-semibold text-white">{item.rep}</span> moved <span className="text-slate-100">{item.company}</span> to <span className="text-indigo-400 font-semibold capitalize">{item.action}</span>
                         </p>
-                        <p className="text-[10px] text-slate-500 font-sans font-medium italic">{item.time}</p>
+                        <p className="text-[10px] text-slate-500 font-sans font-medium italic">{formatDateTime(item.time)}</p>
                       </div>
                     </div>
                   ))
