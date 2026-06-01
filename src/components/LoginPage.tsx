@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
-import { LayoutDashboard, Eye, EyeOff, TrendingUp, Users, Target, BarChart3, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { LayoutDashboard, Eye, EyeOff, TrendingUp, Users, Target, BarChart3, ArrowRight, ShieldCheck, Zap, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, Variants } from 'framer-motion';
 
@@ -190,8 +190,8 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-indigo-50/50 via-white to-slate-50 relative min-h-[100dvh] lg:min-h-screen overflow-hidden">
+      {/* Right Panel - Login Form (Desktop Only) */}
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-indigo-50/50 via-white to-slate-50 relative min-h-screen overflow-hidden">
         
         {/* Subtle mobile background decoration */}
         <div className="lg:hidden absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-indigo-300/20 blur-[80px] rounded-full z-0" />
@@ -329,6 +329,121 @@ export default function LoginPage() {
             Developed By <span className="text-indigo-600">Deepak Sahu</span>
           </p>
         </div>
+      </div>
+
+      {/* Mobile-Only Layout (Fully non-scrollable, fits 100% of viewport height, no forgot password / registration) */}
+      <div className="lg:hidden w-full h-[100dvh] flex flex-col bg-[#09090b] relative overflow-hidden">
+        
+        {/* Top Header branding section */}
+        <div className="h-[28vh] min-h-[170px] bg-[#09090b] flex flex-col items-center justify-center px-6 relative text-white shrink-0 overflow-hidden">
+          {/* Background glowing blobs */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-[-25%] left-[-10%] w-[60%] h-[90%] bg-indigo-600/20 blur-[60px] rounded-full mix-blend-screen" />
+            <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[90%] bg-cyan-600/15 blur-[60px] rounded-full mix-blend-screen" />
+          </div>
+
+          {/* Floating grid pattern */}
+          <div className="absolute inset-0 z-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center gap-2 text-center z-10"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/40 border border-indigo-400/20">
+              <LayoutDashboard className="text-white" size={24} />
+            </div>
+            <h1 className="text-3xl font-heading font-black tracking-widest text-white uppercase select-none mt-1">CRM</h1>
+          </motion.div>
+        </div>
+
+        {/* Bottom Card for Login Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="flex-1 bg-white rounded-t-[2.5rem] px-6 py-6 shadow-2xl flex flex-col justify-between overflow-hidden"
+        >
+          <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-4">
+            <div className="text-center mb-1">
+              <h2 className="text-2xl font-heading font-black text-slate-800 uppercase tracking-tight">Welcome Back</h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Enter your details below</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Stacked Email Address Input */}
+              <div className="border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl px-4 py-2 bg-white flex flex-col transition-all h-14 justify-center shadow-sm">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Email Address</span>
+                <input 
+                  type="text"
+                  placeholder="nicholas@ergemla.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="border-0 bg-transparent p-0 h-6 text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-0 mt-0"
+                />
+              </div>
+
+              {/* Stacked Password Input */}
+              <div className="border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl px-4 py-2 bg-white flex flex-col transition-all h-14 shadow-sm relative justify-center">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Password</span>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="border-0 bg-transparent p-0 h-6 text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-0 mt-0 tracking-widest"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center space-x-3 pt-0.5">
+                <Checkbox 
+                  id="mobile-remember" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 rounded w-4 h-4"
+                />
+                <label htmlFor="mobile-remember" className="text-[10px] uppercase font-bold text-slate-400 tracking-wider cursor-pointer select-none">Remember me for 30 days</label>
+              </div>
+
+              {/* Sign In button with indigo-to-cyan gradient matching branding */}
+              <div className="pt-2">
+                <Button 
+                   type="submit" 
+                   className="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold h-11 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-600/20 transition-all duration-300 border-0 group relative overflow-hidden"
+                   disabled={loading}
+                >
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-400 to-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2 w-full">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Signing In...</span>
+                    </div>
+                  ) : (
+                    <span>Sign In</span>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Footer at the bottom */}
+          <div className="mt-4 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] shrink-0">
+            Developed By <span className="text-indigo-500 font-bold">Deepak Sahu</span>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
