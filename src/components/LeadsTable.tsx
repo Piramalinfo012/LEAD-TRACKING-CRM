@@ -893,78 +893,81 @@ const table = useReactTable({
           table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="p-4 flex flex-col gap-3 cursor-pointer hover:bg-slate-50/50 transition-colors"
+              className="p-4 flex flex-col gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-colors"
               onClick={() => setSelectedLead(row.original)}
             >
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <div className="font-heading font-semibold text-slate-900 text-sm">
-                    {row.original['Party Name'] || row.original.company_name}
-                  </div>
-                  <div className="text-xs text-slate-500 font-medium mt-0.5">
-                    {row.original['Person Name'] || row.original.contact_person}
-                  </div>
+              <div>
+                <div className="font-heading font-semibold text-slate-900 text-sm">
+                  {row.original['Party Name'] || row.original.company_name}
                 </div>
-                <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="text-xs text-slate-500 font-medium mt-0.5">
+                  {row.original['Person Name'] || row.original.contact_person}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100 my-1" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                   {(row.original['Mobile No. '] || row.original.mobile) && (
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                         <Phone size={12} className="text-emerald-600" />
+                         {(row.original['Mobile No. '] || row.original.mobile)}
+                      </div>
+                   )}
+                   
+                   <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                      <Calendar size={12} className="text-slate-600" />
+                      {formatDateToDMY(row.original.created_at || row.original.Timestamp) || '-'}
+                   </div>
+
+                   {stage?.toLowerCase() === 'cold' && (row.original['Follow Up date'] || row.original.followup_date) && (
+                      <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
+                         <Calendar size={12} className="text-indigo-400" />
+                         Follow Up: {formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date)}
+                      </div>
+                   )}
+                   
+                   {stage?.toLowerCase() === 'lead' && (row.original['Lead Planned Date'] || row.original.lead_planned_date) && (
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                         <Calendar size={12} className="text-slate-600" />
+                         Planned: {formatDateToDMY(row.original['Lead Planned Date'] || row.original.lead_planned_date)}
+                      </div>
+                   )}
+                   
+                   {stage?.toLowerCase() === 'meeting' && (row.original['Meeting Planned'] || row.original.meeting_planned_date) && (
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                         <Calendar size={12} className="text-slate-600" />
+                         Planned: {formatDateToDMY(row.original['Meeting Planned'] || row.original.meeting_planned_date)}
+                      </div>
+                   )}
+                   
+                   {row.original.District && (
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium uppercase tracking-tight">
+                         <span className="font-bold text-[10px] text-slate-600">DIST:</span> {row.original.District}
+                      </div>
+                   )}
+
+                   {!stage && row.getValue('status') && (
+                      <div className="flex items-center gap-1.5">
+                         <Badge className={`
+                           capitalize font-heading font-medium text-[9px] border-none px-2 py-0.5 rounded-full
+                           ${row.getValue('status') === 'ORDER' ? 'bg-emerald-50 text-emerald-600' : 
+                             row.getValue('status') === 'CLOSED' ? 'bg-rose-50 text-rose-600' :
+                             'bg-indigo-50 text-indigo-600'}
+                         `}>
+                            {(row.getValue('status') as string).toLowerCase().replace('_', ' ')}
+                         </Badge>
+                      </div>
+                   )}
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-auto sm:ml-0 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {(() => {
                     const actionCell = row.getVisibleCells().find(c => c.column.id === 'actions');
                     return actionCell ? flexRender(actionCell.column.columnDef.cell, actionCell.getContext()) : null;
                   })()}
                 </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs mt-1">
-                 {(row.original['Mobile No. '] || row.original.mobile) && (
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Phone size={12} className="text-emerald-600" />
-                       {(row.original['Mobile No. '] || row.original.mobile)}
-                    </div>
-                 )}
-                 
-                 <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <Calendar size={12} className="text-slate-600" />
-                    {formatDateToDMY(row.original.created_at || row.original.Timestamp) || '-'}
-                 </div>
-
-                 {stage?.toLowerCase() === 'cold' && (row.original['Follow Up date'] || row.original.followup_date) && (
-                    <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
-                       <Calendar size={12} className="text-indigo-400" />
-                       Follow Up: {formatDateToDMY(row.original['Follow Up date'] || row.original.followup_date)}
-                    </div>
-                 )}
-                 
-                 {stage?.toLowerCase() === 'lead' && (row.original['Lead Planned Date'] || row.original.lead_planned_date) && (
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Calendar size={12} className="text-slate-600" />
-                       Planned: {formatDateToDMY(row.original['Lead Planned Date'] || row.original.lead_planned_date)}
-                    </div>
-                 )}
-                 
-                 {stage?.toLowerCase() === 'meeting' && (row.original['Meeting Planned'] || row.original.meeting_planned_date) && (
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                       <Calendar size={12} className="text-slate-600" />
-                       Planned: {formatDateToDMY(row.original['Meeting Planned'] || row.original.meeting_planned_date)}
-                    </div>
-                 )}
-                 
-                 {row.original.District && (
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium uppercase tracking-tight">
-                       <span className="font-bold text-[10px] text-slate-600">DIST:</span> {row.original.District}
-                    </div>
-                 )}
-
-                 {!stage && row.getValue('status') && (
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      <Badge className={`
-                        capitalize font-heading font-medium text-[9px] border-none px-2 py-0.5 rounded-full
-                        ${row.getValue('status') === 'ORDER' ? 'bg-emerald-50 text-emerald-600' : 
-                          row.getValue('status') === 'CLOSED' ? 'bg-rose-50 text-rose-600' :
-                          'bg-indigo-50 text-indigo-600'}
-                      `}>
-                         {(row.getValue('status') as string).toLowerCase().replace('_', ' ')}
-                      </Badge>
-                    </div>
-                 )}
               </div>
             </div>
           ))

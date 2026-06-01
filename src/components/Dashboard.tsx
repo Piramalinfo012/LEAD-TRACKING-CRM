@@ -240,8 +240,8 @@ export default function Dashboard() {
           <h1 className="text-xl lg:text-2xl font-heading font-semibold text-slate-900 tracking-tight">Overview Dashboard</h1>
           <p className="text-slate-500 font-sans text-xs mt-1">Quick summary of all leads and sales.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-64">
+        <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:w-64">
             <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
               <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-sm">
                 <SelectValue placeholder="All Sales Persons" />
@@ -258,7 +258,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
           <motion.div key={i} variants={itemVariants}>
             <motion.div 
@@ -269,10 +269,10 @@ export default function Dashboard() {
               {/* Premium sweep shine animation on hover */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/80 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-[100%] translate-x-[-100%] transition-all duration-700 ease-in-out z-0 pointer-events-none" />
               
-              <div className="p-4 relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] text-slate-500 font-heading uppercase tracking-widest font-extrabold">{stat.title}</div>
-                  <div className={`flex items-center gap-1 text-[10px] font-sans font-bold px-2 py-0.5 rounded-full shadow-sm bg-white border border-slate-100 ${
+              <div className="p-3 sm:p-4 relative z-10">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-heading uppercase tracking-widest font-extrabold truncate">{stat.title}</div>
+                  <div className={`flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] font-sans font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm bg-white border border-slate-100 shrink-0 ${
                     stat.change.startsWith('Active') || stat.change.startsWith('Won') 
                       ? 'text-emerald-600' 
                       : stat.change.startsWith('In') 
@@ -283,12 +283,12 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <div className="text-2xl font-sans font-extrabold text-slate-800 tracking-tight">{stat.value || 0}</div>
+                  <div className="text-xl sm:text-2xl font-sans font-extrabold text-slate-800 tracking-tight">{stat.value || 0}</div>
                   <motion.div 
                     whileHover={{ rotate: 12, scale: 1.15 }}
-                    className={`p-2 rounded-xl bg-white text-slate-700 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05),_inset_0_1px_2px_rgba(255,255,255,1)] border border-slate-100 group-hover:bg-gradient-to-br group-hover:${stat.iconGradient} group-hover:text-white group-hover:${stat.shadowColor} group-hover:border-transparent transition-all duration-300`}
+                    className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white text-slate-700 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05),_inset_0_1px_2px_rgba(255,255,255,1)] border border-slate-100 group-hover:bg-gradient-to-br group-hover:${stat.iconGradient} group-hover:text-white group-hover:${stat.shadowColor} group-hover:border-transparent transition-all duration-300`}
                   >
-                    <stat.icon size={18} strokeWidth={2.5} />
+                    <stat.icon className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   </motion.div>
                 </div>
               </div>
@@ -297,14 +297,14 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <motion.div variants={itemVariants} className="lg:col-span-2">
           <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full">
             <CardHeader className="pb-2 relative z-10">
               <CardTitle className="text-slate-900 font-heading text-sm font-semibold uppercase tracking-wider">Geographic Distribution</CardTitle>
               <CardDescription className="text-slate-500 font-sans">Lead concentration across India</CardDescription>
             </CardHeader>
-            <CardContent className="h-[450px] p-0 relative -mt-4">
+            <CardContent className="h-[320px] sm:h-[450px] p-0 relative -mt-4">
               <IndiaMap leads={filteredLeads} />
             </CardContent>
           </Card>
@@ -381,7 +381,7 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <motion.div variants={itemVariants}>
           <Card className="bg-white border-border shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader className="pb-2">

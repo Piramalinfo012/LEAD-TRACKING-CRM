@@ -380,17 +380,36 @@ export function Shell({ children }: LayoutProps) {
     });
   }, [leads]);
 
+  const [readNotifications, setReadNotifications] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('crm_read_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const markAsRead = (leadId: string) => {
+    if (!readNotifications.includes(leadId)) {
+      const updated = [...readNotifications, leadId];
+      setReadNotifications(updated);
+      localStorage.setItem('crm_read_notifications', JSON.stringify(updated));
+    }
+  };
+
+  const unreadCount = useMemo(() => {
+    return todayFollowups.filter(l => !readNotifications.includes(String(l.id))).length;
+  }, [todayFollowups, readNotifications]);
+
   useEffect(() => {
     if (leads.length > 0 && !hasNotified) {
       if (todayFollowups.length > 0) {
         toast.info(`🔔 You have ${todayFollowups.length} follow-up(s) scheduled for today!`, {
           duration: 8000,
-        });
-        todayFollowups.forEach(l => {
-          const partyName = l['Party Name'] || l.company_name || 'Prospect';
-          toast.success(`Today follow up with ${partyName}`, {
-            duration: 10000,
-          });
+          action: {
+            label: 'View',
+            onClick: () => setIsNotificationsOpen(true)
+          }
         });
       }
       setHasNotified(true);
@@ -438,7 +457,7 @@ export function Shell({ children }: LayoutProps) {
             <div className="max-w-md w-full relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input 
-                placeholder="Search leads by name, contact, phone..." 
+                placeholder="Search leads..." 
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 className="pl-10 pr-10 bg-slate-50/50 border-none text-sm w-full focus-visible:ring-1 focus-visible:ring-indigo-500/20 shadow-none h-10 lg:h-11 rounded-xl"
@@ -505,9 +524,9 @@ export function Shell({ children }: LayoutProps) {
                 className={`text-slate-400 hover:bg-slate-50 hover:text-slate-900 rounded-full relative transition-colors ${isNotificationsOpen ? 'text-indigo-600 bg-slate-50' : ''}`}
               >
                 <Bell size={20} />
-                {todayFollowups.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 bg-rose-500 text-white font-mono text-[9px] rounded-full h-4 min-w-4 px-1 flex items-center justify-center font-bold border-2 border-white leading-none">
-                    {todayFollowups.length}
+                    {unreadCount}
                   </span>
                 )}
               </Button>
@@ -515,7 +534,7 @@ export function Shell({ children }: LayoutProps) {
               {isNotificationsOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setIsNotificationsOpen(false)} />
-                  <div className="fixed top-16 right-4 w-96 z-[9999] shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="fixed top-16 left-4 right-4 lg:left-auto lg:right-4 w-auto lg:w-96 z-[9999] shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200">
                     {/* Glass card */}
                     <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
                       {/* Header */}
@@ -528,7 +547,7 @@ export function Shell({ children }: LayoutProps) {
                             <div>
                               <p className="text-white font-heading font-bold text-sm tracking-wide">Notifications</p>
                               <p className="text-indigo-200 text-[10px] font-sans">
-                                {todayFollowups.length > 0 ? `${todayFollowups.length} follow-up${todayFollowups.length > 1 ? 's' : ''} due today` : 'All caught up!'}
+                                {unreadCount > 0 ? `${unreadCount} unread follow-up${unreadCount > 1 ? 's' : ''} due today` : 'All caught up!'}
                               </p>
                             </div>
                           </div>
@@ -549,16 +568,38 @@ export function Shell({ children }: LayoutProps) {
                               const partyName = l['Party Name'] || l.company_name || 'Prospect';
                               const spName = l.sales_person_name || l['Sales Person Name'] || l.owner_id || 'Unassigned';
                               const mobile = l['Mobile No. '] || l.mobile || '';
-                              const followupDate = l['Follow Up date'] || l.followup_date || '';
+                              const isRead = readNotifications.includes(String(l.id));
                               return (
-                                <div key={l.id || index} className="px-5 py-3.5 hover:bg-indigo-50/50 transition-all group cursor-pointer">
-                                  <div className="flex gap-3 items-start">
+                                <div 
+                                  key={l.id || index} 
+                                  onClick={() => {
+                                    markAsRead(String(l.id));
+                                    setSelectedSearchLead(l);
+                                    setIsNotificationsOpen(false);
+                                  }}
+                                  className={`px-5 py-3.5 transition-all group cursor-pointer relative ${
+                                    isRead 
+                                      ? 'bg-white hover:bg-slate-50/60 opacity-75' 
+                                      : 'bg-indigo-50/30 hover:bg-indigo-50/60 font-semibold'
+                                  }`}
+                                >
+                                  {/* Unread indicator dot */}
+                                  {!isRead && (
+                                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                                  )}
+                                  <div className="flex gap-3 items-start pl-1">
                                     {/* Icon */}
-                                    <div className="mt-0.5 bg-amber-100 text-amber-600 rounded-xl p-2 shrink-0 group-hover:bg-amber-200 transition-colors">
+                                    <div className={`mt-0.5 rounded-xl p-2 shrink-0 transition-colors ${
+                                      isRead 
+                                        ? 'bg-slate-100 text-slate-500' 
+                                        : 'bg-amber-100 text-amber-600 group-hover:bg-amber-200'
+                                    }`}>
                                       <PhoneCall size={13} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-[13px] font-bold text-slate-800 leading-snug truncate">
+                                      <p className={`text-[13px] leading-snug truncate ${
+                                        isRead ? 'text-slate-600 font-medium' : 'text-slate-900 font-bold'
+                                      }`}>
                                         {partyName}
                                       </p>
                                       <p className="text-[11px] text-slate-500 font-sans mt-0.5">
@@ -569,9 +610,15 @@ export function Shell({ children }: LayoutProps) {
                                       )}
                                     </div>
                                     {/* Badge */}
-                                    <span className="shrink-0 bg-rose-50 text-rose-600 border border-rose-100 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
-                                      Today
-                                    </span>
+                                    {!isRead ? (
+                                      <span className="shrink-0 bg-rose-50 text-rose-600 border border-rose-100 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
+                                        Today
+                                      </span>
+                                    ) : (
+                                      <span className="shrink-0 bg-slate-50 text-slate-400 border border-slate-100 text-[9px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                        Read
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -594,9 +641,13 @@ export function Shell({ children }: LayoutProps) {
                           <Clock size={11} />
                           <span className="text-[10px] font-sans">Updates every 30s</span>
                         </div>
-                        <span className="text-[10px] text-indigo-600 font-semibold font-heading uppercase tracking-wider cursor-pointer hover:text-indigo-800">
+                        <Link 
+                          to="/leads" 
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-[10px] text-indigo-600 font-semibold font-heading uppercase tracking-wider cursor-pointer hover:text-indigo-800 transition-colors"
+                        >
                           View All Leads →
-                        </span>
+                        </Link>
                       </div>
                     </div>
                   </div>

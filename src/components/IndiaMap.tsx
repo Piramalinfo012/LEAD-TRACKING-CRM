@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import IndiaMapRaw from '@svg-maps/india';
 const IndiaMapData = (IndiaMapRaw as any).default || IndiaMapRaw;
 import { 
@@ -39,6 +39,16 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [hoveredState, setHoveredState] = useState<{ id: string, name: string, count: number, path: string, fill: string } | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Group leads by normalized state name
   const stateLeadCounts = useMemo(() => {
@@ -89,7 +99,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
   }, [selectedState, leads]);
 
   return (
-    <div className="relative w-full h-full min-h-[400px] flex items-center justify-center p-4">
+    <div className="relative w-full h-full min-h-[280px] sm:min-h-[400px] flex items-center justify-center p-4">
       {hoveredState && (
         <div 
           className="absolute z-50 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full font-sans animate-in fade-in zoom-in-95 duration-100 flex items-center gap-2"
@@ -100,7 +110,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
         </div>
       )}
 
-      <div className="w-full h-[500px] overflow-hidden rounded-2xl relative cursor-grab active:cursor-grabbing bg-slate-50/50 perspective-[1000px]">
+      <div className="w-full h-[320px] sm:h-[500px] overflow-hidden rounded-2xl relative cursor-grab active:cursor-grabbing bg-slate-50/50 perspective-[1000px]">
         <TransformWrapper
           initialScale={1}
           minScale={0.5}
@@ -113,8 +123,8 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
             <div 
               className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out"
               style={{
-                transform: 'rotateX(30deg) rotateZ(-10deg)',
-                transformStyle: 'preserve-3d',
+                transform: isMobile ? 'none' : 'rotateX(30deg) rotateZ(-10deg)',
+                transformStyle: isMobile ? 'flat' : 'preserve-3d',
               }}
             >
               <svg
