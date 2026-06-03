@@ -87,33 +87,33 @@ const isDeletedMarker = (value: any) => {
 
 const getDeletedIdFromRow = (row: any) => {
   const candidates = [
-    row.Id,
-    row.ID,
-    row.id,
-    row['Lead ID'],
-    row['Lead Id'],
-    row.LeadID,
-    row.DELETE,
-    row.Delete,
-    row.delete,
-    row.__col_0,
-    row.__col_1,
+    row.Id, row.ID, row.id, row['Lead ID'], row['Lead Id'], row.LeadID, 
+    row.DELETE, row.Delete, row.delete, row.__col_0, row.__col_1
   ];
 
   for (const candidate of candidates) {
     const id = normalizeLeadId(candidate);
-    if (id && id !== 'id' && id !== 'delete' && id !== 'deleted') return id;
+    if (id && id !== 'id' && id !== 'delete' && id !== 'deleted') return { id, row };
   }
-
-  return '';
+  return null;
 };
 
-const isLeadDeleted = (lead: any, deletedLeadIds: Set<string>) => {
+const isLeadDeleted = (lead: any, deletedLeadMap: Map<string, any>) => {
   const id = normalizeLeadId(lead.id);
   const deleteValue = normalizeLeadId(lead.DELETE || lead.Delete || lead.delete);
 
+  if (id && deletedLeadMap.has(id)) {
+    const deletedRow = deletedLeadMap.get(id);
+    const deletedParty = normalizeLeadId(deletedRow['Party Name']);
+    const leadParty = normalizeLeadId(lead.company_name);
+    
+    // If party names are totally different, it means the ID was reused for a new lead
+    if (!deletedParty || !leadParty || deletedParty === leadParty) {
+      return true;
+    }
+  }
+
   return (
-    (id && deletedLeadIds.has(id)) ||
     isDeletedMarker(lead.is_deleted) ||
     isDeletedMarker(lead.delete_marker) ||
     isDeletedMarker(lead.__col_82) ||
@@ -144,11 +144,13 @@ async function doLeadsFetch() {
         })
       ]);
 
-      const deletedLeadIds = new Set<string>(
-        (deletedRows as any[])
-          .map((row: any) => getDeletedIdFromRow(row))
-          .filter((id: string) => id.length > 0)
-      );
+      const deletedLeadMap = new Map<string, any>();
+      (deletedRows as any[]).forEach((row: any) => {
+        const result = getDeletedIdFromRow(row);
+        if (result && result.id) {
+          deletedLeadMap.set(result.id, result.row);
+        }
+      });
 
       const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => ({
         id: l['Id'] || `LD-MAIN-${index}`,
@@ -178,6 +180,7 @@ async function doLeadsFetch() {
           l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
         ),
         owner_id: l['Sales Person Name'] || 'SYSTEM',
+        entry_by_id: l['Entry By Id'] || '',
         is_deleted: l['is_deleted'] || l['Is Deleted'] || l['__col_82'] || '',
         delete_marker: l['DELETE'] || l['Delete'] || l['__col_82'] || '',
         DELETE: l['DELETE'] || l['Delete'] || '',
@@ -351,7 +354,7 @@ async function doLeadsFetch() {
         };
       });
 
-      leads = [...mainLeads, ...fmsLeads].filter((l: any) => !isLeadDeleted(l, deletedLeadIds));
+      leads = [...mainLeads, ...fmsLeads].filter((l: any) => !isLeadDeleted(l, deletedLeadMap));
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
@@ -727,11 +730,14 @@ app.use(express.json());
           
           const leadOwnerId = String(l.owner_id || '').toLowerCase().trim();
           const leadSalesName = String(l.sales_person_name || '').toLowerCase().trim();
+          
+          // Check if user is the creator (Entry By Id)
+          const isEntryCreator = l.entry_by_id && (l.entry_by_id === userId || l.entry_by_id === employee_id || l.entry_by_id === id);
 
           const isSubordinateOwner = leadOwnerId && subordinateIds.has(leadOwnerId);
           const isSubordinateSales = leadSalesName && subordinateNames.has(leadSalesName);
 
-          return isOwner || isNamedSales || isSubordinateOwner || isSubordinateSales;
+          return isOwner || isNamedSales || isEntryCreator || isSubordinateOwner || isSubordinateSales;
         });
       }
       
@@ -816,9 +822,6 @@ app.use(express.json());
         LEADS_CACHE.push(newLead);
       }
       
-      // Update cache in background
-      refreshLeadsCache(true);
-
       res.status(201).json(leadData);
     } catch (error: any) {
       console.error('Entry Data creation error:', error);
