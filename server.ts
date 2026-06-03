@@ -1405,6 +1405,28 @@ app.use(express.json());
   });
 
   // Get active Notice from Master B2 (Notice col in row with Source === 'Self')
+  // Quick Access API
+  app.get('/api/quick-access', authenticateToken, async (req, res) => {
+    try {
+      const rows = await SheetsDB.getRows('Quick Access', undefined, 0, 10);
+      if (rows && rows.length > 0) {
+        const firstRow = rows[0];
+        const links = [
+          { name: 'Technical Help Form', url: firstRow['Technical Help Form'] || '', icon: 'LifeBuoy' },
+          { name: 'System Alteration', url: firstRow['System Alteration form'] || '', icon: 'Settings2' },
+          { name: 'Leave Application', url: firstRow['Leave Application'] || '', icon: 'CalendarDays' },
+          { name: 'Attendance', url: firstRow['Attendance'] || '', icon: 'UserCheck' }
+        ].filter(link => link.url);
+        res.json(links);
+      } else {
+        res.json([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching Quick Access:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/notice', authenticateToken, async (req, res) => {
     try {
       const masterData = await refreshMasterCache();

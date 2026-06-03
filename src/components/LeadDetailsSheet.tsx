@@ -266,7 +266,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                 variant={isEditing ? "destructive" : "outline"}
                 size="sm"
                 onClick={() => setIsEditing(!isEditing)}
-                className="h-8 font-heading text-[10px] font-semibold px-3 uppercase tracking-wider gap-1.5 rounded-lg border-slate-200 hover:bg-slate-50"
+                className="h-8 font-heading text-[10px] font-semibold px-3 uppercase tracking-wider gap-1.5 rounded-lg border-slate-300 hover:bg-slate-50"
               >
                 <Edit size={12} />
                 {isEditing ? "Cancel Edit" : "Edit Details"}
@@ -293,7 +293,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Input 
                               type="text" 
                               required
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.company_name}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, company_name: e.target.value }))}
                               placeholder="Enter company name..."
@@ -303,7 +303,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Contact Person Name</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.contact_person}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, contact_person: e.target.value }))}
                               placeholder="Enter contact person..."
@@ -317,7 +317,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Valuation ($)</Label>
                             <Input 
                               type="number"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.expected_value}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, expected_value: Number(e.target.value) }))}
                               placeholder="Enter expected value..."
@@ -329,7 +329,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                               value={editFormData.priority} 
                               onValueChange={(val) => setEditFormData(prev => ({ ...prev, priority: val as Priority }))}
                             >
-                              <SelectTrigger className="bg-white border-slate-200 h-9 text-xs text-slate-900 rounded-lg">
+                              <SelectTrigger className="bg-white border-slate-300 h-9 text-xs text-slate-900 rounded-lg">
                                 <SelectValue placeholder="Select Priority" />
                               </SelectTrigger>
                               <SelectContent className="bg-white border-border rounded-lg shadow-xl">
@@ -347,7 +347,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Source</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.source}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, source: e.target.value }))}
                               placeholder="Organic, Referral, etc."
@@ -357,7 +357,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Product</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.product}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, product: e.target.value }))}
                               placeholder="Product name..."
@@ -367,7 +367,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Follow Up Date</Label>
                             <Input 
                               type="date"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light] h-9 wrapper-picker"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light] h-9 wrapper-picker"
                               value={editFormData.followup_date ? editFormData.followup_date.split('T')[0] : ''}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, followup_date: e.target.value }))}
                             />
@@ -380,7 +380,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Mobile Number</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.mobile}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, mobile: e.target.value }))}
                               placeholder="Mobile..."
@@ -390,7 +390,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alternate Number</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.alternate_mobile}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, alternate_mobile: e.target.value }))}
                               placeholder="Alternate mobile..."
@@ -400,7 +400,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Email Address</Label>
                             <Input 
                               type="email"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.email}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
                               placeholder="Email address..."
@@ -414,7 +414,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Address</Label>
                             <Input 
                               type="text"
-                              className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                               value={editFormData.address}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
                               placeholder="Full Address..."
@@ -427,7 +427,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                 value={editFormData.state} 
                                 onValueChange={(val) => setEditFormData(prev => ({ ...prev, state: val, district: '' }))}
                               >
-                                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs text-slate-900 rounded-lg">
+                                <SelectTrigger className="bg-white border-slate-300 h-9 text-xs text-slate-900 rounded-lg">
                                   <SelectValue placeholder="Select State" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-border rounded-lg shadow-xl">
@@ -444,7 +444,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                 onValueChange={(val) => setEditFormData(prev => ({ ...prev, district: val }))}
                                 disabled={!editFormData.state}
                               >
-                                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs text-slate-900 rounded-lg">
+                                <SelectTrigger className="bg-white border-slate-300 h-9 text-xs text-slate-900 rounded-lg">
                                   <SelectValue placeholder="Select District" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-border rounded-lg shadow-xl">
@@ -458,7 +458,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                               <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">City</Label>
                               <Input 
                                 type="text"
-                                className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light]"
+                                className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
                                 value={editFormData.city}
                                 onChange={(e) => setEditFormData(prev => ({ ...prev, city: e.target.value }))}
                                 placeholder="City..."
@@ -471,7 +471,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                         <div className="space-y-1.5">
                           <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-heading">Lead Notes / Narrative</Label>
                           <Textarea 
-                            className="bg-white border-slate-200 text-slate-900 font-sans text-xs [color-scheme:light] h-20"
+                            className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light] h-20"
                             value={editFormData.notes}
                             onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
                             placeholder="Add lead description..."
@@ -550,7 +550,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                   ${lead.priority === Priority.CRITICAL ? 'bg-rose-50 text-rose-600 border-rose-200' : 
                                     lead.priority === Priority.HIGH ? 'bg-orange-50 text-orange-600 border-orange-200' :
                                     lead.priority === Priority.MEDIUM ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                    'bg-slate-50 text-slate-600 border-slate-200'}
+                                    'bg-slate-50 text-slate-600 border-slate-300'}
                                 `}
                               >
                                 {lead.priority || 'NORMAL'}
@@ -627,7 +627,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                             <Separator orientation="vertical" className="hidden md:block h-10" />
                             <div className="shrink-0">
                                <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight block mb-1">District</span>
-                               <Badge variant="outline" className="bg-white text-slate-900 font-bold uppercase text-[10px] border-slate-200">
+                               <Badge variant="outline" className="bg-white text-slate-900 font-bold uppercase text-[10px] border-slate-300">
                                   {lead['District'] || 'N/A'}
                                </Badge>
                             </div>

@@ -134,7 +134,7 @@ export default function Settings() {
         </div>
 
         <div className="md:col-span-3 space-y-6">
-          <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+          <Card className="bg-white border-slate-300 shadow-sm overflow-hidden">
              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
                 <CardTitle className="text-slate-900 text-lg font-bold">Identity Profile</CardTitle>
                 <CardDescription className="text-slate-500 font-medium text-xs">Public credentials used for pipeline management.</CardDescription>
@@ -143,11 +143,11 @@ export default function Settings() {
                 <div className="grid grid-cols-2 gap-6">
                    <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Full Registered Name</Label>
-                      <Input defaultValue={user?.name} className="bg-slate-50 border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
+                      <Input defaultValue={user?.name} className="bg-slate-50 border-slate-300 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
                    </div>
                    <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Route Email Address</Label>
-                      <Input defaultValue={user?.email} className="bg-slate-50 border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
+                      <Input defaultValue={user?.email} className="bg-slate-50 border-slate-300 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
                    </div>
                 </div>
                 <div className="space-y-2">
@@ -161,10 +161,10 @@ export default function Settings() {
                 <div className="space-y-2">
                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile Picture URL</Label>
                    <div className="flex gap-2">
-                     <Input value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://example.com/my-photo.jpg" className="bg-white border-slate-200 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
+                     <Input value={profileUrl} onChange={e => setProfileUrl(e.target.value)} placeholder="https://example.com/my-photo.jpg" className="bg-white border-slate-300 text-slate-900 h-11 focus-visible:ring-indigo-500/20" />
                      <div className="relative">
                        <Input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={isUploading} />
-                       <Button type="button" variant="outline" className="h-11 px-4 border-slate-200 text-slate-600 bg-slate-50 pointer-events-none" disabled={isUploading}>
+                       <Button type="button" variant="outline" className="h-11 px-4 border-slate-300 text-slate-600 bg-slate-50 pointer-events-none" disabled={isUploading}>
                          {isUploading ? 'Uploading...' : 'Upload File'}
                        </Button>
                      </div>
@@ -178,7 +178,7 @@ export default function Settings() {
 
           {/* Admin & CRM Only Notice Configuration Card */}
           {(user?.role === 'ADMIN' || user?.role === 'CRM') && (
-            <Card className="bg-white border-slate-200 shadow-sm overflow-hidden border-indigo-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="bg-white border-slate-300 shadow-sm overflow-hidden border-indigo-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
                <CardHeader className="bg-indigo-50/20 border-b border-indigo-100/30">
                   <div className="flex items-center gap-2">
                      <Megaphone size={18} className="text-indigo-600 animate-pulse" />
@@ -195,7 +195,7 @@ export default function Settings() {
                         <Label htmlFor="notice-input" className="text-[10px] font-bold uppercase text-slate-400 tracking-widest block font-heading font-semibold">Notice Content</Label>
                         <textarea
                            id="notice-input"
-                           className="flex min-h-[90px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 disabled:opacity-50 font-sans leading-relaxed"
+                           className="flex min-h-[90px] w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 disabled:opacity-50 font-sans leading-relaxed"
                            placeholder="Type notice message to display continuously to everyone..."
                            value={notice}
                            onChange={(e) => setNotice(e.target.value)}
@@ -214,7 +214,7 @@ export default function Settings() {
             </Card>
           )}
 
-          <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+          <Card className="bg-white border-slate-300 shadow-sm overflow-hidden">
              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
                 <CardTitle className="text-slate-900 text-lg font-bold">Workspace Nodes</CardTitle>
                 <CardDescription className="text-slate-500 font-medium text-xs">Manage external database and drive nodes.</CardDescription>
@@ -233,7 +233,7 @@ export default function Settings() {
                     <Badge className="bg-emerald-100 text-emerald-700 border-0 font-bold text-[10px] px-2 py-0.5 rounded-full">CONNECTED</Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-5 rounded-xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-colors">
+                <div className="flex items-center justify-between p-5 rounded-xl bg-slate-50 border border-slate-100 group hover:border-indigo-300 transition-colors">
                     <div className="flex items-center gap-4">
                        <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 shadow-sm">
                           <Smartphone size={20} />

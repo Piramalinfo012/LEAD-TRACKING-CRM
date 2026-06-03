@@ -250,7 +250,7 @@ export default function KanbanBoard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 text-[10px] font-heading uppercase px-2 py-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                              className="h-6 text-[10px] font-heading uppercase px-2 py-0 border-indigo-300 text-indigo-600 hover:bg-indigo-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedColdLeadForForm(lead);

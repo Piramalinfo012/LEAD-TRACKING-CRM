@@ -252,7 +252,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-slate-50/50 border-slate-200 text-slate-900 h-12 font-medium px-4 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm"
+                    className="bg-slate-50/50 border-slate-300 text-slate-900 h-12 font-medium px-4 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm"
                   />
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-slate-50/50 border-slate-200 text-slate-900 h-12 font-medium px-4 pr-12 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm tracking-widest"
+                    className="bg-slate-50/50 border-slate-300 text-slate-900 h-12 font-medium px-4 pr-12 rounded-xl focus-visible:ring-4 focus-visible:ring-indigo-500/10 transition-all border focus-visible:border-indigo-500 focus-visible:bg-white shadow-sm placeholder:text-slate-400 text-sm tracking-widest"
                   />
                   <button
                     type="button"

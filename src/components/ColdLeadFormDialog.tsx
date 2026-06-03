@@ -602,7 +602,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   value={formData.custom_status}
                   onChange={(e) => setFormData(p => ({ ...p, custom_status: e.target.value }))}
                   placeholder="e.g. Interested, Callback required..."
-                  className="bg-white border-slate-200 text-sm h-11 focus-visible:ring-indigo-500/20"
+                  className="bg-white border-slate-300 text-sm h-11 focus-visible:ring-indigo-500/20"
                 />
               </div>
 
@@ -611,7 +611,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <Target size={12} /> Shift to Stage
                 </Label>
                 <Select value={selectedStage} onValueChange={(val) => setSelectedStage(val as LeadStatus)}>
-                  <SelectTrigger className="bg-white border-indigo-200 text-indigo-900 h-11 focus:ring-indigo-500/20 font-semibold text-sm shadow-sm">
+                  <SelectTrigger className="bg-white border-indigo-300 text-indigo-900 h-11 focus:ring-indigo-500/20 font-semibold text-sm shadow-sm">
                     <SelectValue placeholder="Select Stage" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
@@ -637,7 +637,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <DropdownMenuTrigger asChild>
                         <Button 
                           variant="outline" 
-                          className="w-full justify-between h-auto min-h-[44px] py-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-normal text-left"
+                          className="w-full justify-between h-auto min-h-[44px] py-2 bg-white border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-normal text-left"
                         >
                           <div className="flex flex-wrap gap-1.5 items-center">
                             {selectedProducts.length > 0 ? (
@@ -677,7 +677,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     </Label>
                     <div className="relative">
                       <input type="file" id="mcb-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'mcb_requirement', setUploadingMCB)} disabled={uploadingMCB} />
-                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.mcb_requirement ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('mcb-upload')?.click()}>
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.mcb_requirement ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-300 hover:bg-slate-50'}`} onClick={() => document.getElementById('mcb-upload')?.click()}>
                         {uploadingMCB ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.mcb_requirement ? <><FileCheck size={16}/><span>File Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload File</span></>}
                       </Button>
                     </div>
@@ -691,7 +691,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <Textarea 
                     value={formData.pain_points}
                     onChange={(e) => setFormData(p => ({ ...p, pain_points: e.target.value }))}
-                    className="bg-white border-slate-200 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
+                    className="bg-white border-slate-300 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
                     placeholder="Describe the customer's pain points in detail..."
                   />
                 </div>
@@ -703,7 +703,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     </Label>
                     <div className="relative">
                       <input type="file" id="kit-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'kit_details', setUploadingKit)} disabled={uploadingKit} />
-                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.kit_details ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('kit-upload')?.click()}>
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.kit_details ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-300 hover:bg-slate-50'}`} onClick={() => document.getElementById('kit-upload')?.click()}>
                         {uploadingKit ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.kit_details ? <><FileCheck size={16}/><span>File Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload KIT</span></>}
                       </Button>
                     </div>
@@ -716,7 +716,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       type="date"
                       value={formData.meeting_followup_date}
                       onChange={(e) => setFormData(p => ({ ...p, meeting_followup_date: e.target.value }))}
-                      className="bg-white border-slate-200 text-sm h-11"
+                      className="bg-white border-slate-300 text-sm h-11"
                     />
                   </div>
                 </div>
@@ -735,7 +735,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <Target size={12} /> Meeting Status
                     </Label>
                     <Select value={formData.meeting_status} onValueChange={(val) => setFormData(p => ({ ...p, meeting_status: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11 focus:ring-indigo-500/20">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11 focus:ring-indigo-500/20">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -773,7 +773,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                           type="text"
                           value={formData.meeting_person_name}
                           onChange={(e) => setFormData(p => ({ ...p, meeting_person_name: e.target.value }))}
-                          className="bg-white border-slate-200 text-sm h-11"
+                          className="bg-white border-slate-300 text-sm h-11"
                           placeholder="Name of person met..."
                         />
                       </div>
@@ -785,7 +785,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                           type="tel"
                           value={formData.meeting_number}
                           onChange={(e) => setFormData(p => ({ ...p, meeting_number: e.target.value }))}
-                          className="bg-white border-slate-200 text-sm h-11"
+                          className="bg-white border-slate-300 text-sm h-11"
                           placeholder="Phone number..."
                         />
                       </div>
@@ -798,7 +798,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <Textarea 
                         value={formData.discussion_points}
                         onChange={(e) => setFormData(p => ({ ...p, discussion_points: e.target.value }))}
-                        className="bg-white border-slate-200 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
+                        className="bg-white border-slate-300 text-sm min-h-[80px] resize-none focus-visible:ring-indigo-500/20"
                         placeholder="Enter main points discussed..."
                       />
                     </div>
@@ -812,7 +812,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                           type="text"
                           value={formData.bullet_point_remarks}
                           onChange={(e) => setFormData(p => ({ ...p, bullet_point_remarks: e.target.value }))}
-                          className="bg-white border-slate-200 text-sm h-11"
+                          className="bg-white border-slate-300 text-sm h-11"
                           placeholder="Short remarks..."
                         />
                       </div>
@@ -823,10 +823,10 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <div className="flex gap-2">
                           <input type="file" id="meeting-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
                           <input type="file" id="meeting-camera" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileUpload(e, 'meeting_url', setUploadingMeeting)} disabled={uploadingMeeting} />
-                          <Button type="button" variant="outline" className={`h-11 flex-1 flex items-center justify-center gap-2 ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={startCamera} disabled={uploadingMeeting}>
+                          <Button type="button" variant="outline" className={`h-11 flex-1 flex items-center justify-center gap-2 ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-300 hover:bg-slate-50'}`} onClick={startCamera} disabled={uploadingMeeting}>
                             {uploadingMeeting ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.meeting_url ? <><FileCheck size={16}/><span>Photo Uploaded</span></> : <><Camera size={16} className="text-indigo-600" /><span>Take Photo</span></>}
                           </Button>
-                          <Button type="button" variant="outline" className={`h-11 px-4 flex items-center justify-center ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-upload')?.click()} disabled={uploadingMeeting} title="Upload File from Device">
+                          <Button type="button" variant="outline" className={`h-11 px-4 flex items-center justify-center ${formData.meeting_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white border-slate-300 hover:bg-slate-50'}`} onClick={() => document.getElementById('meeting-upload')?.click()} disabled={uploadingMeeting} title="Upload File from Device">
                             <Upload size={18} className="text-slate-600" />
                           </Button>
                         </div>
@@ -849,7 +849,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <Target size={12} /> Technical Status
                     </Label>
                     <Select value={formData.tech_status} onValueChange={(val) => setFormData(p => ({ ...p, tech_status: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11 focus:ring-indigo-500/20">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11 focus:ring-indigo-500/20">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -878,7 +878,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                           <Button 
                             type="button"
                             variant="outline" 
-                            className={`h-11 w-full flex items-center justify-center gap-2 ${formData.tech_kit_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}
+                            className={`h-11 w-full flex items-center justify-center gap-2 ${formData.tech_kit_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`}
                             onClick={() => document.getElementById('tech-file-upload')?.click()}
                             disabled={uploading}
                           >
@@ -925,14 +925,14 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <Label className="text-xs uppercase font-bold text-slate-700 tracking-wider flex items-center gap-1.5">
                         <Box size={14} /> Product Negotiations
                       </Label>
-                      <Button type="button" onClick={addTechProduct} variant="outline" size="sm" className="h-8 gap-1.5 bg-white text-indigo-600 hover:bg-indigo-50 border-indigo-200">
+                      <Button type="button" onClick={addTechProduct} variant="outline" size="sm" className="h-8 gap-1.5 bg-white text-indigo-600 hover:bg-indigo-50 border-indigo-300">
                         <Plus size={14} /> Add Product
                       </Button>
                     </div>
 
                     <div className="space-y-4">
                       {techProducts.map((prod, idx) => (
-                        <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 space-y-4 relative animate-in slide-in-from-bottom-2">
+                        <div key={idx} className="bg-white border border-slate-300 rounded-xl p-4 space-y-4 relative animate-in slide-in-from-bottom-2">
                           <Button
                             type="button"
                             variant="ghost"
@@ -949,7 +949,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                             <div className="space-y-1.5">
                               <Label className="text-[10px] uppercase font-bold text-slate-500">Product Name</Label>
                               <Select value={prod.product_name} onValueChange={val => updateTechProduct(idx, 'product_name', val)}>
-                                <SelectTrigger className="bg-white border-slate-200 text-xs h-9">
+                                <SelectTrigger className="bg-white border-slate-300 text-xs h-9">
                                   <SelectValue placeholder="Select Product" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white max-h-60">
@@ -996,7 +996,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       ))}
                       
                       {techProducts.length === 0 && (
-                        <div className="text-center p-8 bg-white border border-dashed border-slate-200 rounded-xl">
+                        <div className="text-center p-8 bg-white border border-dashed border-slate-300 rounded-xl">
                           <p className="text-sm text-slate-400">No products added for technical discussion.</p>
                           <Button type="button" onClick={addTechProduct} variant="outline" size="sm" className="mt-3">
                             Add First Product
@@ -1017,12 +1017,12 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sample Actual Date</Label>
-                    <Input type="date" value={formData.sample_actual_date || new Date().toISOString().split('T')[0]} disabled className="h-11 text-sm bg-slate-50 border-slate-200" />
+                    <Input type="date" value={formData.sample_actual_date || new Date().toISOString().split('T')[0]} disabled className="h-11 text-sm bg-slate-50 border-slate-300" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Product Name</Label>
                     <Select value={formData.sample_product_name} onValueChange={(val) => setFormData(p => ({ ...p, sample_product_name: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Product" />
                       </SelectTrigger>
                       <SelectContent className="bg-white max-h-60">
@@ -1045,7 +1045,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sample Status</Label>
                     <Select value={formData.sample_status} onValueChange={(val) => setFormData(p => ({ ...p, sample_status: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -1066,7 +1066,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Attachment</Label>
                     <div className="relative">
                       <input type="file" id="sample-attachment-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'sample_attachment', setUploadingSampleAttachment)} disabled={uploadingSampleAttachment} />
-                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.sample_attachment ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('sample-attachment-upload')?.click()}>
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.sample_attachment ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`} onClick={() => document.getElementById('sample-attachment-upload')?.click()}>
                         {uploadingSampleAttachment ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.sample_attachment ? <><FileCheck size={16}/><span>Attachment Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Attachment</span></>}
                       </Button>
                     </div>
@@ -1085,7 +1085,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</Label>
                     <Select value={formData.negotiation_status} onValueChange={(val) => setFormData(p => ({ ...p, negotiation_status: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -1110,7 +1110,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Quotation Upload</Label>
                         <div className="relative">
                           <input type="file" id="quotation-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'quotation_url', setUploadingQuotation)} disabled={uploadingQuotation} />
-                          <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.quotation_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('quotation-upload')?.click()}>
+                          <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.quotation_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`} onClick={() => document.getElementById('quotation-upload')?.click()}>
                             {uploadingQuotation ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.quotation_url ? <><FileCheck size={16}/><span>Quotation Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Quotation</span></>}
                           </Button>
                         </div>
@@ -1119,7 +1119,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <div className="space-y-2">
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Unit</Label>
                         <Select value={formData.unit} onValueChange={(val) => setFormData(p => ({ ...p, unit: val }))}>
-                          <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                          <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                             <SelectValue placeholder="Select Unit" />
                           </SelectTrigger>
                           <SelectContent className="bg-white max-h-60">
@@ -1143,7 +1143,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <div className="space-y-2">
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Payment Terms</Label>
                         <Select value={formData.payment_terms} onValueChange={(val) => setFormData(p => ({ ...p, payment_terms: val }))}>
-                          <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                          <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                             <SelectValue placeholder="Select Payment Terms" />
                           </SelectTrigger>
                           <SelectContent className="bg-white max-h-60">
@@ -1162,7 +1162,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       <div className="space-y-2">
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Party Type classification</Label>
                         <Select value={formData.party_type} onValueChange={(val) => setFormData(p => ({ ...p, party_type: val }))}>
-                          <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                          <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                             <SelectValue placeholder="Select Party Type" />
                           </SelectTrigger>
                           <SelectContent className="bg-white max-h-60">
@@ -1177,7 +1177,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Kit Attachment</Label>
                         <div className="relative">
                           <input type="file" id="neg-kit-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'negotiation_kit_url', setUploadingNegKit)} disabled={uploadingNegKit} />
-                          <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.negotiation_kit_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('neg-kit-upload')?.click()}>
+                          <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.negotiation_kit_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`} onClick={() => document.getElementById('neg-kit-upload')?.click()}>
                             {uploadingNegKit ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.negotiation_kit_url ? <><FileCheck size={16}/><span>Kit Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Kit</span></>}
                           </Button>
                         </div>
@@ -1206,7 +1206,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Order Copy Attached (Url)</Label>
                     <div className="relative">
                       <input type="file" id="order-copy-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'order_copy_url', setUploadingOrderCopy)} disabled={uploadingOrderCopy} />
-                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_copy_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-copy-upload')?.click()}>
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_copy_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-copy-upload')?.click()}>
                         {uploadingOrderCopy ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.order_copy_url ? <><FileCheck size={16}/><span>Order Copy Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Order Copy</span></>}
                       </Button>
                     </div>
@@ -1215,7 +1215,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Delivery In</Label>
                     <Select value={formData.delivery_in} onValueChange={(val) => setFormData(p => ({ ...p, delivery_in: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Delivery In" />
                       </SelectTrigger>
                       <SelectContent className="bg-white max-h-60">
@@ -1229,7 +1229,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Unloading</Label>
                     <Select value={formData.unloading} onValueChange={(val) => setFormData(p => ({ ...p, unloading: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Unloading" />
                       </SelectTrigger>
                       <SelectContent className="bg-white max-h-60">
@@ -1248,7 +1248,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         if (val === 'No') setFormData(p => ({ ...p, motor_pump_requirement: 'No' }));
                         else setFormData(p => ({ ...p, motor_pump_requirement: '' }));
                       }}>
-                        <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                        <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                           <SelectValue placeholder="Yes / No" />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
@@ -1265,7 +1265,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Transport</Label>
                     <Select value={formData.transport} onValueChange={(val) => setFormData(p => ({ ...p, transport: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Transport" />
                       </SelectTrigger>
                       <SelectContent className="bg-white max-h-60">
@@ -1279,7 +1279,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Order Status</Label>
                     <Select value={formData.order_status} onValueChange={(val) => setFormData(p => ({ ...p, order_status: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Order Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -1292,14 +1292,14 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
 
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Any Specific Instructions / Remark</Label>
-                    <Textarea value={formData.order_remark} onChange={e => setFormData(p => ({ ...p, order_remark: e.target.value }))} className="bg-white border-slate-200 text-sm min-h-[80px]" placeholder="Enter Remarks" />
+                    <Textarea value={formData.order_remark} onChange={e => setFormData(p => ({ ...p, order_remark: e.target.value }))} className="bg-white border-slate-300 text-sm min-h-[80px]" placeholder="Enter Remarks" />
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Attachment</Label>
                     <div className="relative">
                       <input type="file" id="order-attachment-upload" className="hidden" onChange={(e) => handleFileUpload(e, 'order_attachment_url', setUploadingOrderAttachment)} disabled={uploadingOrderAttachment} />
-                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_attachment_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-attachment-upload')?.click()}>
+                      <Button type="button" variant="outline" className={`h-11 w-full flex items-center justify-center gap-2 ${formData.order_attachment_url ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 hover:bg-slate-100'}`} onClick={() => document.getElementById('order-attachment-upload')?.click()}>
                         {uploadingOrderAttachment ? <><Loader2 size={16} className="animate-spin text-slate-400" /><span>Uploading...</span></> : formData.order_attachment_url ? <><FileCheck size={16}/><span>Attachment Uploaded</span></> : <><Upload size={16} className="text-indigo-600" /><span>Upload Attachment</span></>}
                       </Button>
                     </div>
@@ -1318,7 +1318,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Lost Reason</Label>
                     <Select value={formData.close_reason} onValueChange={(val) => setFormData(p => ({ ...p, close_reason: val }))}>
-                      <SelectTrigger className="bg-white border-slate-200 text-sm h-11">
+                      <SelectTrigger className="bg-white border-slate-300 text-sm h-11">
                         <SelectValue placeholder="Select Reason" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -1346,7 +1346,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
             type="button"
             variant="outline"
             onClick={onClose}
-            className="w-32 font-heading font-bold text-xs uppercase tracking-widest border-slate-200 text-slate-600 hover:bg-slate-100"
+            className="w-32 font-heading font-bold text-xs uppercase tracking-widest border-slate-300 text-slate-600 hover:bg-slate-100"
           >
             Cancel
           </Button>

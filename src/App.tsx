@@ -14,6 +14,7 @@ import LeadsTable from './components/LeadsTable';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import UserManagement from './components/UserManagement';
+import { QuickAccessApps } from './components/QuickAccessApps';
 import { Toaster } from 'sonner';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -88,6 +89,17 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <LeadsTable />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/other" 
+            element={
+              <ProtectedRoute>
+                <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+                  <h1 className="text-2xl font-bold text-slate-800 font-heading">Other Tools</h1>
+                  <QuickAccessApps />
+                </div>
               </ProtectedRoute>
             } 
           />

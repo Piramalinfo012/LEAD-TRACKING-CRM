@@ -397,7 +397,7 @@ export default function Dashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`h-10 px-3 shadow-sm rounded-xl flex items-center justify-center gap-1.5 transition-all shrink-0 ${
               showFilters 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100'
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'
                 : 'bg-white border-border text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -409,7 +409,7 @@ export default function Dashboard() {
       </div>
 
       {showFilters && (
-        <div className="bg-white border border-slate-200/85 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-4 duration-300 shadow-sm">
+        <div className="bg-white border border-slate-300/85 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-4 duration-300 shadow-sm">
           <div className="space-y-1.5">
             <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">Date Range Preset</Label>
             <Select value={datePreset} onValueChange={handlePresetChange}>

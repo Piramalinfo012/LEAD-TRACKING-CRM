@@ -722,7 +722,7 @@ const table = useReactTable({
           onClick={() => setShowFilters(prev => !prev)}
           className={`h-11 sm:h-10 shadow-sm grow sm:grow-0 flex items-center justify-center gap-1.5 px-3 rounded-xl transition-all ${
             showFilters || activeFiltersCount > 0
-              ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100'
+              ? 'bg-indigo-50 border-indigo-300 text-indigo-600 hover:bg-indigo-100'
               : 'bg-white border-border text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -755,7 +755,7 @@ const table = useReactTable({
     </div>
 
     {showFilters && (
-      <div className="bg-slate-50/50 border border-slate-200/85 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-300">
+      <div className="bg-slate-50/50 border border-slate-300/85 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-300">
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-heading">Lead Source</label>
           <Select value={selectedSource} onValueChange={setSelectedSource}>
@@ -945,7 +945,7 @@ const table = useReactTable({
             return (
               <div
                 key={row.id}
-                className="mx-3 my-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
+                className="mx-3 my-2 rounded-2xl border border-slate-300 bg-white shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
                 onClick={() => setSelectedLead(row.original)}
               >
                 {/* Card Header */}
@@ -1010,7 +1010,7 @@ const table = useReactTable({
                       </div>
                     )}
                     {plannedDate && (
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-full">
                         <Calendar size={11} />
                         Planned: {formatDateToDMY(plannedDate)}
                       </div>

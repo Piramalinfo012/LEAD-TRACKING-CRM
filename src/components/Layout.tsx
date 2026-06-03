@@ -23,6 +23,7 @@ import {
   Menu,
   Home,
   Clock,
+  Layers,
   CheckCircle2,
   PhoneCall,
   Package,
@@ -137,6 +138,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
   const menuItems = [
     { name: 'Dashboard', icon: Home, path: '/' },
     { name: 'Reports', icon: BarChart3, path: '/reports' },
+    { name: 'Other', icon: Layers, path: '/other' },
     { name: 'User Management', icon: Users, path: '/users', roles: ['ADMIN', 'CRM'] },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
@@ -185,7 +187,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-hide">
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-2 border-l-2 border-indigo-500/50 ml-1 pl-2">Main Menu</div>
-        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports').map((item) => {
+        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports' || i.name === 'Other').map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link key={item.path} to={item.path} onClick={onNavItemClick} className="block relative">
@@ -555,7 +557,7 @@ export function Shell({ children }: LayoutProps) {
                   <div className="fixed inset-0 z-30" onClick={() => setIsNotificationsOpen(false)} />
                   <div className="fixed top-16 left-4 right-4 lg:left-auto lg:right-4 w-auto lg:w-96 z-[9999] shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200">
                     {/* Glass card */}
-                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
+                    <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-300/80 overflow-hidden">
                       {/* Header */}
                       <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4">
                         <div className="flex items-center justify-between">

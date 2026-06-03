@@ -61,7 +61,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled, onS
   return (
     <div ref={wrapperRef} className="relative w-full">
       <div 
-        className={`flex items-center justify-between bg-white h-12 text-sm rounded-xl shadow-sm border px-4 cursor-pointer focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400' : 'border-slate-200 text-slate-900'}`}
+        className={`flex items-center justify-between bg-white h-12 text-sm rounded-xl shadow-sm border px-4 cursor-pointer focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-300 text-slate-400' : 'border-slate-300 text-slate-900'}`}
         onClick={() => !disabled && setOpen(!open)}
       >
         <span className={value ? "text-slate-900" : "text-slate-500"}>{value || placeholder}</span>
@@ -69,7 +69,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled, onS
       </div>
       
       {open && (
-        <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-300 rounded-xl shadow-xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
             <Search size={14} className="text-slate-400 ml-2" />
             <input 
@@ -370,7 +370,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[95vw] max-w-3xl bg-white border-slate-200 text-slate-900 shadow-2xl p-0 overflow-hidden rounded-2xl">
+      <DialogContent className="w-[95vw] max-w-3xl bg-white border-slate-300 text-slate-900 shadow-2xl p-0 overflow-hidden rounded-2xl">
         <DialogHeader className="p-5 md:p-8 bg-slate-50 border-b border-slate-100">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
@@ -393,7 +393,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 <Input 
                   id="party_name" 
                   placeholder="Enter Company Name" 
-                  className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
+                  className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
                   value={formData.party_name}
                   onChange={(e) => handlePartyNameChange(e.target.value)}
                   onFocus={() => {
@@ -414,7 +414,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 />
                 
                 {showSuggestions && (
-                  <div className="absolute z-[100] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-[200px] overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-xl max-h-[200px] overflow-y-auto animate-in fade-in slide-in-from-top-2">
                     {filteredParties.map((party, idx) => (
                       <button
                         key={idx}
@@ -440,7 +440,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Input 
                  id="person_name" 
                  placeholder="Full Name" 
-                 className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
+                 className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
                  value={formData.person_name}
                  onChange={(e) => setFormData({...formData, person_name: e.target.value})}
                  required
@@ -459,11 +459,11 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 )}
               </div>
               <div className={`flex gap-2 p-0.5 rounded-[13px] transition-all ${duplicateLead ? 'bg-rose-50 ring-2 ring-rose-500/20' : ''}`}>
-                <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl px-3 text-slate-500 font-sans font-bold text-sm h-12 whitespace-nowrap">+91</div>
+                <div className="flex items-center justify-center bg-slate-50 border border-slate-300 rounded-xl px-3 text-slate-500 font-sans font-bold text-sm h-12 whitespace-nowrap">+91</div>
                 <Input 
                   id="mobile_no" 
                   placeholder="00000 00000" 
-                  className={`bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl flex-1 ${duplicateLead ? 'border-rose-300 text-rose-600 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
+                  className={`bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl flex-1 ${duplicateLead ? 'border-rose-300 text-rose-600 focus:border-rose-500 focus:ring-rose-500/10' : ''}`}
                   value={formData.mobile_no}
                   onChange={(e) => handleMobileChange(e.target.value)}
                   required
@@ -485,7 +485,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 id="gmail_id" 
                 type="email" 
                 placeholder="example@gmail.com" 
-                className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
+                className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
                 value={formData.gmail_id}
                 onChange={(e) => setFormData({...formData, gmail_id: e.target.value})}
               />
@@ -498,7 +498,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Textarea 
                 id="address" 
                 placeholder="Village, Street, Building Details..." 
-                className="bg-white border-slate-200 text-slate-900 min-h-[100px] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pt-3 px-4 rounded-xl resize-none"
+                className="bg-white border-slate-300 text-slate-900 min-h-[100px] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pt-3 px-4 rounded-xl resize-none"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
               />
@@ -542,7 +542,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 <Button 
                   type="button"
                   variant="outline" 
-                  className={`w-full h-12 px-4 md:px-5 justify-center shadow-sm rounded-xl border-dashed border-2 text-sm font-sans transition-all ${formData.mcb_kit_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                  className={`w-full h-12 px-4 md:px-5 justify-center shadow-sm rounded-xl border-dashed border-2 text-sm font-sans transition-all ${formData.mcb_kit_url ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 text-slate-500 hover:bg-slate-100'}`}
                   onClick={() => document.getElementById('file-upload')?.click()}
                   disabled={uploading}
                 >
@@ -574,7 +574,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                   id="source" 
                   list="sources-list"
                   placeholder="Select or Add Source" 
-                  className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pr-10 rounded-xl"
+                  className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pr-10 rounded-xl"
                   value={formData.source}
                   onChange={(e) => setFormData({...formData, source: e.target.value})}
                 />
@@ -592,7 +592,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Input 
                 id="follow_up_date" 
                 type="date"
-                className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
+                className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
                 value={formData.follow_up_date}
                 onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
               />
@@ -612,10 +612,10 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                      }));
                    }}
                  >
-                   <SelectTrigger className="bg-white border-slate-200 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl">
+                   <SelectTrigger className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl">
                      <SelectValue placeholder="Select Sales Person" />
                    </SelectTrigger>
-                   <SelectContent className="bg-white border-slate-200 shadow-xl rounded-xl z-[100] max-h-60">
+                   <SelectContent className="bg-white border-slate-300 shadow-xl rounded-xl z-[100] max-h-60">
                      {users.map((u, idx) => {
                        const name = u['USER NAME'] || u.name;
                        if (!name) return null;
@@ -628,7 +628,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                    id="sales_person" 
                    value={formData.sales_person_name}
                    disabled
-                   className="bg-slate-50 border-slate-200 text-slate-500 h-12 font-sans text-sm cursor-not-allowed font-medium shadow-none px-4 rounded-xl"
+                   className="bg-slate-50 border-slate-300 text-slate-500 h-12 font-sans text-sm cursor-not-allowed font-medium shadow-none px-4 rounded-xl"
                  />
                )}
             </div>
@@ -638,7 +638,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
               <Textarea 
                 id="last_remarks" 
                 placeholder="Brief summary of the requirement..." 
-                className="bg-white border-slate-200 text-slate-900 min-h-[110px] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pt-3 px-4 rounded-xl resize-none"
+                className="bg-white border-slate-300 text-slate-900 min-h-[110px] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all pt-3 px-4 rounded-xl resize-none"
                 value={formData.last_remarks}
                 onChange={(e) => setFormData({...formData, last_remarks: e.target.value})}
               />

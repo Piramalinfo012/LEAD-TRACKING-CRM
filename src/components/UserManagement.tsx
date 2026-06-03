@@ -138,7 +138,7 @@ export default function UserManagement() {
           <UserPlus size={15} /> Add New User
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white border-slate-200 text-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md mx-4 sm:mx-auto">
+      <DialogContent className="bg-white border-slate-300 text-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md mx-4 sm:mx-auto">
         <DialogHeader className="mb-5">
           <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
             {editingUser ? 'Edit User Profile' : 'Create User Profile'}
@@ -152,7 +152,7 @@ export default function UserManagement() {
               placeholder="Full identity name"
               value={newUser.name}
               onChange={e => setNewUser({...newUser, name: e.target.value})}
-              className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl"
+              className="bg-slate-50 border-slate-300 h-11 text-slate-900 font-medium px-4 rounded-xl"
               required
             />
           </div>
@@ -163,7 +163,7 @@ export default function UserManagement() {
               placeholder="Corporate email address"
               value={newUser.email}
               onChange={e => setNewUser({...newUser, email: e.target.value})}
-              className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl"
+              className="bg-slate-50 border-slate-300 h-11 text-slate-900 font-medium px-4 rounded-xl"
               required
             />
           </div>
@@ -174,17 +174,17 @@ export default function UserManagement() {
                 placeholder="EMP000"
                 value={newUser.employee_id}
                 onChange={e => setNewUser({...newUser, employee_id: e.target.value})}
-                className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl"
+                className="bg-slate-50 border-slate-300 h-11 text-slate-900 font-medium px-4 rounded-xl"
                 required
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest pl-1">Role</Label>
               <Select value={newUser.role} onValueChange={(v: UserRole) => setNewUser({...newUser, role: v})}>
-                <SelectTrigger className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl">
+                <SelectTrigger className="bg-slate-50 border-slate-300 h-11 text-slate-900 font-medium px-4 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200 p-1 rounded-xl shadow-xl">
+                <SelectContent className="bg-white border-slate-300 p-1 rounded-xl shadow-xl">
                   <SelectItem value={UserRole.ADMIN}>ADMIN</SelectItem>
                   <SelectItem value={UserRole.SALES}>SALES</SelectItem>
                   <SelectItem value={UserRole.CRM}>CRM</SelectItem>
@@ -201,7 +201,7 @@ export default function UserManagement() {
               placeholder="User password"
               value={newUser.password}
               onChange={e => setNewUser({...newUser, password: e.target.value})}
-              className="bg-slate-50 border-slate-200 h-11 text-slate-900 font-medium px-4 rounded-xl"
+              className="bg-slate-50 border-slate-300 h-11 text-slate-900 font-medium px-4 rounded-xl"
               required={!editingUser}
             />
           </div>
@@ -300,7 +300,7 @@ export default function UserManagement() {
       </div>
 
       {/* Desktop: Table layout, Mobile: hidden */}
-      <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-white border border-slate-300 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead className="bg-slate-50/70 border-b border-slate-100">

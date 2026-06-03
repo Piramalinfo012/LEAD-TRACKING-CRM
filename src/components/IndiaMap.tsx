@@ -27,7 +27,7 @@ const formatCurrency = (val: number | string) => {
 const MapControls = () => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
-    <div className="absolute top-4 right-4 flex flex-col gap-2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-xl shadow-lg border border-slate-200/50">
+    <div className="absolute top-4 right-4 flex flex-col gap-2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-xl shadow-lg border border-slate-300/50">
       <button onClick={() => zoomIn()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
       <button onClick={() => zoomOut()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
       <button onClick={() => resetTransform()} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-700 transition-colors" title="Reset View"><Maximize size={18} /></button>
@@ -220,7 +220,7 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="font-heading font-bold text-sm text-slate-900">{lead['Party Name'] || lead.company_name || 'Unknown'}</span>
-                        <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest bg-slate-50 border-slate-200 text-slate-500">{lead.status}</Badge>
+                        <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest bg-slate-50 border-slate-300 text-slate-500">{lead.status}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-xs font-sans text-slate-500">
                         <span className="flex items-center gap-1.5"><User size={12} className="text-slate-400" /> {lead['Person Name'] || lead.contact_person || '-'}</span>
