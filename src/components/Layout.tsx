@@ -369,7 +369,8 @@ export function Shell({ children }: LayoutProps) {
       if (cached && !silent) {
         try { setLeads(JSON.parse(cached)); } catch(e) {}
       }
-      const data = await request('/api/leads', { silent });
+      const endpoint = silent ? '/api/leads' : '/api/leads?force=true';
+      const data = await request(endpoint, { silent });
       if (data && Array.isArray(data)) {
         setLeads(data);
         localStorage.setItem('crm_leads_cache', JSON.stringify(data));

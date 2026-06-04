@@ -722,7 +722,8 @@ app.use(express.json());
   // Leads: List
   app.get('/api/leads', authenticateToken, async (req: any, res) => {
     try {
-      const leads = await refreshLeadsCache();
+      const forceRefresh = req.query.force === 'true';
+      const leads = await refreshLeadsCache(forceRefresh);
       const users = await refreshUsersCache();
       const { role, id, employee_id, name } = req.user;
 
