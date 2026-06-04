@@ -439,7 +439,7 @@ export function Shell({ children }: LayoutProps) {
 
   const mobileNavItems = [
     { icon: Home, path: '/', label: 'Home' },
-    { icon: Kanban, path: '/pipeline/lead', label: 'Stages' },
+    { icon: Layers, path: '/other', label: 'Other' },
     { icon: PlusCircle, action: () => setIsNewLeadOpen(true), label: 'Add', primary: true },
     { icon: BarChart3, path: '/reports', label: 'Reports' },
     { icon: Settings, path: '/settings', label: 'Setup' },

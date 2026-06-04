@@ -166,18 +166,18 @@ async function doLeadsFetch() {
         sales_person_name: l['Sales Person Name'] || '',
         mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
         last_remarks: l['Last Remarks'] || '',
-        followup_date: l['Follow Up date'] || '',
+        followup_date: l['Follow Up date'] || l['__col_13'] || '',
         'District': l['District'],
-        'Follow Up date': l['Follow Up date'],
+        'Follow Up date': l['Follow Up date'] || l['__col_13'] || '',
         'Source': l['Source'],
         'Party Name': l['Party Name'],
         'Person Name': l['Person Name'],
         'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
         'Gmail ID': l['Gmail ID'],
         'Last Remarks': l['Last Remarks'],
-        created_at: l['Timestamp'] || '',
+        created_at: l['Timestamp'] || l['__col_0'] || '',
         updated_at: (
-          l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
+          l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || l['__col_0'] || ''
         ),
         owner_id: l['Sales Person Name'] || 'SYSTEM',
         entry_by_id: l['Entry By Id'] || '',
@@ -261,9 +261,9 @@ async function doLeadsFetch() {
           sales_person_name: l['Sales Person Name'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
           last_remarks: l['Last Remarks'] || '',
-          followup_date: l['Follow Up date'] || '',
+          followup_date: l['Follow Up date'] || l['__col_13'] || '',
           'District': l['District'],
-          'Follow Up date': l['Follow Up date'],
+          'Follow Up date': l['Follow Up date'] || l['__col_13'] || '',
           'Source': l['Source'],
           'Party Name': l['Party Name'],
           'Person Name': l['Person Name'],
@@ -271,9 +271,9 @@ async function doLeadsFetch() {
           'Gmail ID': l['Gmail ID'],
           'MCBs. (KIT) URl': l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'],
           'Last Remarks': l['Last Remarks'],
-          created_at: l['Timestamp'] || '',
+          created_at: l['Timestamp'] || l['__col_0'] || '',
           updated_at: (
-            l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || ''
+            l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || l['__col_0'] || ''
           ),
           owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
           is_fms: true,
@@ -1408,19 +1408,8 @@ app.use(express.json());
   // Quick Access API
   app.get('/api/quick-access', authenticateToken, async (req, res) => {
     try {
-      const rows = await SheetsDB.getRows('Quick Access', undefined, 0, 10);
-      if (rows && rows.length > 0) {
-        const firstRow = rows[0];
-        const links = [
-          { name: 'Technical Help Form', url: firstRow['Technical Help Form'] || '', icon: 'LifeBuoy' },
-          { name: 'System Alteration', url: firstRow['System Alteration form'] || '', icon: 'Settings2' },
-          { name: 'Leave Application', url: firstRow['Leave Application'] || '', icon: 'CalendarDays' },
-          { name: 'Attendance', url: firstRow['Attendance'] || '', icon: 'UserCheck' }
-        ].filter(link => link.url);
-        res.json(links);
-      } else {
-        res.json([]);
-      }
+      const rows = await SheetsDB.getRows('Quick Access');
+      res.json(rows || []);
     } catch (error: any) {
       console.error('Error fetching Quick Access:', error);
       res.status(500).json({ error: error.message });

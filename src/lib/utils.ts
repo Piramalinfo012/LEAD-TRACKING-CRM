@@ -22,10 +22,12 @@ export function formatDateToDMY(dateInput: any): string {
     return `${dmyMatch[1]}/${dmyMatch[2]}/${dmyMatch[3]}`;
   }
 
-  // If YYYY-MM-DD
-  const ymdMatch = valStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (ymdMatch) {
-    return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+  // If YYYY-MM-DD (but not full ISO string)
+  if (valStr.length <= 10) {
+    const ymdMatch = valStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+      return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+    }
   }
 
   // Try parsing with Date object

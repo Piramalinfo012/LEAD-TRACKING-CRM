@@ -311,35 +311,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                           </div>
                         </div>
 
-                        {/* Valuation & Priority */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Valuation ($)</Label>
-                            <Input 
-                              type="number"
-                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
-                              value={editFormData.expected_value}
-                              onChange={(e) => setEditFormData(prev => ({ ...prev, expected_value: Number(e.target.value) }))}
-                              placeholder="Enter expected value..."
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Priority</Label>
-                            <Select 
-                              value={editFormData.priority} 
-                              onValueChange={(val) => setEditFormData(prev => ({ ...prev, priority: val as Priority }))}
-                            >
-                              <SelectTrigger className="bg-white border-slate-300 h-9 text-xs text-slate-900 rounded-lg">
-                                <SelectValue placeholder="Select Priority" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-border rounded-lg shadow-xl">
-                                {Object.values(Priority).map(p => (
-                                  <SelectItem key={p} value={p} className="text-xs font-semibold">{p}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+
 
                         {/* Business Context & Follow Up Date */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -375,7 +347,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                         </div>
 
                         {/* Contact Channels */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Mobile Number</Label>
                             <Input 
@@ -384,16 +356,6 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                               value={editFormData.mobile}
                               onChange={(e) => setEditFormData(prev => ({ ...prev, mobile: e.target.value }))}
                               placeholder="Mobile..."
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alternate Number</Label>
-                            <Input 
-                              type="text"
-                              className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
-                              value={editFormData.alternate_mobile}
-                              onChange={(e) => setEditFormData(prev => ({ ...prev, alternate_mobile: e.target.value }))}
-                              placeholder="Alternate mobile..."
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -526,35 +488,12 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                           </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                           <div className="space-y-1">
                             <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-widest">Lead Contact</span>
                             <div className="flex items-center gap-2 text-slate-900 font-sans font-semibold">
                               <CheckCircle2 size={14} className="text-emerald-500" />
                               <span>{lead.contact_person || lead['Person Name'] || 'N/A'}</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-widest">Valuation</span>
-                            <div className="text-indigo-600 font-sans font-bold text-xl">
-                              {lead.expected_value ? `$${lead.expected_value.toLocaleString()}` : '$0.00'}
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-widest">Priority</span>
-                            <div>
-                              <Badge 
-                                variant="outline" 
-                                className={`
-                                  text-[10px] font-bold uppercase px-2 py-0.5 rounded-md
-                                  ${lead.priority === Priority.CRITICAL ? 'bg-rose-50 text-rose-600 border-rose-200' : 
-                                    lead.priority === Priority.HIGH ? 'bg-orange-50 text-orange-600 border-orange-200' :
-                                    lead.priority === Priority.MEDIUM ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                    'bg-slate-50 text-slate-600 border-slate-300'}
-                                `}
-                              >
-                                {lead.priority || 'NORMAL'}
-                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -597,14 +536,10 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                           <h4 className="text-[10px] font-heading uppercase font-bold text-slate-900 tracking-widest flex items-center gap-2">
                             <Phone size={14} className="text-indigo-600" /> Primary Channels
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div className="space-y-1">
                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Direct Line</span>
                               <p className="text-sm font-sans font-semibold text-slate-700">{lead.mobile || lead['Mobile No. ']}</p>
-                            </div>
-                            <div className="space-y-1">
-                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Alternate No.</span>
-                               <p className="text-sm font-sans font-semibold text-slate-700">{lead.alternate_mobile || '-'}</p>
                             </div>
                             <div className="space-y-1">
                               <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Email Route</span>
