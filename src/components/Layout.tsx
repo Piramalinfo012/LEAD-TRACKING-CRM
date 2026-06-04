@@ -386,7 +386,7 @@ export function Shell({ children }: LayoutProps) {
     
     const interval = setInterval(() => {
       fetchLeads(true);
-    }, 20000);
+    }, 3000);
     
     return () => clearInterval(interval);
   }, [request]);

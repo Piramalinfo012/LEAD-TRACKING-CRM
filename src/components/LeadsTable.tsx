@@ -250,23 +250,21 @@ export default function LeadsTable() {
     });
   }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, stage]);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      const applyData = (leadsToApply: any[]) => {
-        setData(leadsToApply); // Status filtering is now handled in filteredData
-      };
-
       const cached = localStorage.getItem('crm_leads_cache');
-      if (cached) {
-        try { applyData(JSON.parse(cached)); } catch(e) {}
+      if (cached && !silent) {
+        try { setData(JSON.parse(cached)); } catch(e) {}
       }
-
       setIsSyncing(true);
-      const leads = await request('/api/leads', { silent: !!cached });
-      applyData(leads);
-      localStorage.setItem('crm_leads_cache', JSON.stringify(leads));
+      const endpoint = silent ? '/api/leads' : '/api/leads?force=true';
+      const res = await request(endpoint, { silent });
+      if (res && Array.isArray(res)) {
+        setData(res);
+        localStorage.setItem('crm_leads_cache', JSON.stringify(res));
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load leads', err);
     } finally {
       setIsSyncing(false);
     }

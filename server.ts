@@ -14,7 +14,7 @@ import { SheetsDB } from './src/lib/sheets.js';
 import { getDriveClient } from './src/lib/google-auth.js';
 
 // --- Server Side Caching ---
-const LEADS_CACHE_TTL = 10 * 1000; // 10 seconds cache TTL
+const LEADS_CACHE_TTL = 2 * 1000; // 2 seconds cache TTL for near real-time sync
 const USERS_CACHE_TTL = 15 * 1000; // 15 seconds cache TTL
 const MASTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
@@ -1440,11 +1440,42 @@ app.use(express.json());
   });
 
   // Get active Notice from Master B2 (Notice col in row with Source === 'Self')
-  // Quick Access API
+  let quickAccessCache: any[] | null = null;
+  let lastQuickAccessFetch = 0;
+  let activeQuickAccessFetch: Promise<any> | null = null;
+
   app.get('/api/quick-access', authenticateToken, async (req, res) => {
     try {
-      const rows = await SheetsDB.getRows('Quick Access');
-      res.json(rows || []);
+      const now = Date.now();
+      
+      // Background fetch if expired
+      if (quickAccessCache && (now - lastQuickAccessFetch >= 5 * 60 * 1000)) {
+        if (!activeQuickAccessFetch) {
+          activeQuickAccessFetch = SheetsDB.getRows('Quick Access').then(rows => {
+            quickAccessCache = rows || [];
+            lastQuickAccessFetch = Date.now();
+            return quickAccessCache;
+          }).finally(() => {
+            activeQuickAccessFetch = null;
+          });
+        }
+      }
+
+      // If we don't have cache, fetch it now
+      if (!quickAccessCache) {
+        if (!activeQuickAccessFetch) {
+          activeQuickAccessFetch = SheetsDB.getRows('Quick Access').then(rows => {
+            quickAccessCache = rows || [];
+            lastQuickAccessFetch = Date.now();
+            return quickAccessCache;
+          }).finally(() => {
+            activeQuickAccessFetch = null;
+          });
+        }
+        await activeQuickAccessFetch;
+      }
+      
+      res.json(quickAccessCache || []);
     } catch (error: any) {
       console.error('Error fetching Quick Access:', error);
       res.status(500).json({ error: error.message });
