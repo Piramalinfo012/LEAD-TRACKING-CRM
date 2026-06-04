@@ -19,10 +19,10 @@ import {
   TrendingUp, 
   CheckCircle2, 
   Clock, 
-  ArrowUpRight, 
   ArrowDownRight,
   Filter,
-  XCircle
+  XCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { getEmbeddableUrl } from '../lib/utils';
@@ -237,14 +237,25 @@ export default function Dashboard() {
   }, [leads, selectedSalesPerson, fromDate, toDate]);
 
   const stats = useMemo(() => {
-    const isWon = (l: any) => l.order_status && l.order_status.toLowerCase().trim() === 'recieved';
+    const getLeadStage = (lead: any) => {
+      if (lead.closed_at || String(lead.status || '').toUpperCase() === 'CLOSED') return 'closed';
+      if (lead.order_planned_date && !lead.order_actual_date) return 'order';
+      if (lead.negotiation_planned_date && !lead.negotiation_actual_date) return 'negotiation';
+      if (lead.tech_planned_date && !lead.tech_actual_date) return 'tech';
+      if (lead.sample_planned_date && !lead.sample_actual_date) return 'sample';
+      if (lead.meeting_planned_date && !lead.meeting_actual_date) return 'meeting';
+      if (lead.lead_planned_date && !lead.lead_actual_date) return 'lead';
+      return 'cold';
+    };
+
+    const isWon = (l: any) => l.order_status && String(l.order_status).toLowerCase().trim() === 'recieved';
     return {
       totalLeads: filteredLeads.length,
       activeLeads: filteredLeads.filter((l: any) => {
-        const st = l.status?.toUpperCase() || 'COLD';
-        return st !== 'CLOSED' && !isWon(l);
+        const stage = getLeadStage(l);
+        return stage !== 'closed' && !isWon(l);
       }).length,
-      closedLeads: filteredLeads.filter((l: any) => l.status?.toUpperCase() === 'CLOSED').length,
+      closedLeads: filteredLeads.filter((l: any) => getLeadStage(l) === 'closed').length,
       convertedOrders: filteredLeads.filter(isWon).length,
     };
   }, [filteredLeads]);
@@ -286,13 +297,28 @@ export default function Dashboard() {
       };
     });
 
+    const getLeadStage = (lead: any) => {
+      if (lead.closed_at || String(lead.status || '').toUpperCase() === 'CLOSED') return 'closed';
+      if (lead.order_planned_date && !lead.order_actual_date) return 'order';
+      if (lead.negotiation_planned_date && !lead.negotiation_actual_date) return 'negotiation';
+      if (lead.tech_planned_date && !lead.tech_actual_date) return 'tech';
+      if (lead.sample_planned_date && !lead.sample_actual_date) return 'sample';
+      if (lead.meeting_planned_date && !lead.meeting_actual_date) return 'meeting';
+      if (lead.lead_planned_date && !lead.lead_actual_date) return 'lead';
+      return 'cold';
+    };
+
+    const isWon = (l: any) => l.order_status && String(l.order_status).toLowerCase().trim() === 'recieved';
+
     const funnel = [
-      { name: 'Cold', value: filteredLeads.filter(l => (l.status?.toUpperCase() || 'COLD') === 'COLD').length },
-      { name: 'Lead', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'LEAD').length },
-      { name: 'Meeting', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'MEETING').length },
-      { name: 'Tech Talk', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'TECHNICAL_DISCUSSION').length },
-      { name: 'Negotiation', value: filteredLeads.filter(l => l.status?.toUpperCase() === 'NEGOTIATION').length },
-      { name: 'Won ✓', value: filteredLeads.filter(l => l.order_status && l.order_status.toLowerCase().trim() === 'recieved').length },
+      { name: 'Cold', value: filteredLeads.filter(l => getLeadStage(l) === 'cold').length },
+      { name: 'Lead', value: filteredLeads.filter(l => getLeadStage(l) === 'lead').length },
+      { name: 'Meeting', value: filteredLeads.filter(l => getLeadStage(l) === 'meeting').length },
+      { name: 'Tech Talk', value: filteredLeads.filter(l => getLeadStage(l) === 'tech').length },
+      { name: 'Sample', value: filteredLeads.filter(l => getLeadStage(l) === 'sample').length },
+      { name: 'Negotiation', value: filteredLeads.filter(l => getLeadStage(l) === 'negotiation').length },
+      { name: 'Order', value: filteredLeads.filter(l => getLeadStage(l) === 'order').length },
+      { name: 'Won ✓', value: filteredLeads.filter(isWon).length },
     ];
 
     return {
@@ -403,6 +429,20 @@ export default function Dashboard() {
           >
             <Filter size={16} />
             <span className="hidden sm:inline text-xs font-semibold">Filters</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm shrink-0 h-10 w-10 rounded-xl"
+            onClick={() => {
+              setIsSyncing(true);
+              window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
+              setTimeout(() => setIsSyncing(false), 800);
+            }}
+            disabled={isSyncing}
+            title="Manual Refresh"
+          >
+            <RefreshCw size={18} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
           </Button>
           <Button className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-md shadow-indigo-500/20 text-[10px] font-heading font-medium uppercase tracking-wider h-10 px-5 rounded-xl shrink-0">Export</Button>
         </div>

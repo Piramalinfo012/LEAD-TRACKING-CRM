@@ -30,9 +30,12 @@ const MASTER_CACHE_FILE = path.join(CACHE_DIR, 'master.json');
 let LEADS_CACHE: any[] | null = null;
 let USERS_CACHE: any[] | null = null;
 let MASTER_CACHE: any[] | null = null;
+let EXTRA_DATA_CACHE: { followups: any[], history: any[], techProducts: any[] } | null = null;
 let LAST_FETCH_LEADS = 0;
 let LAST_FETCH_USERS = 0;
 let LAST_FETCH_MASTER = 0;
+let LAST_FETCH_EXTRA_DATA = 0;
+const EXTRA_DATA_CACHE_TTL = 30 * 1000; // 30 seconds
 
 // Load from disk on startup
 try {
@@ -77,6 +80,7 @@ try {
 let activeLeadsFetchPromise: Promise<any[]> | null = null;
 let activeUsersFetchPromise: Promise<any[]> | null = null;
 let activeMasterFetchPromise: Promise<any[]> | null = null;
+let activeExtraDataFetchPromise: Promise<any> | null = null;
 
 const normalizeLeadId = (value: any) => String(value ?? '').trim().toLowerCase();
 
@@ -97,6 +101,57 @@ const getDeletedIdFromRow = (row: any) => {
   }
   return null;
 };
+
+async function doExtraDataFetch() {
+  const now = Date.now();
+  console.log('Refreshing Extra Data Cache from Sheets...');
+  try {
+    // Increase timeout to 25000 to prevent AbortError
+    const [followups, history, techProducts] = await Promise.all([
+      SheetsDB.getRows('Followups', undefined, 0, 25000).catch(() => []),
+      SheetsDB.getRows('LeadHistory', undefined, 0, 25000).catch(() => []),
+      SheetsDB.getRows('Prodcut Negotiation', undefined, 0, 25000).catch(() => []),
+    ]);
+    EXTRA_DATA_CACHE = { followups, history, techProducts };
+    LAST_FETCH_EXTRA_DATA = now;
+    return EXTRA_DATA_CACHE;
+  } catch (err) {
+    console.error("Failed to fetch Extra Data", err);
+    throw err;
+  }
+}
+
+async function refreshExtraDataCache(force = false) {
+  const now = Date.now();
+  
+  if (force) {
+    if (!activeExtraDataFetchPromise) {
+      activeExtraDataFetchPromise = doExtraDataFetch().finally(() => {
+        activeExtraDataFetchPromise = null;
+      });
+    }
+    return activeExtraDataFetchPromise;
+  }
+
+  // Stale-While-Revalidate pattern for ultra-fast UI
+  if (EXTRA_DATA_CACHE) {
+    if (now - LAST_FETCH_EXTRA_DATA >= EXTRA_DATA_CACHE_TTL) {
+      if (!activeExtraDataFetchPromise) {
+        activeExtraDataFetchPromise = doExtraDataFetch().finally(() => {
+          activeExtraDataFetchPromise = null;
+        });
+      }
+    }
+    return EXTRA_DATA_CACHE;
+  }
+
+  if (!activeExtraDataFetchPromise) {
+    activeExtraDataFetchPromise = doExtraDataFetch().finally(() => {
+      activeExtraDataFetchPromise = null;
+    });
+  }
+  return activeExtraDataFetchPromise;
+}
 
 const isLeadDeleted = (lead: any, deletedLeadMap: Map<string, any>) => {
   const id = normalizeLeadId(lead.id);
@@ -128,17 +183,13 @@ async function doLeadsFetch() {
     let leads: any[] = [];
     if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SCRIPT_URL) {
       
-      // Fetch both sheets in parallel to cut loading time in half, with 8s timeout safeguard
-      const [rawMain, fmsRows, deletedRows] = await Promise.all([
-        SheetsDB.getRows('Entry Data', undefined, 0, 8000).catch(err => {
-          console.warn('Leads sheet fetch failed (Entry Data):', err);
-          return [];
-        }),
-        SheetsDB.getRows('NEW_FMS', undefined, 5, 8000).catch(err => {
+      // Fetch both sheets in parallel to cut loading time in half, with 25s timeout safeguard
+      const [fmsRows, deletedRows] = await Promise.all([
+        SheetsDB.getRows('NEW_FMS', undefined, 5, 25000).catch(err => {
           console.error('NEW_FMS fetch failed during cache refresh:', err.message);
           throw err; // Throw error so we don't wipe out the cache with an empty array!
         }),
-        SheetsDB.getRows('Deleted', undefined, 0, 8000).catch(err => {
+        SheetsDB.getRows('Deleted', undefined, 0, 25000).catch(err => {
           console.warn('Deleted sheet fetch failed during cache refresh:', err.message || err);
           return [];
         })
@@ -151,96 +202,6 @@ async function doLeadsFetch() {
           deletedLeadMap.set(result.id, result.row);
         }
       });
-
-      const mainLeads = rawMain.filter((r: any) => (r['Party Name'] || r['Id']) && String(r['Id']).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => ({
-        id: l['Id'] || `LD-MAIN-${index}`,
-        company_name: l['Party Name'] || '',
-        contact_person: l['Person Name'] || '',
-        mobile: l['Mobile No. '] || l['Mobile No.'] || '',
-        email: l['Gmail ID'] || '',
-        address: l['Address'] || '',
-        state: l['State'] || '',
-        district: l['District'] || '',
-        source: l['Source'] || '',
-        status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
-        sales_person_name: l['Sales Person Name'] || '',
-        mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
-        last_remarks: l['Last Remarks'] || '',
-        followup_date: l['Follow Up date'] || l['__col_13'] || '',
-        'District': l['District'],
-        'Follow Up date': l['Follow Up date'] || l['__col_13'] || '',
-        'Source': l['Source'],
-        'Party Name': l['Party Name'],
-        'Person Name': l['Person Name'],
-        'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
-        'Gmail ID': l['Gmail ID'],
-        'Last Remarks': l['Last Remarks'],
-        created_at: l['Timestamp'] || l['__col_0'] || '',
-        updated_at: (
-          l['__col_60'] || l['__col_47'] || l['__col_33'] || l['__col_24'] || l['__col_16'] || l['Timestamp'] || l['__col_0'] || ''
-        ),
-        owner_id: l['Sales Person Name'] || 'SYSTEM',
-        entry_by_id: l['Entry By Id'] || '',
-        is_deleted: l['is_deleted'] || l['Is Deleted'] || l['__col_82'] || '',
-        delete_marker: l['DELETE'] || l['Delete'] || l['__col_82'] || '',
-        DELETE: l['DELETE'] || l['Delete'] || '',
-        __col_82: l['__col_82'] || '',
-        
-        // Lead Stage Fields
-        lead_planned_date: l['__col_15'] || l['Lead Planned Date'] || l['planned_date'] || '',
-        lead_actual_date: l['__col_16'] || l['Lead Actual Date'] || l['actual_date'] || '',
-        lead_status: l['Lead Status'] || l['custom_status'] || '',
-        product_details: l['Product details.'] || l['product_details'] || '',
-        mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
-        pain_points: l['Pain Points – Remark in detail.'] || l['pain_points'] || '',
-        kit_details: l['KIT Url'] || l['KIT.'] || l['kit_details'] || '',
-        meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
-
-        // Meeting Stage Fields
-        meeting_planned_date: l['__col_23'] || l['Meeting Planned Date'] || l['Meeting Planned'] || '',
-        meeting_actual_date: l['__col_24'] || l['Meeting Actual Date'] || l['Meeting Actual'] || '',
-        meeting_status: l['Meeting Status'] || '',
-        reschedule_date: l['Reschedule Meeting Date'] || '',
-        discussion_points: l['Discussion Points'] || l['Discussion Points.'] || '',
-        meeting_person_name: l['Meeting Person Name'] || '',
-        meeting_number: l['Contact Number'] || l['Contact No'] || l['Number'] || '',
-        bullet_point_remarks: l['Bullet Point Remarks'] || l['Bullet Point Remarks.'] || '',
-        meeting_url: l['Picture of Meeting Url'] || '',
-
-        // Technical Discussion Stage Fields
-        tech_planned_date: l['__col_32'] || '',
-        tech_actual_date: l['__col_33'] || '',
-        tech_status: l['__col_34'] || l['Technical Status'] || '',
-        tech_kit_url: l['__col_44'] || l['Kit Attachment Url'] || '',
-
-        // Sample Stage Fields
-        sample_planned_date: l['__col_73'] || l['Sample Planned Date'] || '',
-        sample_actual_date: l['__col_74'] || l['Sample Actule Date'] || '',
-        sample_status: l['__col_75'] || l['Sample Status'] || '',
-        sample_product_name: l['__col_76'] || l['Prodcut Name'] || l['Product Name'] || '',
-        sample_qty: l['__col_77'] || l['Qty'] || '',
-        sample_dispatch_date: l['__col_78'] || l['Sample Dispach Date'] || '',
-        sample_remark: l['__col_79'] || l['Remark If-Any'] || '',
-        sample_attachment: l['__col_80'] || l['Attachment'] || '',
-
-        // Negotiation Stage Fields
-        negotiation_planned_date: l['__col_46'] || '',
-        negotiation_actual_date: l['__col_47'] || '',
-        negotiation_status: l['__col_48'] || l['Status'] || '',
-        quotation_url: l['__col_49'] || l['Quotation Upload:'] || '',
-        unit: l['__col_50'] || l['Unit'] || '',
-        final_price: l['__col_51'] || l['Final Price'] || '',
-        quantity: l['__col_52'] || l['Quantity,'] || '',
-        payment_terms: l['__col_53'] || l['Payment Terms'] || '',
-        delivery_schedule: l['__col_54'] || l['Delivery Schedule.'] || '',
-        party_type: l['__col_55'] || l['Party Type classification:'] || '',
-        negotiation_remark: l['__col_56'] || l['Remark if-Any'] || '',
-        negotiation_kit_url: l['__col_57'] || l['Kit Attachment'] || '',
-
-        // Order Stage Fields
-        order_planned_date: l['__col_59'] || '',
-        order_actual_date: l['__col_60'] || ''
-      }));
 
       const fmsLeads = fmsRows.filter((r: any) => (r.Id || r['Party Name']) && String(r.Id).trim().toLowerCase() !== 'id' && String(r['Party Name']).trim().toLowerCase() !== 'party name').map((l: any, index: number) => {
         const companyName = l['Party Name'] || '';
@@ -354,7 +315,7 @@ async function doLeadsFetch() {
         };
       });
 
-      leads = [...mainLeads, ...fmsLeads].filter((l: any) => !isLeadDeleted(l, deletedLeadMap));
+      leads = fmsLeads.filter((l: any) => !isLeadDeleted(l, deletedLeadMap));
     } else {
       throw new Error('Google Sheets credentials (GOOGLE_SCRIPT_URL) are missing.');
     }
@@ -384,7 +345,7 @@ async function doLeadsFetch() {
 async function refreshLeadsCache(force = false) {
   const now = Date.now();
   
-  if (force || !LEADS_CACHE || now - LAST_FETCH_LEADS >= LEADS_CACHE_TTL) {
+  if (force) {
     if (!activeLeadsFetchPromise) {
       activeLeadsFetchPromise = doLeadsFetch().finally(() => {
         activeLeadsFetchPromise = null;
@@ -393,7 +354,24 @@ async function refreshLeadsCache(force = false) {
     return activeLeadsFetchPromise;
   }
 
-  return LEADS_CACHE;
+  // Stale-While-Revalidate pattern for ultra-fast UI
+  if (LEADS_CACHE) {
+    if (now - LAST_FETCH_LEADS >= LEADS_CACHE_TTL) {
+      if (!activeLeadsFetchPromise) {
+        activeLeadsFetchPromise = doLeadsFetch().finally(() => {
+          activeLeadsFetchPromise = null;
+        });
+      }
+    }
+    return LEADS_CACHE;
+  }
+
+  if (!activeLeadsFetchPromise) {
+    activeLeadsFetchPromise = doLeadsFetch().finally(() => {
+      activeLeadsFetchPromise = null;
+    });
+  }
+  return activeLeadsFetchPromise;
 }
 
 async function doUsersFetch() {
@@ -429,7 +407,7 @@ async function doUsersFetch() {
 async function refreshUsersCache(force = false) {
   const now = Date.now();
   
-  if (force || !USERS_CACHE || now - LAST_FETCH_USERS >= USERS_CACHE_TTL) {
+  if (force) {
     if (!activeUsersFetchPromise) {
       activeUsersFetchPromise = doUsersFetch().finally(() => {
         activeUsersFetchPromise = null;
@@ -438,7 +416,24 @@ async function refreshUsersCache(force = false) {
     return activeUsersFetchPromise;
   }
 
-  return USERS_CACHE;
+  // Stale-While-Revalidate pattern for ultra-fast UI
+  if (USERS_CACHE) {
+    if (now - LAST_FETCH_USERS >= USERS_CACHE_TTL) {
+      if (!activeUsersFetchPromise) {
+        activeUsersFetchPromise = doUsersFetch().finally(() => {
+          activeUsersFetchPromise = null;
+        });
+      }
+    }
+    return USERS_CACHE;
+  }
+
+  if (!activeUsersFetchPromise) {
+    activeUsersFetchPromise = doUsersFetch().finally(() => {
+      activeUsersFetchPromise = null;
+    });
+  }
+  return activeUsersFetchPromise;
 }
 
 async function doMasterFetch() {
@@ -470,7 +465,7 @@ async function doMasterFetch() {
 async function refreshMasterCache(force = false) {
   const now = Date.now();
   
-  if (force || !MASTER_CACHE || now - LAST_FETCH_MASTER >= MASTER_CACHE_TTL) {
+  if (force) {
     if (!activeMasterFetchPromise) {
       activeMasterFetchPromise = doMasterFetch().finally(() => {
         activeMasterFetchPromise = null;
@@ -479,7 +474,24 @@ async function refreshMasterCache(force = false) {
     return activeMasterFetchPromise;
   }
 
-  return MASTER_CACHE;
+  // Stale-While-Revalidate pattern for ultra-fast UI
+  if (MASTER_CACHE) {
+    if (now - LAST_FETCH_MASTER >= MASTER_CACHE_TTL) {
+      if (!activeMasterFetchPromise) {
+        activeMasterFetchPromise = doMasterFetch().finally(() => {
+          activeMasterFetchPromise = null;
+        });
+      }
+    }
+    return MASTER_CACHE;
+  }
+
+  if (!activeMasterFetchPromise) {
+    activeMasterFetchPromise = doMasterFetch().finally(() => {
+      activeMasterFetchPromise = null;
+    });
+  }
+  return activeMasterFetchPromise;
 }
 
 function getSubordinateIdentifiers(currentUser: any, users: any[]) {
@@ -759,7 +771,7 @@ app.use(express.json());
       };
       
       // Background save to Sheets
-      SheetsDB.addRow('Entry Data', leadData).catch(e => console.error("Background Sheet Add Error:", e))
+      SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
         .finally(() => refreshLeadsCache(true));
       
       // Update cache optimistically
@@ -845,34 +857,34 @@ app.use(express.json());
         }
       }
 
-      // History tracking if status changed
-      if (updateData.status) {
-        const existingLead = leads.find((l: any) => l.id === id);
-        if (existingLead && existingLead.status !== updateData.status) {
-          await SheetsDB.addRow('LeadHistory', {
-            id: `HIST-${Date.now()}`,
-            lead_id: id,
-            prev_stage: existingLead.status,
-            next_stage: updateData.status,
-            user_id: req.user.id,
-            timestamp: new Date().toISOString(),
-            remarks: updateData.remarks || 'Status change'
-          });
-        }
-      }
-
       const existingLeadObj = leads.find((l: any) => l.id === id);
-      const isFms = updateData.is_fms !== undefined ? updateData.is_fms : (existingLeadObj ? existingLeadObj.is_fms : true);
-      const sheetName = isFms ? 'NEW_FMS' : 'Entry Data';
+      const prevStatus = existingLeadObj ? existingLeadObj.status : null;
+      const isFms = true; // Force everything to NEW_FMS
+      const sheetName = 'NEW_FMS';
       const idField = 'Id';
       
       const mappedUpdate = { ...updateData };
       if (updateData.status) mappedUpdate['Stage'] = updateData.status; // Avoid collision with 'Status' which is custom_status
       if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
       
+      // DO NOT STORE FORMULA DATES
+      delete mappedUpdate.lead_planned_date;
+      delete mappedUpdate['Lead Planned Date'];
+      delete mappedUpdate.meeting_planned_date;
+      delete mappedUpdate['Meeting Planned Date'];
+      delete mappedUpdate.tech_planned_date;
+      delete mappedUpdate.negotiation_planned_date;
+      delete mappedUpdate.order_planned_date;
+      delete mappedUpdate.sample_planned_date;
+      delete mappedUpdate['Sample Planned Date'];
+      delete mappedUpdate['__col_73'];
+      
       // Map Lead Stage fields
-      // Do NOT map Lead Planned Date as it is formula-generated
-      if (updateData.lead_actual_date !== undefined) mappedUpdate['Lead Actual Date'] = updateData.lead_actual_date;
+      if (updateData.lead_actual_date !== undefined) {
+        mappedUpdate['__col_16'] = updateData.lead_actual_date;
+        mappedUpdate['Lead Actual Date'] = updateData.lead_actual_date;
+        mappedUpdate['actual_date'] = updateData.lead_actual_date;
+      }
       if (updateData.custom_status !== undefined) mappedUpdate['Lead Status'] = updateData.custom_status;
       if (updateData.lead_status !== undefined && !updateData.custom_status) mappedUpdate['Lead Status'] = updateData.lead_status;
       if (updateData.product_details !== undefined) mappedUpdate['Product details.'] = updateData.product_details;
@@ -898,9 +910,6 @@ app.use(express.json());
       }
       if (updateData.meeting_status !== undefined) {
         mappedUpdate['Meeting Status'] = updateData.meeting_status;
-        if (updateData.status === 'MEETING') {
-          mappedUpdate['Status'] = updateData.meeting_status;
-        }
       }
       if (updateData.reschedule_date !== undefined) mappedUpdate['Reschedule Meeting Date'] = updateData.reschedule_date;
       if (updateData.discussion_points !== undefined) {
@@ -980,6 +989,18 @@ app.use(express.json());
       // Run Google Sheets updates in the background (fire and forget)
       (async () => {
         try {
+          if (updateData.status && prevStatus && prevStatus !== updateData.status) {
+            await SheetsDB.addRow('LeadHistory', {
+              id: `HIST-${Date.now()}`,
+              lead_id: id,
+              prev_stage: prevStatus,
+              next_stage: updateData.status,
+              user_id: req.user.id,
+              timestamp: new Date().toISOString(),
+              remarks: updateData.remarks || 'Status change'
+            });
+          }
+
           await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
           
           if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
@@ -1043,8 +1064,8 @@ app.use(express.json());
 
       const leads = await refreshLeadsCache();
       const targetLead = leads.find((l: any) => l.id === id);
-      const isFms = targetLead?.is_fms ?? false;
-      const sheetName = isFms ? 'NEW_FMS' : 'Entry Data';
+      const isFms = true;
+      const sheetName = 'NEW_FMS';
 
       // Optimistically remove from cache
       if (LEADS_CACHE) {
@@ -1077,7 +1098,7 @@ app.use(express.json());
           );
 
           // 2. Actually DELETE the row from the data sheet
-          await SheetsDB.deleteRow(sheetName, 'Id', id, isFms ? 5 : 0);
+          await SheetsDB.deleteRow(sheetName, 'Id', id, 5);
           console.log(`[DELETE] Successfully deleted lead ${id} from ${sheetName}`);
         } catch (err) {
           console.error("Background Sheet Delete Error:", err);
@@ -1095,8 +1116,21 @@ app.use(express.json());
   // Followups
   app.get('/api/history/:leadId', authenticateToken, async (req, res) => {
     try {
-      const history = await SheetsDB.getRows('LeadHistory');
-      res.json(history.filter(h => h.lead_id === req.params.leadId));
+      const cache = await refreshExtraDataCache();
+      res.json(cache.history.filter((h: any) => h.lead_id === req.params.leadId));
+    } catch (error: any) {
+      if (error.message && error.message.includes('not found')) {
+        res.json([]);
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.get('/api/leads/:id/tech-products', authenticateToken, async (req, res) => {
+    try {
+      const cache = await refreshExtraDataCache();
+      res.json(cache.techProducts.filter((p: any) => p.Id === req.params.id));
     } catch (error: any) {
       if (error.message && error.message.includes('not found')) {
         res.json([]);
@@ -1108,8 +1142,8 @@ app.use(express.json());
 
   app.get('/api/followups/:leadId', authenticateToken, async (req, res) => {
     try {
-      const followups = await SheetsDB.getRows('Followups');
-      res.json(followups.filter(f => f.lead_id === req.params.leadId));
+      const cache = await refreshExtraDataCache();
+      res.json(cache.followups.filter((f: any) => f.lead_id === req.params.leadId));
     } catch (error: any) {
       if (error.message && error.message.includes('not found')) {
         res.json([]);
@@ -1545,6 +1579,7 @@ if (!process.env.VERCEL) {
     refreshLeadsCache().catch(e => console.error('Initial Leads Cache warm-up failed:', e));
     refreshUsersCache().catch(e => console.error('Initial Users Cache warm-up failed:', e));
     refreshMasterCache().catch(e => console.error('Initial Master Cache warm-up failed:', e));
+    refreshExtraDataCache().catch(e => console.error('Initial Extra Data Cache warm-up failed:', e));
   });
 }
 

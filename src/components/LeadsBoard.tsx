@@ -8,7 +8,8 @@ import {
   Tag, 
   Calendar,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Lead, LeadStatus } from '../types';
@@ -131,6 +132,11 @@ export default function KanbanBoard() {
 
   const leadsByStage = STAGES.reduce((acc, stage) => {
     let stageLeads = filteredLeads.filter(l => {
+      // Ensure CLOSED leads ONLY show in the 'closed' stage column
+      if (stage !== LeadStatus.CLOSED && (l.closed_at || l.status?.toUpperCase() === 'CLOSED')) {
+        return false;
+      }
+
       if (stage === LeadStatus.LEAD) {
         return !!l.lead_planned_date && !l.lead_actual_date;
       } else if (stage === LeadStatus.MEETING) {
@@ -178,6 +184,20 @@ export default function KanbanBoard() {
               </SelectContent>
             </Select>
           </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm shrink-0 h-10 w-10"
+            onClick={() => {
+              setIsSyncing(true);
+              window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
+              setTimeout(() => setIsSyncing(false), 800);
+            }}
+            disabled={isSyncing}
+            title="Manual Refresh"
+          >
+            <RefreshCw size={18} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
+          </Button>
           <Button 
             onClick={() => setIsNewLeadDialogOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-md shadow-indigo-500/20 py-2 font-heading font-medium text-[10px] uppercase tracking-widest h-10 px-5 rounded-xl shrink-0"

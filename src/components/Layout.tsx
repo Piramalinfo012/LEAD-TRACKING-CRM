@@ -1,5 +1,5 @@
 import React, { ReactNode, useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -312,6 +312,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 }
 
 export function Shell({ children }: LayoutProps) {
+  const navigate = useNavigate();
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -507,8 +508,24 @@ export function Shell({ children }: LayoutProps) {
                         <div 
                           key={result.id}
                           onClick={() => {
-                            setSelectedSearchLead(result);
                             setSearchValue('');
+                            let finalStage = 'cold';
+                            if (result.closed_at || String(result.status || '').toUpperCase() === 'CLOSED') {
+                              finalStage = 'closed';
+                            } else if (result.order_planned_date && !result.order_actual_date) {
+                              finalStage = 'order';
+                            } else if (result.negotiation_planned_date && !result.negotiation_actual_date) {
+                              finalStage = 'negotiation';
+                            } else if (result.tech_planned_date && !result.tech_actual_date) {
+                              finalStage = 'tech';
+                            } else if (result.sample_planned_date && !result.sample_actual_date) {
+                              finalStage = 'sample';
+                            } else if (result.meeting_planned_date && !result.meeting_actual_date) {
+                              finalStage = 'meeting';
+                            } else if (result.lead_planned_date && !result.lead_actual_date) {
+                              finalStage = 'lead';
+                            }
+                            navigate(`/pipeline/${finalStage}`);
                           }}
                           className="flex items-center justify-between p-3 hover:bg-indigo-50/60 rounded-lg cursor-pointer transition-colors group"
                         >

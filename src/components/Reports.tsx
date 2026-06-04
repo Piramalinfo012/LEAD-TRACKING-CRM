@@ -21,7 +21,8 @@ import {
   Share2,
   Table as TableIcon,
   Calendar,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -248,6 +249,7 @@ export default function Reports() {
 
   const leadStats = useMemo(() => {
     const groups: Record<string, any> = {};
+    const isWon = (l: any) => l.order_status && String(l.order_status).toLowerCase().trim() === 'recieved';
     
     filteredLeads.forEach((l: any) => {
       const name = l['Sales Person Name'] || l.owner_id || 'Unassigned';
@@ -255,7 +257,7 @@ export default function Reports() {
         groups[name] = { name, leads: 0, conversions: 0, value: 0 };
       }
       groups[name].leads++;
-      if (l.status?.toUpperCase() === 'ORDER') {
+      if (isWon(l)) {
         groups[name].conversions++;
         groups[name].value += Number(l.expected_value || 0);
       }
@@ -272,21 +274,32 @@ export default function Reports() {
     let negotiation = 0;
     let orderReceived = 0;
 
+    const getLeadStage = (lead: any) => {
+      if (lead.closed_at || String(lead.status || '').toUpperCase() === 'CLOSED') return 'closed';
+      if (lead.order_planned_date && !lead.order_actual_date) return 'order';
+      if (lead.negotiation_planned_date && !lead.negotiation_actual_date) return 'negotiation';
+      if (lead.tech_planned_date && !lead.tech_actual_date) return 'tech';
+      if (lead.sample_planned_date && !lead.sample_actual_date) return 'sample';
+      if (lead.meeting_planned_date && !lead.meeting_actual_date) return 'meeting';
+      if (lead.lead_planned_date && !lead.lead_actual_date) return 'lead';
+      return 'cold';
+    };
+
     filteredLeads.forEach((l: any) => {
-      const status = l.status?.toUpperCase();
+      const stage = getLeadStage(l);
       
       // Active Leads in hand (not closed)
-      if (status !== 'CLOSED') {
+      if (stage !== 'closed') {
         inHand++;
       }
       
-      // Quotation shared (has quotation url or status is negotiation)
-      if (l.quotation_url || l.negotiation_status?.toLowerCase().includes('quotation')) {
+      // Quotation shared (has quotation url or stage is negotiation/order)
+      if (l.quotation_url || l.negotiation_status?.toLowerCase().includes('quotation') || stage === 'negotiation' || stage === 'order') {
         quotationShared++;
       }
 
-      // Meeting Done (has actual date or status passed meeting)
-      if (l.meeting_actual_date || status === 'MEETING' || status === 'TECHNICAL_DISCUSSION' || status === 'NEGOTIATION' || status === 'ORDER') {
+      // Meeting Done (has actual date or stage passed meeting)
+      if (l.meeting_actual_date || stage === 'meeting' || stage === 'tech' || stage === 'sample' || stage === 'negotiation' || stage === 'order') {
         meetingDone++;
       }
 
@@ -296,12 +309,12 @@ export default function Reports() {
       }
 
       // Negotiation Stage
-      if (status === 'NEGOTIATION') {
+      if (stage === 'negotiation') {
         negotiation++;
       }
 
       // Order Received = WON (order_status === 'Recieved')
-      if (l.order_status && l.order_status.toLowerCase().trim() === 'recieved') {
+      if (l.order_status && String(l.order_status).toLowerCase().trim() === 'recieved') {
         orderReceived++;
       }
     });
@@ -351,6 +364,18 @@ export default function Reports() {
           >
             <Filter size={16} />
             <span className="hidden sm:inline text-xs font-semibold">Filters</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm shrink-0 h-10 w-10 rounded-xl"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
+            }}
+            disabled={isSyncing}
+            title="Manual Refresh"
+          >
+            <RefreshCw size={18} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
           </Button>
           <Button 
             onClick={() => setIsExportDialogOpen(true)}

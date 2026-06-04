@@ -62,6 +62,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
   const { request, loading } = useApi();
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [history, setHistory] = useState<LeadHistory[]>([]);
+  const [techProducts, setTechProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -208,6 +209,9 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
       
       const hData = await request(`/api/history/${lead?.id}`);
       setHistory(hData || []);
+
+      const pData = await request(`/api/leads/${lead?.id}/tech-products`, { silent: true });
+      setTechProducts(pData || []);
     } catch (err) {
       console.error(err);
     }
@@ -461,32 +465,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                       </form>
                     ) : (
                       <>
-                        {currentUser?.role === UserRole.ADMIN && (
-                          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-[10px] uppercase font-extrabold text-indigo-900 tracking-widest flex items-center gap-2">
-                                <UserCheck size={14} /> Global Assignment
-                              </h4>
-                              <Badge variant="outline" className="text-[9px] font-bold text-indigo-600 bg-indigo-50 uppercase border-indigo-100">Admin Only</Badge>
-                            </div>
-                            <Select 
-                              disabled={isAssigning}
-                              defaultValue={lead.owner_id} 
-                              onValueChange={handleAssign}
-                            >
-                              <SelectTrigger className="bg-white border-indigo-100 h-10 text-xs text-slate-900 font-bold px-4 rounded-lg focus:ring-indigo-500/20">
-                                <SelectValue placeholder="Assign Owner" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-border rounded-lg shadow-xl">
-                                {users.map(u => (
-                                  <SelectItem key={u.id} value={u.employee_id} className="text-xs font-medium">
-                                    {u.name} ({u.employee_id})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+
 
                         <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                           <div className="space-y-1">
@@ -766,6 +745,65 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                                <div className="text-sm font-sans font-semibold text-slate-700">{renderValueOrLink(lead.tech_kit_url)}</div>
                                             </div>
                                           )}
+                                          {techProducts && techProducts.length > 0 && (
+                                            <div className="md:col-span-2 mt-2 space-y-3">
+                                              <span className="text-[10px] font-heading uppercase font-bold text-slate-500 tracking-widest border-b pb-1 inline-block">Products Negotiated</span>
+                                              <div className="grid gap-3">
+                                                {techProducts.map((prod, idx) => (
+                                                  <div key={idx} className="p-3 bg-white border border-slate-200 rounded-lg text-sm grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Product Name</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Product Name'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Density</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Density'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">GCV</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['GCV'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Flash Point</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Flash Point'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Moisture</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Moisture'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Carbon Content</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Carbon Content'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Sulphur</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Sulphur'] || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Sediment</span>
+                                                      <span className="font-semibold text-slate-700 text-xs">{prod['Sediment.'] || prod['Sediment'] || '-'}</span>
+                                                    </div>
+                                                    {(prod['Remarks in Detail.'] || prod['Remarks in Detail'] || prod['Kit Attachment Url']) && (
+                                                      <div className="col-span-2 sm:col-span-4 mt-1 border-t border-slate-100 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {(prod['Remarks in Detail.'] || prod['Remarks in Detail']) && (
+                                                          <div>
+                                                            <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Remarks</span>
+                                                            <span className="text-slate-600 text-xs">{prod['Remarks in Detail.'] || prod['Remarks in Detail']}</span>
+                                                          </div>
+                                                        )}
+                                                        {prod['Kit Attachment Url'] && (
+                                                          <div>
+                                                            <span className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Kit Attachment</span>
+                                                            <span className="text-slate-600 text-xs">{renderValueOrLink(prod['Kit Attachment Url'])}</span>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
                                        </div>
                                     </div>
                                  )}
@@ -893,12 +931,7 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
             </div>
           </div>
 
-          <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
-            <div className="w-full flex gap-3">
-              <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-medium h-12 text-xs uppercase tracking-widest shadow-sm shadow-indigo-500/20">Advance Stage</Button>
-              <Button variant="ghost" className="border-none text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 px-6 font-heading font-medium text-[10px] uppercase tracking-widest">Retire Lead</Button>
-            </div>
-          </DialogFooter>
+
         </div>
       </DialogContent>
     </Dialog>

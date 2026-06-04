@@ -25,7 +25,8 @@ import {
   Calendar,
   ArrowRight,
   XCircle,
-  MapPin
+  MapPin,
+  RefreshCw
 } from 'lucide-react';
 import { useApi } from '../lib/api';
 import { Lead, LeadStatus, Priority } from '../types';
@@ -203,6 +204,11 @@ export default function LeadsTable() {
       if (stage) {
         const stageKey = stage.toLowerCase();
         
+        // Ensure CLOSED leads ONLY show in the 'closed' stage tab
+        if (stageKey !== 'closed' && (lead.closed_at || lead.status?.toUpperCase() === 'CLOSED')) {
+          return false;
+        }
+
         if (stageKey === 'lead') {
           const hasPlanned = !!(lead.lead_planned_date);
           const hasActual = !!(lead.lead_actual_date);
@@ -573,6 +579,42 @@ export default function LeadsTable() {
     return meetingCols as ColumnDef<Lead>[];
   }
 
+  if (stage?.toLowerCase() === 'sample') {
+    const sampleCols = [...defaultCols];
+
+    sampleCols.push({
+      accessorKey: 'sample_remark',
+      meta: { className: 'hidden sm:table-cell' },
+      header: 'Remark',
+      cell: ({ row }) => {
+        const remark = row.original.sample_remark || row.original.status || '-';
+        return (
+          <Badge className="bg-indigo-50 text-indigo-600 capitalize font-heading font-medium text-[10px] border-none px-2 py-0.5 rounded-full">
+            {String(remark).toLowerCase().replace('_', ' ')}
+          </Badge>
+        );
+      }
+    });
+
+    sampleCols.push({
+      accessorKey: 'created_at',
+      meta: { className: 'hidden md:table-cell' },
+      header: 'Timestamp',
+      sortingFn: customDateSortFn,
+      cell: ({ row }) => {
+        return <div className="text-[10px] text-slate-600 font-sans font-medium uppercase tracking-tight">{formatDateToDMY(row.original.created_at || row.original.Timestamp)}</div>;
+      },
+    });
+
+    sampleCols.push({
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => renderActions(row)
+    });
+
+    return sampleCols as ColumnDef<Lead>[];
+  }
+
   // Standard columns for other stages
   return [
     ...defaultCols,
@@ -742,6 +784,20 @@ const table = useReactTable({
           title="Download CSV"
         >
           <Download size={18} />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-white border-border text-slate-600 hover:text-slate-900 shadow-sm grow sm:grow-0 h-11 sm:h-10"
+          onClick={() => {
+            setIsSyncing(true);
+            window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
+            setTimeout(() => setIsSyncing(false), 800);
+          }}
+          disabled={isSyncing}
+          title="Manual Refresh"
+        >
+          <RefreshCw size={18} className={isSyncing ? "animate-spin text-indigo-500" : ""} />
         </Button>
         <Button 
           onClick={() => setIsNewLeadDialogOpen(true)}

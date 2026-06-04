@@ -347,24 +347,24 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
       } 
       // Check for Reschedule
       else if (
-        payload.meeting_status === 'Reschedule' || 
-        payload.tech_status === 'Reschedule' || 
-        payload.negotiation_status === 'Reschedule' || 
-        payload.custom_status === 'Reschedule' || 
-        payload.order_status === 'Reschedule' || 
-        payload.reschedule_date
+        (payload.meeting_status === 'Reschedule' && payload.meeting_status !== lead.meeting_status) || 
+        (payload.tech_status === 'Reschedule' && payload.tech_status !== lead.tech_status) || 
+        (payload.negotiation_status === 'Reschedule' && payload.negotiation_status !== lead.negotiation_status) || 
+        (payload.custom_status === 'Reschedule' && payload.custom_status !== lead.custom_status) || 
+        (payload.order_status === 'Reschedule' && payload.order_status !== lead.order_status) || 
+        (payload.reschedule_date && payload.reschedule_date !== lead.reschedule_date)
       ) {
         successMsg = '📅 Meeting Rescheduled successfully!';
       }
       // Check for Follow up
       else if (
-        payload.custom_status === 'Follow up' || 
-        payload.meeting_status === 'Follow up' || 
-        payload.tech_status === 'Follow up' || 
-        payload.negotiation_status === 'Follow up' ||
-        payload.order_status === 'Follow up' ||
-        payload.meeting_followup_date ||
-        payload.followup_date
+        (payload.custom_status === 'Follow up' && payload.custom_status !== lead.custom_status) || 
+        (payload.meeting_status === 'Follow up' && payload.meeting_status !== lead.meeting_status) || 
+        (payload.tech_status === 'Follow up' && payload.tech_status !== lead.tech_status) || 
+        (payload.negotiation_status === 'Follow up' && payload.negotiation_status !== lead.negotiation_status) ||
+        (payload.order_status === 'Follow up' && payload.order_status !== lead.order_status) ||
+        (payload.meeting_followup_date && payload.meeting_followup_date !== lead.meeting_followup_date) ||
+        (payload.followup_date && payload.followup_date !== lead.followup_date)
       ) {
         successMsg = '⏱️ Follow-up scheduled successfully!';
       }
