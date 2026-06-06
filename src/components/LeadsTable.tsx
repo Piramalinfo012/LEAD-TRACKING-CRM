@@ -60,6 +60,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from './ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import LeadDetailsSheet from './LeadDetailsSheet';
 import NewLeadDialog from './NewLeadDialog';
 import ColdLeadFormDialog from './ColdLeadFormDialog';
@@ -71,6 +72,28 @@ export default function LeadsTable() {
   const { stage } = useParams<{ stage: string }>();
   const [data, setData] = useState<Lead[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [rescheduleLogLead, setRescheduleLogLead] = useState<Lead | null>(null);
+  const [rescheduleLogs, setRescheduleLogs] = useState<any[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+
+  useEffect(() => {
+    if (rescheduleLogLead) {
+      setIsLoadingLogs(true);
+      request(`/api/history/${rescheduleLogLead.id}`)
+        .then(hData => {
+          const logs = (hData || []).filter((h: any) => 
+            h.remarks?.toLowerCase().includes('reschedule') || 
+            h.next_stage?.toLowerCase().includes('reschedule') ||
+            h.prev_stage?.toLowerCase().includes('reschedule')
+          );
+          setRescheduleLogs(logs.length > 0 ? logs : hData || []);
+        })
+        .catch(() => toast.error("Failed to load logs"))
+        .finally(() => setIsLoadingLogs(false));
+    } else {
+      setRescheduleLogs([]);
+    }
+  }, [rescheduleLogLead, request]);
 
   const handleDeleteLead = async (id: string) => {
     if (confirm("Are you sure you want to delete this lead?")) {
@@ -430,6 +453,33 @@ export default function LeadsTable() {
             </div>
           );
         },
+      },
+      {
+        id: 'reschedules',
+        header: 'Reschedules',
+        cell: ({ row }) => {
+          const count = row.original['Reschedule Count'] || row.original.reschedule_count || row.original['Reschedule'] || row.original['No of Reschedules'] || 0;
+          const rescheduleDate = row.original.reschedule_date || row.original['Reschedule Date'];
+          
+          if ((!count || count === '0' || count === 0) && !rescheduleDate) return <div className="text-slate-300 font-bold text-xs">-</div>;
+          
+          return (
+            <div 
+              className="flex flex-col items-start gap-1 cursor-pointer p-2 -m-2 hover:bg-rose-50 rounded-xl transition-colors group"
+              onClick={(e) => { e.stopPropagation(); setRescheduleLogLead(row.original); }}
+              title="View reschedule logs"
+            >
+              {count && count !== '0' && count !== 0 ? (
+                <Badge className="bg-rose-100 text-rose-700 group-hover:bg-rose-600 group-hover:text-white border-none font-extrabold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm transition-colors">
+                  {count} Times
+                </Badge>
+              ) : null}
+              {rescheduleDate ? (
+                <span className="text-[10px] font-mono font-bold text-rose-500 whitespace-nowrap">{formatDateToDMY(rescheduleDate)}</span>
+              ) : null}
+            </div>
+          );
+        }
       },
       {
         id: 'view',
@@ -1161,6 +1211,44 @@ const table = useReactTable({
         promoteToStage={promoteTargetStage}
         currentStageView={stage}
       />
+
+      <Dialog open={!!rescheduleLogLead} onOpenChange={(open) => !open && setRescheduleLogLead(null)}>
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-2xl p-6">
+          <DialogHeader className="mb-4 border-b border-slate-100 pb-4">
+            <DialogTitle className="text-xl font-heading font-semibold text-rose-600 flex items-center gap-2">
+              <Calendar size={20} className="text-rose-500" /> Reschedule History
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+            {isLoadingLogs ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full rounded-xl bg-slate-100" />
+                <Skeleton className="h-20 w-full rounded-xl bg-slate-100" />
+              </div>
+            ) : rescheduleLogs.length > 0 ? (
+              <div className="space-y-3">
+                {rescheduleLogs.map((log: any, idx: number) => (
+                  <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-slate-500 font-mono tracking-tight">{formatDateToDMY(log.timestamp)}</span>
+                      <Badge variant="outline" className="text-[9px] bg-white text-slate-400 border-slate-200 uppercase">{log.user_id}</Badge>
+                    </div>
+                    <p className="text-sm font-medium text-slate-700 leading-snug">
+                      {log.remarks || `Moved from ${log.prev_stage?.replace('_', ' ')} to ${log.next_stage?.replace('_', ' ')}`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 flex flex-col items-center gap-2">
+                <Calendar size={32} className="text-slate-200 mb-2" />
+                <p className="text-slate-500 font-medium">No history logs found.</p>
+                <p className="text-xs text-slate-400">Reschedules might not have been logged.</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

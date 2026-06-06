@@ -1005,8 +1005,10 @@ app.use(express.json());
           await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
           
           if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
+            const d = new Date();
+            const formattedTimestamp = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             const rescheduleData = {
-              'Timestamp': new Date().toISOString(),
+              'Timestamp': formattedTimestamp,
               'Id': id,
               'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
               'Reschedule Date': updateData.reschedule_date || '',

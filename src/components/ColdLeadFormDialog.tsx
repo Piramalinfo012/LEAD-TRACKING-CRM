@@ -310,22 +310,22 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
           const selectedIndex = stagesSeq.indexOf(selectedStage as LeadStatus);
           
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.LEAD)) {
-            if (!lead.lead_actual_date) payload.lead_actual_date = nowDmy;
+            if (!lead.lead_actual_date && payload.custom_status !== 'Reschedule') payload.lead_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.MEETING)) {
-            if (!lead.meeting_actual_date) payload.meeting_actual_date = nowDmy;
+            if (!lead.meeting_actual_date && payload.meeting_status !== 'Reschedule') payload.meeting_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.SAMPLE)) {
-            if (!lead.sample_actual_date) payload.sample_actual_date = nowDmy;
+            if (!lead.sample_actual_date && payload.sample_status !== 'Reschedule') payload.sample_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.TECHNICAL_DISCUSSION)) {
-            if (!lead.tech_actual_date) payload.tech_actual_date = nowDmy;
+            if (!lead.tech_actual_date && payload.tech_status !== 'Reschedule') payload.tech_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.NEGOTIATION)) {
-            if (!lead.negotiation_actual_date) payload.negotiation_actual_date = nowDmy;
+            if (!lead.negotiation_actual_date && payload.negotiation_status !== 'Reschedule') payload.negotiation_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.ORDER)) {
-            if (!lead.order_actual_date) payload.order_actual_date = nowDmy;
+            if (!lead.order_actual_date && payload.order_status !== 'Reschedule') payload.order_actual_date = nowDmy;
           }
           if (selectedIndex >= stagesSeq.indexOf(LeadStatus.CLOSED)) {
             if (!lead.closed_at) payload.closed_at = nowDmy;
