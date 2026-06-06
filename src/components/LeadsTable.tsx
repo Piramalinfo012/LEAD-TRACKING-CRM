@@ -75,13 +75,21 @@ export default function LeadsTable() {
   const handleDeleteLead = async (id: string) => {
     if (confirm("Are you sure you want to delete this lead?")) {
       try {
+        // Optimistic UI update to remove it instantly
+        setData(prev => {
+          const newData = prev.filter(lead => lead.id !== id);
+          localStorage.setItem('crm_leads_cache', JSON.stringify(newData));
+          return newData;
+        });
+
         await request(`/api/leads/${id}`, {
           method: 'DELETE'
         });
         toast.success("Lead successfully deleted");
-        fetchData();
+        fetchData(true);
       } catch (err: any) {
         toast.error(err.message || "Failed to delete lead");
+        fetchData(); // Refresh to revert if failed
       }
     }
   };

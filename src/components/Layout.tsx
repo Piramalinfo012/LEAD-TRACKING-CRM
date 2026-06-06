@@ -249,7 +249,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
         })}
 
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-8 border-l-2 border-indigo-500/50 ml-1 pl-2">Admin</div>
-        {filteredMenu.filter(i => i.name !== 'Dashboard' && i.name !== 'Reports').map((item) => {
+        {filteredMenu.filter(i => i.name !== 'Dashboard' && i.name !== 'Reports' && i.name !== 'Other').map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link key={item.path} to={item.path} onClick={onNavItemClick} className="block relative">
