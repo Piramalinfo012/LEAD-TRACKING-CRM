@@ -27,7 +27,8 @@ import {
   CheckCircle2,
   PhoneCall,
   Package,
-  XCircle
+  XCircle,
+  ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
@@ -138,6 +139,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
   const menuItems = [
     { name: 'Dashboard', icon: Home, path: '/' },
     { name: 'Reports', icon: BarChart3, path: '/reports' },
+    { name: 'Meeting Checklist', icon: ClipboardCheck, path: '/meeting-checklist' },
     { name: 'Other', icon: Layers, path: '/other' },
     { name: 'User Management', icon: Users, path: '/users', roles: ['ADMIN', 'CRM'] },
     { name: 'Settings', icon: Settings, path: '/settings' },
@@ -187,7 +189,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-hide">
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-2 border-l-2 border-indigo-500/50 ml-1 pl-2">Main Menu</div>
-        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports' || i.name === 'Other').map((item) => {
+        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports' || i.name === 'Meeting Checklist' || i.name === 'Other').map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link key={item.path} to={item.path} onClick={onNavItemClick} className="block relative">
@@ -249,7 +251,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
         })}
 
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-8 border-l-2 border-indigo-500/50 ml-1 pl-2">Admin</div>
-        {filteredMenu.filter(i => i.name !== 'Dashboard' && i.name !== 'Reports' && i.name !== 'Other').map((item) => {
+        {filteredMenu.filter(i => i.name !== 'Dashboard' && i.name !== 'Reports' && i.name !== 'Meeting Checklist' && i.name !== 'Other').map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link key={item.path} to={item.path} onClick={onNavItemClick} className="block relative">

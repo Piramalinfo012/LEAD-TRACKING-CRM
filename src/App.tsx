@@ -14,6 +14,7 @@ import LeadsTable from './components/LeadsTable';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import UserManagement from './components/UserManagement';
+import MeetingChecklist from './components/MeetingChecklist';
 import { QuickAccessApps } from './components/QuickAccessApps';
 import { Toaster } from 'sonner';
 
@@ -67,6 +68,14 @@ export default function App() {
                 <Reports />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/meeting-checklist"
+            element={
+              <ProtectedRoute>
+                <MeetingChecklist />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/users" 

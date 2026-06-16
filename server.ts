@@ -1484,6 +1484,159 @@ app.use(express.json());
     }
   });
 
+  const MEETING_CHECKLIST_SHEET = 'Meeting Checklist';
+  const MEETING_CHECKLIST_HEADERS = [
+    'Date',
+    'Party Name',
+    'Appointment scheduled through CRM',
+    "Verify and obtain the client's location from CRM before travel",
+    'Inform concerned staff via WhatsApp/Email about the visit',
+    "Inform Varsha Ma'am one day before for car arrangement",
+    'Reach the meeting location on time',
+    'Questionnaire Sheet',
+    'Gift (as per designation)',
+    '2 Pens',
+    'Pad/Tablet',
+    'Notepad/Sticky Pad',
+    'Visiting Cards',
+    'PPPL Badge',
+    'Formal Attire',
+    'Review customer records before meeting',
+    'Present company profile/System/Sales Deck',
+    "Understand client's process",
+    'Discuss usage of our fuel in their process',
+    'Ask for referrals',
+    'Click photographs',
+    'Request testimonial/feedback',
+    'Send thank-you email with photo attachment',
+  ];
+
+  const formatMeetingChecklistDate = (value: any) => {
+    const raw = String(value || '').trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return raw;
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  };
+
+  const ensureMeetingChecklistHeaders = async (scriptUrl: string) => {
+    const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(MEETING_CHECKLIST_SHEET)}`);
+    if (!response.ok) {
+      throw new Error(`Google Apps Script returned status ${response.status} while reading Meeting Checklist`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Unable to read Meeting Checklist sheet');
+    }
+
+    const existingHeaders = result.data?.[0] || [];
+    for (let index = 0; index < MEETING_CHECKLIST_HEADERS.length; index++) {
+      if (existingHeaders[index] === MEETING_CHECKLIST_HEADERS[index]) continue;
+
+      const params = new URLSearchParams();
+      params.append('action', 'updateCell');
+      params.append('sheetName', MEETING_CHECKLIST_SHEET);
+      params.append('rowIndex', '1');
+      params.append('columnIndex', String(index + 1));
+      params.append('value', MEETING_CHECKLIST_HEADERS[index]);
+
+      const updateResponse = await fetch(scriptUrl, { method: 'POST', body: params });
+      if (!updateResponse.ok) {
+        throw new Error(`Google Apps Script returned status ${updateResponse.status} while updating checklist headers`);
+      }
+
+      const updateResult = await updateResponse.json();
+      if (!updateResult.success) {
+        throw new Error(updateResult.error || 'Unable to update Meeting Checklist headers');
+      }
+    }
+  };
+
+  const isMeetingChecklistChecked = (value: any) => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return normalized === 'true' || normalized === 'yes' || normalized === '1' || normalized === 'checked';
+  };
+
+  app.get('/api/meeting-checklist', authenticateToken, async (req: any, res) => {
+    try {
+      const rows = await SheetsDB.getRows(MEETING_CHECKLIST_SHEET);
+      const items = rows
+        .filter((row: any) => String(row.Date || row.date || row.__col_0 || '').trim() || String(row['Party Name'] || row.partyName || row.__col_1 || '').trim())
+        .map((row: any, index: number) => {
+          const checklist: Record<string, boolean> = {};
+          MEETING_CHECKLIST_HEADERS.slice(2).forEach(header => {
+            checklist[header] = isMeetingChecklistChecked(row[header]);
+          });
+
+          const completedItems = MEETING_CHECKLIST_HEADERS.slice(2).filter(header => checklist[header]);
+          return {
+            id: `meeting-checklist-${index}`,
+            date: row.Date || row.date || row.__col_0 || '',
+            partyName: row['Party Name'] || row.partyName || row.__col_1 || '',
+            checklist,
+            completedItems,
+            completedCount: completedItems.length,
+            totalCount: MEETING_CHECKLIST_HEADERS.length - 2,
+          };
+        })
+        .reverse();
+
+      res.json(items);
+    } catch (error: any) {
+      console.error('Meeting Checklist fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/meeting-checklist', authenticateToken, async (req: any, res) => {
+    try {
+      const date = formatMeetingChecklistDate(req.body?.date);
+      const partyName = String(req.body?.partyName || '').trim();
+      const checklist = req.body?.checklist || {};
+
+      if (!date || !partyName) {
+        return res.status(400).json({ error: 'Date and Party Name are required.' });
+      }
+
+      const rowData: Record<string, string> = {
+        Date: date,
+        'Party Name': partyName,
+      };
+
+      MEETING_CHECKLIST_HEADERS.slice(2).forEach(header => {
+        rowData[header] = checklist[header] ? 'TRUE' : 'FALSE';
+      });
+
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+      if (scriptUrl) {
+        await ensureMeetingChecklistHeaders(scriptUrl);
+
+        const rowValues = MEETING_CHECKLIST_HEADERS.map(header => rowData[header] ?? '');
+        const params = new URLSearchParams();
+        params.append('action', 'insert');
+        params.append('sheetName', MEETING_CHECKLIST_SHEET);
+        params.append('rowData', JSON.stringify(rowValues));
+
+        const response = await fetch(scriptUrl, { method: 'POST', body: params });
+        if (!response.ok) {
+          throw new Error(`Google Apps Script returned status ${response.status} while saving Meeting Checklist`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Unable to save Meeting Checklist');
+        }
+      } else {
+        await SheetsDB.addRow(MEETING_CHECKLIST_SHEET, rowData);
+      }
+
+      res.status(201).json({ success: true });
+    } catch (error: any) {
+      console.error('Meeting Checklist save error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/notice', authenticateToken, async (req, res) => {
     try {
       const masterData = await refreshMasterCache(true);
