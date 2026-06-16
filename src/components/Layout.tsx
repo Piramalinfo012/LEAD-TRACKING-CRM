@@ -350,8 +350,8 @@ export function Shell({ children }: LayoutProps) {
     async function fetchNotice() {
       try {
         const res = await request('/api/notice');
-        if (res && res.notice) {
-          setNoticeText(res.notice);
+        if (res && Object.prototype.hasOwnProperty.call(res, 'notice')) {
+          setNoticeText(String(res.notice ?? ''));
         }
       } catch (err) {
         console.error('Failed to fetch notice:', err);

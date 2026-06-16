@@ -33,8 +33,8 @@ export default function Settings() {
       async function loadNotice() {
         try {
           const res = await request('/api/notice');
-          if (res && res.notice) {
-            setNotice(res.notice);
+          if (res && Object.prototype.hasOwnProperty.call(res, 'notice')) {
+            setNotice(String(res.notice ?? ''));
           }
         } catch (err: any) {
           console.error('Failed to load notice:', err);

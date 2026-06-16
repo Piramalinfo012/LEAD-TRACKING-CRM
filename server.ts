@@ -1486,13 +1486,10 @@ app.use(express.json());
 
   app.get('/api/notice', authenticateToken, async (req, res) => {
     try {
-      const masterData = await refreshMasterCache();
-      const selfRow = masterData.find((row: any) => {
-        const src = String(row.Source || row.source || '').trim();
-        return src === 'Self' || src === 'self';
-      });
-      console.log('[NOTICE GET] selfRow:', JSON.stringify(selfRow));
-      const noticeText = selfRow ? (selfRow.Notice || selfRow.notice || '') : 'Running message to be shared through meeting – avoid sharing via WhatsApp/Email/Oral.';
+      const masterData = await refreshMasterCache(true);
+      const b2Row = masterData[0] || {};
+      const noticeText = String(b2Row.Notice ?? b2Row.notice ?? b2Row.__col_1 ?? '');
+      res.set('Cache-Control', 'no-store');
       res.json({ notice: noticeText });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
