@@ -1557,12 +1557,48 @@ app.use(express.json());
     return normalized === 'true' || normalized === 'yes' || normalized === '1' || normalized === 'checked';
   };
 
+  app.get('/api/meeting-checklist/party-names', authenticateToken, async (req: any, res) => {
+    try {
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+      let rawNames: any[] = [];
+
+      if (scriptUrl) {
+        const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent('Scot Sheet Data')}`);
+        if (!response.ok) {
+          throw new Error(`Google Apps Script returned status ${response.status} while reading Scot Sheet Data`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Unable to read Scot Sheet Data');
+        }
+
+        rawNames = (result.data || []).slice(1).map((row: any[]) => row?.[2]);
+      } else {
+        const rows = await SheetsDB.getRows('Scot Sheet Data');
+        rawNames = rows.map((row: any) => row.__col_2);
+      }
+
+      const names = Array.from(new Set(
+        rawNames
+          .map((name: any) => String(name || '').trim())
+          .filter(Boolean)
+      ));
+
+      res.json(names);
+    } catch (error: any) {
+      console.error('Meeting Checklist party names fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/meeting-checklist', authenticateToken, async (req: any, res) => {
     try {
       const rows = await SheetsDB.getRows(MEETING_CHECKLIST_SHEET);
       const items = rows
-        .filter((row: any) => String(row.Date || row.date || row.__col_0 || '').trim() || String(row['Party Name'] || row.partyName || row.__col_1 || '').trim())
-        .map((row: any, index: number) => {
+        .map((row: any, index: number) => ({ row, rowIndex: index + 2 }))
+        .filter(({ row }: any) => String(row.Date || row.date || row.__col_0 || '').trim() || String(row['Party Name'] || row.partyName || row.__col_1 || '').trim())
+        .map(({ row, rowIndex }: any) => {
           const checklist: Record<string, boolean> = {};
           MEETING_CHECKLIST_HEADERS.slice(2).forEach(header => {
             checklist[header] = isMeetingChecklistChecked(row[header]);
@@ -1570,7 +1606,8 @@ app.use(express.json());
 
           const completedItems = MEETING_CHECKLIST_HEADERS.slice(2).filter(header => checklist[header]);
           return {
-            id: `meeting-checklist-${index}`,
+            id: `meeting-checklist-${rowIndex}`,
+            rowIndex,
             date: row.Date || row.date || row.__col_0 || '',
             partyName: row['Party Name'] || row.partyName || row.__col_1 || '',
             checklist,
@@ -1584,6 +1621,49 @@ app.use(express.json());
       res.json(items);
     } catch (error: any) {
       console.error('Meeting Checklist fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch('/api/meeting-checklist/:rowIndex', authenticateToken, async (req: any, res) => {
+    try {
+      const rowIndex = Number(req.params.rowIndex);
+      const checklist = req.body?.checklist || {};
+
+      if (!Number.isInteger(rowIndex) || rowIndex < 2) {
+        return res.status(400).json({ error: 'Valid Meeting Checklist row is required.' });
+      }
+
+      const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+      if (!scriptUrl) {
+        return res.status(500).json({ error: 'GOOGLE_SCRIPT_URL not configured.' });
+      }
+
+      await ensureMeetingChecklistHeaders(scriptUrl);
+
+      for (let index = 2; index < MEETING_CHECKLIST_HEADERS.length; index++) {
+        const header = MEETING_CHECKLIST_HEADERS[index];
+        const params = new URLSearchParams();
+        params.append('action', 'updateCell');
+        params.append('sheetName', MEETING_CHECKLIST_SHEET);
+        params.append('rowIndex', String(rowIndex));
+        params.append('columnIndex', String(index + 1));
+        params.append('value', checklist[header] ? 'TRUE' : 'FALSE');
+
+        const response = await fetch(scriptUrl, { method: 'POST', body: params });
+        if (!response.ok) {
+          throw new Error(`Google Apps Script returned status ${response.status} while updating Meeting Checklist`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Unable to update Meeting Checklist');
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Meeting Checklist update error:', error);
       res.status(500).json({ error: error.message });
     }
   });
