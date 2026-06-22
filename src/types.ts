@@ -99,6 +99,10 @@ export interface Lead {
   meeting_actual_date?: string;
   meeting_status?: string;
   reschedule_date?: string;
+  reschedule_count?: number | string;
+  'Reschedule Count'?: number | string;
+  'Reschedule'?: number | string;
+  'No of Reschedules'?: number | string;
   discussion_points?: string;
   meeting_person_name?: string;
   meeting_number?: string;
