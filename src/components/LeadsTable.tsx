@@ -68,6 +68,59 @@ import NewLeadDialog from './NewLeadDialog';
 import ColdLeadFormDialog from './ColdLeadFormDialog';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
+type StageHistoryConfig = {
+  actualKey: keyof Lead;
+  plannedKey: keyof Lead;
+  statusKey: keyof Lead;
+  doneHeader: string;
+  emptyMessage: string;
+};
+
+const STAGE_HISTORY_CONFIG: Record<string, StageHistoryConfig> = {
+  lead: {
+    actualKey: 'lead_actual_date',
+    plannedKey: 'lead_planned_date',
+    statusKey: 'lead_status',
+    doneHeader: 'Lead Done On',
+    emptyMessage: 'No completed lead history found.',
+  },
+  meeting: {
+    actualKey: 'meeting_actual_date',
+    plannedKey: 'meeting_planned_date',
+    statusKey: 'meeting_status',
+    doneHeader: 'Meeting Done On',
+    emptyMessage: 'No completed meeting history found.',
+  },
+  tech: {
+    actualKey: 'tech_actual_date',
+    plannedKey: 'tech_planned_date',
+    statusKey: 'tech_status',
+    doneHeader: 'Tech Talk Done On',
+    emptyMessage: 'No completed tech talk history found.',
+  },
+  sample: {
+    actualKey: 'sample_actual_date',
+    plannedKey: 'sample_planned_date',
+    statusKey: 'sample_status',
+    doneHeader: 'Sample Done On',
+    emptyMessage: 'No completed sample history found.',
+  },
+  negotiation: {
+    actualKey: 'negotiation_actual_date',
+    plannedKey: 'negotiation_planned_date',
+    statusKey: 'negotiation_status',
+    doneHeader: 'Negotiation Done On',
+    emptyMessage: 'No completed negotiation history found.',
+  },
+  order: {
+    actualKey: 'order_actual_date',
+    plannedKey: 'order_planned_date',
+    statusKey: 'order_status',
+    doneHeader: 'Order Done On',
+    emptyMessage: 'No completed order history found.',
+  },
+};
+
 export default function LeadsTable() {
   const { request, loading } = useApi();
   const { user } = useAuth();
@@ -149,6 +202,10 @@ export default function LeadsTable() {
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [stageTab, setStageTab] = useState<'active' | 'history'>('active');
+  const currentStageKey = stage?.toLowerCase() || '';
+  const historyConfig = STAGE_HISTORY_CONFIG[currentStageKey];
+  const hasHistoryTab = !!historyConfig;
 
   const salesPersonsList = useMemo(() => {
     const list = new Set<string>();
@@ -283,6 +340,59 @@ export default function LeadsTable() {
     });
   }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, stage]);
 
+  const stageHistoryData = useMemo(() => {
+    if (!historyConfig) return [];
+
+    return data.filter(lead => {
+      if (!(lead as any)[historyConfig.actualKey]) return false;
+
+      if (currentStageKey !== 'closed' && (lead.closed_at || lead.status?.toUpperCase() === 'CLOSED')) {
+        return false;
+      }
+
+      if (selectedSalesPerson && selectedSalesPerson !== 'ALL') {
+        const spName = (lead['Sales Person Name'] || lead.owner_id || 'Unassigned').toLowerCase().trim();
+        if (spName !== selectedSalesPerson.toLowerCase().trim()) {
+          return false;
+        }
+      }
+
+      if (selectedSource && selectedSource !== 'ALL') {
+        const leadSrc = (lead.Source || lead.source || 'Unspecified').toLowerCase().trim();
+        if (leadSrc !== selectedSource.toLowerCase().trim()) {
+          return false;
+        }
+      }
+
+      if (selectedProduct && selectedProduct !== 'ALL') {
+        const leadProd = (lead.product || 'General').toLowerCase().trim();
+        if (leadProd !== selectedProduct.toLowerCase().trim()) {
+          return false;
+        }
+      }
+
+      if (fromDate) {
+        const leadDate = new Date(lead.created_at);
+        const filterFrom = new Date(fromDate);
+        filterFrom.setHours(0, 0, 0, 0);
+        if (leadDate < filterFrom) {
+          return false;
+        }
+      }
+
+      if (toDate) {
+        const leadDate = new Date(lead.created_at);
+        const filterTo = new Date(toDate);
+        filterTo.setHours(23, 59, 59, 999);
+        if (leadDate > filterTo) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [data, selectedSalesPerson, selectedSource, selectedProduct, fromDate, toDate, historyConfig, currentStageKey]);
+
   const fetchData = async (silent = false) => {
     try {
       const cached = localStorage.getItem('crm_leads_cache');
@@ -304,6 +414,7 @@ export default function LeadsTable() {
   };
 
   useEffect(() => {
+    setStageTab('active');
     fetchData();
   }, [stage]);
 
@@ -625,7 +736,56 @@ export default function LeadsTable() {
     return leadCols as ColumnDef<Lead>[];
   }
 
-  if (stage?.toLowerCase() === 'meeting') {
+  if (historyConfig && stageTab === 'history') {
+    const historyCols = [...defaultCols];
+
+    if (currentStageKey === 'meeting') {
+      historyCols.push({
+        id: 'meeting_with',
+        accessorFn: (row) => `${row.meeting_person_name || ''} ${row.meeting_number || ''}`,
+        header: 'Meeting With',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span className="text-slate-900 font-sans font-medium">{row.original.meeting_person_name || '-'}</span>
+            <span className="text-xs text-slate-600 font-sans font-normal tracking-tight">{row.original.meeting_number || ''}</span>
+          </div>
+        ),
+      });
+    }
+
+    historyCols.push({
+      accessorKey: historyConfig.actualKey,
+      header: historyConfig.doneHeader,
+      sortingFn: customDateSortFn,
+      cell: ({ row }) => (
+        <div className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider whitespace-nowrap">
+          {formatDateToDMY((row.original as any)[historyConfig.actualKey])}
+        </div>
+      ),
+    });
+
+    historyCols.push({
+      id: 'history_status',
+      accessorFn: (row) => String((row as any)[historyConfig.statusKey] || 'Completed'),
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge className="bg-emerald-50 text-emerald-600 capitalize font-heading font-medium text-[10px] border-none px-2 py-0.5 rounded-full">
+          {String((row.original as any)[historyConfig.statusKey] || 'Completed')}
+        </Badge>
+      ),
+    });
+
+    historyCols.push({
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: any) => renderActions(row)
+    });
+
+    return historyCols as ColumnDef<Lead>[];
+  }
+
+  if (currentStageKey === 'meeting') {
+
     const meetingCols = [...defaultCols];
 
     meetingCols.push({
@@ -709,10 +869,12 @@ export default function LeadsTable() {
       cell: ({ row }) => renderActions(row)
     },
   ];
-}, [stage, user]);
+}, [stage, user, historyConfig, stageTab, currentStageKey]);
+
+const tableData = hasHistoryTab && stageTab === 'history' ? stageHistoryData : filteredData;
 
 const table = useReactTable({
-  data: filteredData,
+  data: tableData,
   columns,
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
@@ -726,8 +888,14 @@ const table = useReactTable({
   },
 });
 
+const currentRecordCount = table.getFilteredRowModel().rows.length;
+const recordCountLabel = hasHistoryTab && stageTab === 'history' ? 'History Records' : 'Active Records';
+const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emptyMessage : 'No prospects found in pipeline.';
+
   const handleDownloadCSV = () => {
-    if (!filteredData || filteredData.length === 0) {
+    const exportData = table.getFilteredRowModel().rows.map(row => row.original);
+
+    if (!exportData || exportData.length === 0) {
       alert("No data to download.");
       return;
     }
@@ -745,7 +913,7 @@ const table = useReactTable({
     const csvRows = [];
     csvRows.push(headers.join(','));
 
-    for (const row of filteredData) {
+    for (const row of exportData) {
       const values = headers.map(header => {
         let val = (row as any)[header] || '';
         val = String(val).replace(/"/g, '""');
@@ -770,6 +938,10 @@ const table = useReactTable({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-12">
+      <div className="text-[10px] uppercase font-bold text-slate-600 tracking-widest">
+        Showing {currentRecordCount} {recordCountLabel}
+      </div>
+
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-heading font-semibold text-slate-900 tracking-tight">
@@ -788,6 +960,32 @@ const table = useReactTable({
           Manage and track leads in the {stage?.toLowerCase() === 'closed' ? 'lost' : (stage || 'total')} pipeline.
         </p>
       </div>
+
+      {hasHistoryTab && (
+        <Tabs
+          value={stageTab}
+          onValueChange={(value) => {
+            setStageTab(value as 'active' | 'history');
+            table.setPageIndex(0);
+          }}
+          className="w-fit"
+        >
+          <TabsList className="h-10 rounded-xl bg-white border border-border p-1 shadow-sm">
+            <TabsTrigger
+              value="active"
+              className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+            >
+              Active
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+            >
+              History
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
 
 
@@ -988,7 +1186,7 @@ const table = useReactTable({
             <TableRow>
               <TableCell colSpan={columns.length} className="h-40 text-center py-8">
                 <div className="flex flex-col items-center justify-center space-y-2">
-                  <span className="text-slate-600 italic text-sm font-medium">No prospects found in pipeline.</span>
+                  <span className="text-slate-600 italic text-sm font-medium">{emptyMessage}</span>
                   {activeFiltersCount > 0 && (
                     <Button 
                       variant="outline" 
@@ -1027,14 +1225,14 @@ const table = useReactTable({
             const contact = row.original['Person Name'] || row.original.contact_person || '';
             const mobileNo = row.original['Mobile No. '] || row.original.mobile || '';
             const district = row.original.District || '';
-            const status = row.getValue('status') as string;
+            const status = row.original.status as string;
             const priority = row.original.priority || '';
             const createdAt = formatDateToDMY(row.original.created_at || row.original.Timestamp);
             const followUpDate = row.original['Follow Up date'] || row.original.followup_date;
-            const plannedDate =
-              stage?.toLowerCase() === 'lead' ? (row.original['Lead Planned Date'] || row.original.lead_planned_date) :
-              stage?.toLowerCase() === 'meeting' ? (row.original['Meeting Planned'] || row.original.meeting_planned_date) :
-              null;
+            const plannedDate = historyConfig
+              ? ((row.original as any)[stageTab === 'history' ? historyConfig.actualKey : historyConfig.plannedKey])
+              : null;
+            const stageDateLabel = hasHistoryTab && stageTab === 'history' ? 'Done' : 'Planned';
             const priorityColors: Record<string, string> = {
               CRITICAL: 'bg-rose-100 text-rose-700',
               HIGH: 'bg-orange-100 text-orange-700',
@@ -1121,7 +1319,7 @@ const table = useReactTable({
                     {plannedDate && (
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-full">
                         <Calendar size={11} />
-                        Planned: {formatDateToDMY(plannedDate)}
+                        {stageDateLabel}: {formatDateToDMY(plannedDate)}
                       </div>
                     )}
                   </div>
@@ -1142,7 +1340,7 @@ const table = useReactTable({
           })
         ) : (
           <div className="p-8 flex flex-col items-center justify-center space-y-3">
-             <span className="text-slate-600 italic text-sm font-medium">No prospects found in pipeline.</span>
+             <span className="text-slate-600 italic text-sm font-medium">{emptyMessage}</span>
              {activeFiltersCount > 0 && (
                 <Button 
                   variant="outline" 
@@ -1163,10 +1361,7 @@ const table = useReactTable({
       </div>
     </div>
     
-    <div className="flex items-center justify-between px-2">
-      <div className="text-[10px] uppercase font-bold text-slate-600 tracking-widest">
-        Showing {table.getFilteredRowModel().rows.length} Active Records
-      </div>
+    <div className="flex items-center justify-end px-2">
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"
