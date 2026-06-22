@@ -113,24 +113,18 @@ export default function IndiaMap({ leads }: { leads: any[] }) {
       <div className="w-full h-[320px] sm:h-[500px] overflow-hidden rounded-2xl relative cursor-grab active:cursor-grabbing bg-slate-50/50 perspective-[1000px]">
         <TransformWrapper
           initialScale={1}
-          minScale={0.5}
+          minScale={0.4}
           maxScale={4}
           centerOnInit
           wheel={{ step: 0.1 }}
         >
           <MapControls />
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-            <div 
-              className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out"
-              style={{
-                transform: isMobile ? 'none' : 'rotateX(30deg) rotateZ(-10deg)',
-                transformStyle: isMobile ? 'flat' : 'preserve-3d',
-              }}
-            >
+            <div className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={IndiaMapData.viewBox}
-                className="w-full max-w-[600px] drop-shadow-2xl filter"
+                className="w-[90%] max-w-[700px] drop-shadow-2xl filter"
         onMouseMove={(e) => {
           // Adjust mouse position relative to a stable parent if needed, but clientX/Y works fine for fixed tooltips if we use fixed pos.
           // Better to use relative pos within the container.
