@@ -350,7 +350,7 @@ export default function Dashboard() {
       return new Date(d).getTime();
     };
 
-    return [...filteredLeads]
+    return [...leads]
       .filter(l => {
         const { date } = getLatestStage(l);
         return !!date;
@@ -363,7 +363,7 @@ export default function Dashboard() {
         const { stage, date } = getLatestStage(l);
         return { rep, company, action: stage, time: date };
       });
-  }, [filteredLeads]);
+  }, [leads]);
 
   const statCards = [
     { title: 'Total Leads', value: stats?.totalLeads, icon: Users, bgGradient: 'from-blue-50/80 to-indigo-50/30', iconGradient: 'from-blue-500 to-indigo-600', shadowColor: 'shadow-blue-500/20', change: 'Active' },
