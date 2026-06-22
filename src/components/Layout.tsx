@@ -722,7 +722,7 @@ export function Shell({ children }: LayoutProps) {
           </div>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide pb-32 lg:pb-8 bg-slate-50/50">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 lg:p-8 pb-32 lg:pb-8 bg-slate-50/50">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

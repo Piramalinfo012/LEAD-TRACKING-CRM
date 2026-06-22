@@ -40,6 +40,8 @@ import {
   SelectValue 
 } from './ui/select';
 import IndiaMap from './IndiaMap';
+import { useGlobalFilter } from '../hooks/useGlobalFilter';
+import { SearchableSelect } from './ui/searchable-select';
 
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#3b82f6'];
 
@@ -101,7 +103,7 @@ const formatDateTime = (dateInput: any) => {
 export default function Dashboard() {
   const { request, loading } = useApi();
   const [leads, setLeads] = useState<any[]>([]);
-  const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const { salesPerson: selectedSalesPerson, setSalesPerson: setSelectedSalesPerson } = useGlobalFilter();
   const [avatars, setAvatars] = useState<Record<string, string>>({});
   const [datePreset, setDatePreset] = useState<string>('ALL');
   const [fromDate, setFromDate] = useState<string>('');
@@ -405,18 +407,13 @@ export default function Dashboard() {
           <p className="text-slate-500 font-sans text-xs mt-1">Quick summary of all leads and sales.</p>
         </div>
         <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:w-64">
-            <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
-              <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-sm">
-                <SelectValue placeholder="All Sales Persons" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="ALL">All Sales Persons</SelectItem>
-                {salesPersonsList.map(name => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex-1 sm:w-64 z-[60]">
+            <SearchableSelect 
+              value={selectedSalesPerson} 
+              onValueChange={setSelectedSalesPerson}
+              options={salesPersonsList}
+              allLabel="All Sales Persons"
+            />
           </div>
           <Button 
             variant={showFilters ? "default" : "outline"}

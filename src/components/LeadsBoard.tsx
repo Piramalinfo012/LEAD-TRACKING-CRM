@@ -35,6 +35,8 @@ import { useMemo } from 'react';
 import LeadDetailsSheet from './LeadDetailsSheet';
 import NewLeadDialog from './NewLeadDialog';
 import ColdLeadFormDialog from './ColdLeadFormDialog';
+import { useGlobalFilter } from '../hooks/useGlobalFilter';
+import { SearchableSelect } from './ui/searchable-select';
 
 const STAGES: LeadStatus[] = [
   LeadStatus.COLD,
@@ -61,7 +63,7 @@ export default function KanbanBoard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
-  const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const { salesPerson: selectedSalesPerson, setSalesPerson: setSelectedSalesPerson } = useGlobalFilter();
   const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -171,18 +173,13 @@ export default function KanbanBoard() {
           <p className="text-slate-500 font-sans text-xs mt-1">Track where each lead is in the process.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-64">
-            <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
-              <SelectTrigger className="bg-white border-border text-slate-900 h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-sm">
-                <SelectValue placeholder="All Sales Persons" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="ALL">All Sales Persons</SelectItem>
-                {salesPersonsList.map(name => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="w-full sm:w-64 z-[60] relative">
+            <SearchableSelect 
+              value={selectedSalesPerson} 
+              onValueChange={setSelectedSalesPerson}
+              options={salesPersonsList}
+              allLabel="All Sales Persons"
+            />
           </div>
           <Button 
             variant="outline" 

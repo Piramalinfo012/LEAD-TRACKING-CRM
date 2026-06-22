@@ -62,6 +62,8 @@ import {
 } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import LeadDetailsSheet from './LeadDetailsSheet';
+import { useGlobalFilter } from '../hooks/useGlobalFilter';
+import { SearchableSelect } from './ui/searchable-select';
 import NewLeadDialog from './NewLeadDialog';
 import ColdLeadFormDialog from './ColdLeadFormDialog';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
@@ -141,7 +143,7 @@ export default function LeadsTable() {
   const [selectedColdLeadForForm, setSelectedColdLeadForForm] = useState<Lead | null>(null);
   const [promoteTargetStage, setPromoteTargetStage] = useState<LeadStatus | undefined>(undefined);
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
-  const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
+  const { salesPerson: selectedSalesPerson, setSalesPerson: setSelectedSalesPerson } = useGlobalFilter();
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
   const [selectedProduct, setSelectedProduct] = useState<string>('ALL');
   const [fromDate, setFromDate] = useState<string>('');
@@ -800,18 +802,13 @@ const table = useReactTable({
             className="pl-10 bg-white border-border text-slate-900 font-sans text-sm h-11 sm:h-10 shadow-sm focus-visible:ring-indigo-500/20 rounded-xl"
           />
         </div>
-        <div className="w-full sm:w-64">
-          <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
-            <SelectTrigger className="bg-white border-border text-slate-900 h-11 sm:h-10 rounded-xl shadow-sm focus:ring-indigo-500/20 font-sans text-sm">
-              <SelectValue placeholder="All Sales Persons" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="ALL">All Sales Persons</SelectItem>
-              {salesPersonsList.map(name => (
-                <SelectItem key={name} value={name}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="w-full sm:w-64 z-[60] relative">
+          <SearchableSelect 
+            value={selectedSalesPerson} 
+            onValueChange={setSelectedSalesPerson}
+            options={salesPersonsList}
+            allLabel="All Sales Persons"
+          />
         </div>
       </div>
       <div className="flex gap-2 w-full sm:w-auto">
