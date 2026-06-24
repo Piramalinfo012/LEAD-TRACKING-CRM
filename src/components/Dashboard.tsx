@@ -74,9 +74,14 @@ const formatDateTime = (dateInput: any) => {
   const valStr = String(dateInput).trim();
   if (!valStr) return '';
 
-  // Check if it's already a formatted date like DD/MM/YYYY with optional time
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(valStr)) {
-    return valStr;
+  const dmyMatch = valStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dmyMatch) {
+    return `${dmyMatch[1].padStart(2, '0')}/${dmyMatch[2].padStart(2, '0')}/${dmyMatch[3]}`;
+  }
+
+  const ymdMatch = valStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
   }
 
   const date = new Date(valStr);
@@ -84,17 +89,6 @@ const formatDateTime = (dateInput: any) => {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    
-    // Check if it has time part (i.e. contains 'T' or a colon, or is ISO string)
-    if (valStr.includes('T') || valStr.includes(':')) {
-      let hours = date.getHours();
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-      return `${day}/${month}/${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-    }
-    
     return `${day}/${month}/${year}`;
   }
   return valStr;
