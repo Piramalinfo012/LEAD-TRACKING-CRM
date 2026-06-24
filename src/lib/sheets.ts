@@ -220,7 +220,11 @@ export class SheetsDB {
             // Explicitly clear formula columns so ArrayFormula can expand
             const header = headers[idx];
             if (header === 'Lead Planned Date' || header === '__col_15' || 
-                header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23') {
+                header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23' ||
+                header === 'Technical Discussion Planned' || header === 'Technical Discussion Planned Date' ||
+                header === 'Tech Planned' || header === 'Tech Planned Date' || header === '__col_32' || idx === 32 ||
+                header === 'Order Planned' || header === 'Order Planned Date' || header === '__col_59' || idx === 59 ||
+                header === 'Sample Planned' || header === 'Sample Planned Date' || header === '__col_73' || idx === 73) {
               return null;
             }
             
@@ -243,6 +247,7 @@ export class SheetsDB {
             }
             
             if (colIndex !== -1) {
+              if (colIndex === 32 || colIndex === 59 || colIndex === 73) continue;
               // Expand newRowData if colIndex is beyond current length
               while (newRowData.length <= colIndex) newRowData.push('');
               newRowData[colIndex] = data[key];
@@ -302,6 +307,14 @@ export class SheetsDB {
     if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
 
     const updatedRow = headers.map((header, index) => {
+        if (header === 'Lead Planned Date' || header === '__col_15' ||
+            header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23' ||
+            header === 'Technical Discussion Planned' || header === 'Technical Discussion Planned Date' ||
+            header === 'Tech Planned' || header === 'Tech Planned Date' || header === '__col_32' || index === 32 ||
+            header === 'Order Planned' || header === 'Order Planned Date' || header === '__col_59' || index === 59 ||
+            header === 'Sample Planned' || header === 'Sample Planned Date' || header === '__col_73' || index === 73) {
+          return null;
+        }
         return data[header] !== undefined ? data[header] : rows[rowIndex][index];
     });
 
@@ -310,6 +323,7 @@ export class SheetsDB {
 
       const colIndex = parseInt(key.replace('__col_', ''), 10);
       if (isNaN(colIndex)) continue;
+      if (colIndex === 32 || colIndex === 59 || colIndex === 73) continue;
 
       while (updatedRow.length <= colIndex) updatedRow.push('');
       updatedRow[colIndex] = data[key];

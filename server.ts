@@ -37,6 +37,30 @@ let LAST_FETCH_MASTER = 0;
 let LAST_FETCH_EXTRA_DATA = 0;
 const EXTRA_DATA_CACHE_TTL = 30 * 1000; // 30 seconds
 
+const formatDateForSheet = (value: any) => {
+  if (!value) return '';
+
+  const raw = String(value).trim();
+  if (!raw) return '';
+
+  const dmyMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dmyMatch) {
+    return `${dmyMatch[1].padStart(2, '0')}/${dmyMatch[2].padStart(2, '0')}/${dmyMatch[3]}`;
+  }
+
+  const ymdMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${String(parsed.getDate()).padStart(2, '0')}/${String(parsed.getMonth() + 1).padStart(2, '0')}/${parsed.getFullYear()}`;
+  }
+
+  return raw;
+};
+
 // Load from disk on startup
 try {
   if (fs.existsSync(LEADS_CACHE_FILE)) {
@@ -792,6 +816,9 @@ app.use(express.json());
       const leadData = req.body;
       const entryUserId = req.user.employee_id || req.user.id || '';
       leadData['Entry By Id'] = entryUserId;
+      if (leadData['Follow Up date'] !== undefined) {
+        leadData['Follow Up date'] = formatDateForSheet(leadData['Follow Up date']);
+      }
       
       // Save to 'NEW_FMS' sheet in background
       SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
@@ -867,6 +894,13 @@ app.use(express.json());
       const mappedUpdate = { ...updateData };
       if (updateData.status) mappedUpdate['Stage'] = updateData.status; // Avoid collision with 'Status' which is custom_status
       if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
+      const followUpDateValue = updateData.followup_date ?? updateData['Follow Up date'] ?? updateData['__col_13'];
+      if (followUpDateValue !== undefined) {
+        const formattedFollowUpDate = formatDateForSheet(followUpDateValue);
+        mappedUpdate.followup_date = formattedFollowUpDate;
+        mappedUpdate['Follow Up date'] = formattedFollowUpDate;
+        mappedUpdate['__col_13'] = formattedFollowUpDate;
+      }
       
       // DO NOT STORE FORMULA DATES
       delete mappedUpdate.lead_planned_date;
@@ -874,9 +908,18 @@ app.use(express.json());
       delete mappedUpdate.meeting_planned_date;
       delete mappedUpdate['Meeting Planned Date'];
       delete mappedUpdate.tech_planned_date;
+      delete mappedUpdate['Technical Discussion Planned'];
+      delete mappedUpdate['Technical Discussion Planned Date'];
+      delete mappedUpdate['Tech Planned'];
+      delete mappedUpdate['Tech Planned Date'];
+      delete mappedUpdate['__col_32'];
       delete mappedUpdate.negotiation_planned_date;
       delete mappedUpdate.order_planned_date;
+      delete mappedUpdate['Order Planned'];
+      delete mappedUpdate['Order Planned Date'];
+      delete mappedUpdate['__col_59'];
       delete mappedUpdate.sample_planned_date;
+      delete mappedUpdate['Sample Planned'];
       delete mappedUpdate['Sample Planned Date'];
       delete mappedUpdate['__col_73'];
       
@@ -958,7 +1001,7 @@ app.use(express.json());
       if (updateData.order_status !== undefined) mappedUpdate['__col_68'] = updateData.order_status;
       
       // Map Sample Stage fields
-      if (updateData.sample_actual_date !== undefined) mappedUpdate['__col_74'] = updateData.sample_actual_date;
+      if (updateData.sample_actual_date !== undefined) mappedUpdate['__col_74'] = formatDateForSheet(updateData.sample_actual_date);
       if (updateData.sample_status !== undefined) mappedUpdate['__col_75'] = updateData.sample_status;
       if (updateData.sample_product_name !== undefined) mappedUpdate['__col_76'] = updateData.sample_product_name;
       if (updateData.sample_qty !== undefined) mappedUpdate['__col_77'] = updateData.sample_qty;
