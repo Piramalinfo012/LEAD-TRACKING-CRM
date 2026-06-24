@@ -325,12 +325,14 @@ export default function Dashboard() {
 
   const recentActivities = useMemo(() => {
     const getLatestStage = (l: any) => {
+      const currentStatus = String(l.status || '').toUpperCase();
+      if (currentStatus === 'ORDER') return { stage: 'Order', date: l.order_actual_date || l.created_at };
+      if (l.closed_at || currentStatus === 'CLOSED') return { stage: 'Lost Lead', date: l.closed_at || l.created_at };
       if (l.order_actual_date) return { stage: 'Order', date: l.order_actual_date };
       if (l.negotiation_actual_date) return { stage: 'Negotiation', date: l.negotiation_actual_date };
       if (l.tech_actual_date) return { stage: 'Tech Talk', date: l.tech_actual_date };
       if (l.meeting_actual_date) return { stage: 'Meeting', date: l.meeting_actual_date };
       if (l.lead_actual_date) return { stage: 'Lead', date: l.lead_actual_date };
-      if (l.status === 'CLOSED') return { stage: 'Closed', date: l.closed_at || l.created_at };
       return { stage: 'Cold', date: l.created_at };
     };
 
