@@ -1439,11 +1439,13 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
                 {rescheduleLogs.map((log: any, idx: number) => (
                   <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-slate-500 font-mono tracking-tight">{formatDateToDMY(log.timestamp)}</span>
-                      <Badge variant="outline" className="text-[9px] bg-white text-slate-400 border-slate-200 uppercase">{log.user_id}</Badge>
+                      <span className="text-[11px] font-bold text-slate-500 font-mono tracking-tight">{formatDateToDMY(log.timestamp || log.Timestamp)}</span>
+                      <Badge variant="outline" className="text-[9px] bg-white text-slate-400 border-slate-200 uppercase">{log.user_id || log.Stage || 'SYSTEM'}</Badge>
                     </div>
                     <p className="text-sm font-medium text-slate-700 leading-snug">
-                      {log.remarks || `Moved from ${log.prev_stage?.replace('_', ' ')} to ${log.next_stage?.replace('_', ' ')}`}
+                      {log['Reschedule Date'] 
+                        ? `Rescheduled to ${formatDateToDMY(log['Reschedule Date'])} (Stage: ${log.Stage || 'MEETING'})`
+                        : log.remarks || `Moved from ${log.prev_stage?.replace('_', ' ')} to ${log.next_stage?.replace('_', ' ')}`}
                     </p>
                   </div>
                 ))}

@@ -149,7 +149,7 @@ async function doExtraDataFetch() {
     // Increase timeout to 25000 to prevent AbortError
     const [followups, history, techProducts] = await Promise.all([
       SheetsDB.getRows('Followups', undefined, 0, 25000).catch(() => []),
-      SheetsDB.getRows('LeadHistory', undefined, 0, 25000).catch(() => []),
+      SheetsDB.getRows('Reschedule', undefined, 0, 25000).catch(() => []),
       SheetsDB.getRows('Prodcut Negotiation', undefined, 0, 25000).catch(() => []),
     ]);
     EXTRA_DATA_CACHE = { followups, history, techProducts };
@@ -1306,7 +1306,7 @@ app.use(express.json());
   app.get('/api/history/:leadId', authenticateToken, async (req, res) => {
     try {
       const cache = await refreshExtraDataCache();
-      res.json(cache.history.filter((h: any) => h.lead_id === req.params.leadId));
+      res.json(cache.history.filter((h: any) => h.lead_id === req.params.leadId || h.Id === req.params.leadId || h.id === req.params.leadId));
     } catch (error: any) {
       if (error.message && error.message.includes('not found')) {
         res.json([]);
