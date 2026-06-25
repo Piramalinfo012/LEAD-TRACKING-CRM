@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   MoreVertical, 
@@ -119,14 +119,30 @@ export default function KanbanBoard() {
     return () => window.removeEventListener('crm_leads_updated', handleSync);
   }, []);
 
+  const applyLeadUpdate = useCallback((updatedLead?: Lead) => {
+    if (!updatedLead?.id) {
+      fetchLeads();
+      return;
+    }
+
+    setLeads(prev => {
+      const nextLeads = prev.map(lead => (
+        lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead
+      ));
+      localStorage.setItem('crm_leads_cache', JSON.stringify(nextLeads));
+      window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: nextLeads }));
+      return nextLeads;
+    });
+  }, []);
+
   const moveLead = async (leadId: string, nextStage: LeadStatus) => {
     try {
-      await request(`/api/leads/${leadId}`, {
+      const updatedLead = await request(`/api/leads/${leadId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: nextStage }),
       });
       toast.success('Lead stage updated');
-      fetchLeads();
+      applyLeadUpdate((updatedLead && typeof updatedLead === 'object') ? updatedLead : ({ id: leadId, status: nextStage } as Lead));
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -340,7 +356,7 @@ export default function KanbanBoard() {
         lead={selectedColdLeadForForm}
         isOpen={!!selectedColdLeadForForm}
         onClose={() => setSelectedColdLeadForForm(null)}
-        onSuccess={fetchLeads}
+        onSuccess={applyLeadUpdate}
       />
     </div>
   );

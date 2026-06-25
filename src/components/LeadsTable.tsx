@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   flexRender,
@@ -412,6 +412,22 @@ export default function LeadsTable() {
       setIsSyncing(false);
     }
   };
+
+  const handleLeadFormSuccess = useCallback((updatedLead?: Lead) => {
+    if (!updatedLead?.id) {
+      fetchData(true);
+      return;
+    }
+
+    setData(prev => {
+      const nextData = prev.map(lead => (
+        lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead
+      ));
+      localStorage.setItem('crm_leads_cache', JSON.stringify(nextData));
+      window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: nextData }));
+      return nextData;
+    });
+  }, []);
 
   useEffect(() => {
     setStageTab('active');
@@ -1399,7 +1415,7 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
           setSelectedColdLeadForForm(null);
           setPromoteTargetStage(undefined);
         }}
-        onSuccess={fetchData}
+        onSuccess={handleLeadFormSuccess}
         promoteToStage={promoteTargetStage}
         currentStageView={stage}
       />

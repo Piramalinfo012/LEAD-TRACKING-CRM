@@ -34,7 +34,7 @@ interface ColdLeadFormDialogProps {
   lead: Lead | null;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedLead?: Lead) => void;
   promoteToStage?: LeadStatus;
   currentStageView?: string;
 }
@@ -332,10 +332,32 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
           }
         }
 
-      await request(`/api/leads/${lead.id}`, {
+      const savedLead = await request(`/api/leads/${lead.id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
+
+      const updatedLead = {
+        ...lead,
+        ...((savedLead && typeof savedLead === 'object') ? savedLead : payload),
+        id: lead.id,
+      } as Lead;
+
+      try {
+        const cached = localStorage.getItem('crm_leads_cache');
+        if (cached) {
+          const cachedLeads = JSON.parse(cached);
+          if (Array.isArray(cachedLeads)) {
+            const nextLeads = cachedLeads.map((item: Lead) => (
+              item.id === lead.id ? { ...item, ...updatedLead } : item
+            ));
+            localStorage.setItem('crm_leads_cache', JSON.stringify(nextLeads));
+            window.dispatchEvent(new CustomEvent('crm_leads_updated', { detail: nextLeads }));
+          }
+        }
+      } catch (cacheError) {
+        console.warn('Unable to sync lead cache after update:', cacheError);
+      }
 
       let successMsg = 'Lead updated successfully!';
       let isPremium = false;
@@ -378,7 +400,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         toast.success(successMsg);
       }
 
-      onSuccess();
+      onSuccess(updatedLead);
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update lead');

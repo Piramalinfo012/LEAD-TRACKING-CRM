@@ -108,6 +108,22 @@ let activeExtraDataFetchPromise: Promise<any> | null = null;
 
 const normalizeLeadId = (value: any) => String(value ?? '').trim().toLowerCase();
 
+const normalizePipelineStage = (value: any) => {
+  const stage = String(value ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (stage === 'TECH') return 'TECHNICAL_DISCUSSION';
+  const allowedStages = new Set([
+    'COLD',
+    'LEAD',
+    'MEETING',
+    'SAMPLE',
+    'TECHNICAL_DISCUSSION',
+    'NEGOTIATION',
+    'ORDER',
+    'CLOSED',
+  ]);
+  return allowedStages.has(stage) ? stage : 'COLD';
+};
+
 const isDeletedMarker = (value: any) => {
   const marker = String(value ?? '').trim().toLowerCase();
   return marker === 'deleted' || marker === 'true' || marker === 'yes' || marker === '1';
@@ -241,7 +257,7 @@ async function doLeadsFetch() {
         state: l['State'] || '',
         district: l['District'] || '',
         source: l['Source'] || '',
-        status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
+        status: normalizePipelineStage(l['Pramoted To'] || l['Stage'] || l['stage']),
         sales_person_name: l['Sales Person Name'] || '',
         mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
         last_remarks: l['Last Remarks'] || '',
@@ -273,7 +289,7 @@ async function doLeadsFetch() {
         lead_status: l['Lead Status'] || l['custom_status'] || '',
         product_details: l['Product details.'] || l['product_details'] || '',
         mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
-        pain_points: l['Pain Points â€“ Remark in detail.'] || l['pain_points'] || '',
+        pain_points: l['__col_20'] || l['pain_points'] || '',
         kit_details: l['KIT Url'] || l['KIT.'] || l['kit_details'] || '',
         meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
 
@@ -351,7 +367,7 @@ async function doLeadsFetch() {
           state: l['State'] || '',
           district: l['District'] || '',
           source: l['Source'] || '',
-          status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
+          status: normalizePipelineStage(l['Pramoted To'] || l['Stage'] || l['stage']),
           sales_person_name: l['Sales Person Name'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
           last_remarks: l['Last Remarks'] || '',
@@ -384,7 +400,7 @@ async function doLeadsFetch() {
           lead_status: l['Lead Status'] || l['custom_status'] || '',
           product_details: l['Product details.'] || l['product_details'] || '',
           mcb_requirement: l['MCB according to requirement. Url'] || l['MCB according to requirement.'] || l['mcb_requirement'] || '',
-          pain_points: l['Pain Points – Remark in detail.'] || l['pain_points'] || '',
+          pain_points: l['__col_20'] || l['pain_points'] || '',
           kit_details: l['KIT Url'] || l['KIT.'] || l['kit_details'] || '',
           meeting_followup_date: l['Meeting Follow-up Date.'] || l['meeting_followup_date'] || '',
   
@@ -943,7 +959,7 @@ app.use(express.json());
           follow_up_date: l['Follow Up date'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || '',
           last_remarks: l['Last Remarks'] || '',
-          status: l['Stage'] || l['stage'] || l['Lead Status'] || 'COLD',
+          status: normalizePipelineStage(l['Pramoted To'] || l['Stage'] || l['stage']),
           sales_person_name: l['Sales Person Name'] || '',
           followup_date: l['Follow Up date'] || '',
           'District': l['District'],
@@ -976,8 +992,14 @@ app.use(express.json());
     try {
       const { id } = req.params;
       const updateData = { ...req.body, updated_at: new Date().toISOString() };
+
+      Object.keys(updateData).forEach(key => {
+        if (typeof updateData[key] === 'string' && updateData[key].trim() === '') {
+          delete updateData[key];
+        }
+      });
       
-      const leads = await refreshLeadsCache();
+      const leads = LEADS_CACHE || await refreshLeadsCache(true);
       
       // Lead Assignment check: Only ADMIN can change owner_id
       if (updateData.owner_id && req.user.role !== 'ADMIN') {
@@ -994,7 +1016,10 @@ app.use(express.json());
       const idField = 'Id';
       
       const mappedUpdate = { ...updateData };
-      if (updateData.status) mappedUpdate['Stage'] = updateData.status; // Avoid collision with 'Status' which is custom_status
+      if (updateData.status) {
+        mappedUpdate['Pramoted To'] = updateData.status;
+        mappedUpdate['__col_14'] = updateData.status;
+      }
       if (updateData.company_name) mappedUpdate['Party Name'] = updateData.company_name;
       const followUpDateValue = updateData.followup_date ?? updateData['Follow Up date'] ?? updateData['__col_13'];
       if (followUpDateValue !== undefined) {
@@ -1038,7 +1063,7 @@ app.use(express.json());
         mappedUpdate['MCB according to requirement. Url'] = updateData.mcb_requirement;
         mappedUpdate['MCB according to requirement.'] = updateData.mcb_requirement; // fallback
       }
-      if (updateData.pain_points !== undefined) mappedUpdate['Pain Points – Remark in detail.'] = updateData.pain_points;
+      if (updateData.pain_points !== undefined) mappedUpdate['__col_20'] = updateData.pain_points;
       if (updateData.kit_details !== undefined) {
         mappedUpdate['KIT Url'] = updateData.kit_details;
         mappedUpdate['KIT.'] = updateData.kit_details; // fallback
@@ -1073,6 +1098,11 @@ app.use(express.json());
         mappedUpdate['Bullet Point Remarks.'] = updateData.bullet_point_remarks;
       }
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
+
+      // Map Technical Discussion Stage fields
+      if (updateData.tech_actual_date !== undefined) mappedUpdate['__col_33'] = updateData.tech_actual_date;
+      if (updateData.tech_status !== undefined) mappedUpdate['__col_34'] = updateData.tech_status;
+      if (updateData.tech_kit_url !== undefined) mappedUpdate['__col_44'] = updateData.tech_kit_url;
 
       // Map Negotiation Stage fields
       if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
@@ -1127,27 +1157,32 @@ app.use(express.json());
         }
       }
 
-      // Optimistically update the cache immediately so frontend gets instant response
+      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
+
       if (existingLeadObj) {
         Object.assign(existingLeadObj, updateData);
       }
 
-      // Run Google Sheets updates in the background (fire and forget)
+      refreshLeadsCache(true).catch(e => console.error('Post-update cache refresh failed:', e));
+
+      // Side logs should never block the primary NEW_FMS update.
       (async () => {
         try {
           if (updateData.status && prevStatus && prevStatus !== updateData.status) {
-            await SheetsDB.addRow('LeadHistory', {
-              id: `HIST-${Date.now()}`,
-              lead_id: id,
-              prev_stage: prevStatus,
-              next_stage: updateData.status,
-              user_id: req.user.id,
-              timestamp: new Date().toISOString(),
-              remarks: updateData.remarks || 'Status change'
-            });
+            try {
+              await SheetsDB.addRow('LeadHistory', {
+                id: `HIST-${Date.now()}`,
+                lead_id: id,
+                prev_stage: prevStatus,
+                next_stage: updateData.status,
+                user_id: req.user.id,
+                timestamp: new Date().toISOString(),
+                remarks: updateData.remarks || 'Status change'
+              });
+            } catch (err) {
+              console.error("LeadHistory side-log failed:", err);
+            }
           }
-
-          await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
           
           if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
             const d = new Date();
@@ -1160,7 +1195,7 @@ app.use(express.json());
               'Remark': updateData.custom_status || '',
               'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
             };
-            await SheetsDB.addRow('Reschedule', rescheduleData);
+            await SheetsDB.addRow('Reschedule', rescheduleData).catch(err => console.error("Reschedule side-log failed:", err));
           }
     
           if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {
@@ -1183,18 +1218,14 @@ app.use(express.json());
                 'Kit Attachment Url': updateData.tech_kit_url || '',
                 'Technical Status': updateData.tech_status || ''
               };
-              await SheetsDB.addRow('Prodcut Negotiation', productData);
+              await SheetsDB.addRow('Prodcut Negotiation', productData).catch(err => console.error("Product negotiation side-log failed:", err));
             }
           }
         } catch (err) {
-          console.error("Background Sheet Update Error:", err);
-        } finally {
-          // Re-sync cache from sheets after all background updates complete
-          refreshLeadsCache(true);
+          console.error("Background side-log error:", err);
         }
       })();
       
-      // Return instantly so UI is fast
       res.json({ success: true, ...existingLeadObj });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

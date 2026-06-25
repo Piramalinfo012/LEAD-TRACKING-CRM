@@ -211,34 +211,10 @@ export class SheetsDB {
           const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
           if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
           
-          const existingRow = allRows[rowIndex0Based];
-          
-          // Construct the full rowData array
-          // The App Script will read `rowData.length` columns, so we need to pass an array
-          // that is at least as long as the headers length.
-          const newRowData = [...existingRow].map((val, idx) => {
-            // Explicitly clear formula columns so ArrayFormula can expand
-            const header = headers[idx];
-            if (header === 'Lead Planned Date' || header === '__col_15' || 
-                header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23' ||
-                header === 'Technical Discussion Planned' || header === 'Technical Discussion Planned Date' ||
-                header === 'Tech Planned' || header === 'Tech Planned Date' || header === '__col_32' || idx === 32 ||
-                header === 'Order Planned' || header === 'Order Planned Date' || header === '__col_59' || idx === 59 ||
-                header === 'Sample Planned' || header === 'Sample Planned Date' || header === '__col_73' || idx === 73) {
-              return null;
-            }
-            
-            // doGet converts Date objects to ISO strings. Convert them back to DD/MM/YYYY before saving.
-            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(val)) {
-              const d = new Date(val);
-              return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            }
-            return val;
-          });
-          
-          // Pad array if necessary
-          while (newRowData.length < headers.length) newRowData.push('');
-          
+          const existingRow = allRows[rowIndex0Based] || [];
+          const cellUpdates = new Map<number, any>();
+          const formulaColumns = new Set([15, 23, 32, 59, 73]);
+
           for (const key of Object.keys(data)) {
             let colIndex = headers.indexOf(key);
             if (key.startsWith('__col_')) {
@@ -247,34 +223,47 @@ export class SheetsDB {
             }
             
             if (colIndex !== -1) {
-              if (colIndex === 32 || colIndex === 59 || colIndex === 73) continue;
-              // Expand newRowData if colIndex is beyond current length
-              while (newRowData.length <= colIndex) newRowData.push('');
-              newRowData[colIndex] = data[key];
+              if (formulaColumns.has(colIndex)) continue;
+              const nextValue = data[key] == null ? '' : String(data[key]);
+              const currentValue = existingRow[colIndex] == null ? '' : String(existingRow[colIndex]);
+              if (currentValue === nextValue) continue;
+              cellUpdates.set(colIndex, nextValue);
             }
           }
-          
-          // 2. Call the 'update' action with the 1-based rowIndex
+
+          if (cellUpdates.size === 0) {
+            console.log(`[SheetsDB.updateRow] No matching sheet columns to update for ${idValue} in ${sheetName}`);
+            return;
+          }
+
           const rowIndex1Based = rowIndex0Based + 1;
-          const params = new URLSearchParams();
-          params.append('action', 'update');
-          params.append('sheetName', sheetName);
-          params.append('rowIndex', rowIndex1Based.toString());
-          params.append('rowData', JSON.stringify(newRowData));
+          for (const [colIndex, value] of Array.from(cellUpdates)) {
+            const params = new URLSearchParams();
+            params.append('action', 'updateCell');
+            params.append('sheetName', sheetName);
+            params.append('rowIndex', rowIndex1Based.toString());
+            params.append('columnIndex', String(colIndex + 1));
+            params.append('value', value);
 
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-          const postResponse = await fetch(scriptUrl, {
-            method: 'POST',
-            body: params,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const postResponse = await fetch(scriptUrl, {
+              method: 'POST',
+              body: params,
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
 
-          const result = await postResponse.json();
-          if (!result.success) throw new Error(result.error || 'Update failed via App Script');
-          console.log(`[SheetsDB.updateRow] Successfully updated ${idValue} in ${sheetName} via App Script`);
+            if (!postResponse.ok) {
+              throw new Error(`Update cell failed with status ${postResponse.status}`);
+            }
+
+            const result = await postResponse.json();
+            if (!result.success) throw new Error(result.error || 'Update cell failed via App Script');
+          }
+
+          console.log(`[SheetsDB.updateRow] Successfully updated ${cellUpdates.size} cells for ${idValue} in ${sheetName} via App Script`);
           return;
         } catch (e: any) {
           console.error('[SheetsDB.updateRow] App Script fallback failed:', e.message);
