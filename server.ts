@@ -1156,8 +1156,7 @@ app.use(express.json());
            mappedUpdate['__col_72'] = updateData.close_remark;
         }
       }
-
-      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0);
+      SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => console.error("Background updateRow failed:", e));
 
       if (existingLeadObj) {
         Object.assign(existingLeadObj, updateData);
@@ -1736,7 +1735,7 @@ app.use(express.json());
   app.get('/api/meeting-checklist/party-names', authenticateToken, async (req: any, res) => {
     try {
       const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
-      let rawNames: any[] = [];
+      let rawData: any[] = [];
 
       if (scriptUrl) {
         const response = await fetch(`${scriptUrl}?sheet=${encodeURIComponent('Scot Sheet Data')}`);
@@ -1749,19 +1748,28 @@ app.use(express.json());
           throw new Error(result.error || 'Unable to read Scot Sheet Data');
         }
 
-        rawNames = (result.data || []).slice(1).map((row: any[]) => row?.[2]);
+        rawData = (result.data || []).slice(1);
       } else {
         const rows = await SheetsDB.getRows('Scot Sheet Data');
-        rawNames = rows.map((row: any) => row.__col_2);
+        rawData = rows.map((row: any) => [row.__col_0, row.__col_1, row.__col_2]);
       }
 
-      const names = Array.from(new Set(
-        rawNames
-          .map((name: any) => String(name || '').trim())
-          .filter(Boolean)
-      ));
+      const partyMap = new Map<string, string>();
+      
+      rawData.forEach((row: any[]) => {
+        const salesPerson = String(row?.[1] || '').trim();
+        const partyName = String(row?.[2] || '').trim();
+        if (partyName) {
+          partyMap.set(partyName, salesPerson);
+        }
+      });
 
-      res.json(names);
+      let parties = Array.from(partyMap.entries()).map(([name, salesPerson]) => ({
+        name,
+        salesPerson
+      }));
+
+      res.json(parties);
     } catch (error: any) {
       console.error('Meeting Checklist party names fetch error:', error);
       res.status(500).json({ error: error.message });

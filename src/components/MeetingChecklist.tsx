@@ -14,6 +14,9 @@ import {
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useApi } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
+import { UserRole } from '../types';
+import { SearchableSelect } from './ui/searchable-select';
 
 const CHECKLIST_SECTIONS = [
   {
@@ -163,9 +166,11 @@ function normalizePartyName(name: string) {
 
 export default function MeetingChecklist() {
   const { request } = useApi();
+  const { user } = useAuth();
   const [visitDate, setVisitDate] = useState(getTodayInputValue());
   const [partyName, setPartyName] = useState('');
-  const [partyNameOptions, setPartyNameOptions] = useState<string[]>([]);
+  const [partyNameOptions, setPartyNameOptions] = useState<{name: string, salesPerson: string}[]>([]);
+  const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('ALL');
   const [isPartyNameDropdownOpen, setIsPartyNameDropdownOpen] = useState(false);
   const [isLoadingPartyNames, setIsLoadingPartyNames] = useState(false);
   const [checkedItems, setCheckedItems] = useState<ChecklistState>(() => createInitialChecklist());
@@ -184,25 +189,73 @@ export default function MeetingChecklist() {
   const allItems = useMemo(() => CHECKLIST_SECTIONS.flatMap(section => section.items), []);
   const completedCount = allItems.filter(item => checkedItems[item]).length;
   const editCompletedCount = allItems.filter(item => editCheckedItems[item]).length;
+  const salesPersonsList = useMemo(() => {
+    const list = new Set<string>();
+    
+    // From party names
+    partyNameOptions.forEach(p => {
+      if (p.salesPerson) list.add(p.salesPerson.trim());
+    });
+
+    // From Leads Cache (matches Reports.tsx exactly)
+    try {
+      const cached = localStorage.getItem('crm_leads_cache');
+      if (cached) {
+        const leads = JSON.parse(cached);
+        if (Array.isArray(leads)) {
+          leads.forEach(l => {
+            const name = l['Sales Person Name'] || l.owner_id;
+            if (name && name !== 'Unassigned') {
+              list.add(name.trim());
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Add 'ADMIN' if not present as a fallback
+    list.add('ADMIN');
+
+    return Array.from(list).sort();
+  }, [partyNameOptions]);
+
+  const allowedPartyNameOptions = useMemo(() => {
+    if (user?.role === UserRole.ADMIN) {
+      if (selectedSalesPerson && selectedSalesPerson !== 'ALL') {
+        return partyNameOptions.filter(p => (p.salesPerson || '').toLowerCase() === selectedSalesPerson.toLowerCase());
+      }
+      return partyNameOptions;
+    }
+    return partyNameOptions.filter(p => (p.salesPerson || '').toLowerCase() === (user?.name || '').toLowerCase());
+  }, [user, partyNameOptions, selectedSalesPerson]);
+
+  const allowedPartyNamesSet = useMemo(() => new Set(allowedPartyNameOptions.map(p => p.name)), [allowedPartyNameOptions]);
+
   const filteredPartyNames = useMemo(() => {
     const query = partyName.trim().toLowerCase();
+    const names = allowedPartyNameOptions.map(p => p.name);
     const matches = query
-      ? partyNameOptions.filter(name => name.toLowerCase().includes(query))
-      : partyNameOptions;
+      ? names.filter(name => name.toLowerCase().includes(query))
+      : names;
 
     return matches.slice(0, 20);
-  }, [partyName, partyNameOptions]);
+  }, [partyName, allowedPartyNameOptions]);
+
   const meetupPlans = useMemo<MeetupPlan[]>(() => {
     const today = startOfDay(new Date());
     const latestByParty = new Map<string, { partyName: string; lastMeetingDate: Date | null }>();
 
-    partyNameOptions.forEach(name => {
-      const key = normalizePartyName(name);
+    allowedPartyNameOptions.forEach(p => {
+      const key = normalizePartyName(p.name);
       if (!key) return;
-      latestByParty.set(key, { partyName: name, lastMeetingDate: null });
+      latestByParty.set(key, { partyName: p.name, lastMeetingDate: null });
     });
 
     entries.forEach(entry => {
+      if (!allowedPartyNamesSet.has(entry.partyName)) return;
+
       const key = normalizePartyName(entry.partyName);
       if (!key) return;
 
@@ -234,7 +287,8 @@ export default function MeetingChecklist() {
       if (dateDiff !== 0) return dateDiff;
       return a.partyName.localeCompare(b.partyName);
     });
-  }, [entries, partyNameOptions]);
+  }, [entries, allowedPartyNameOptions, allowedPartyNamesSet]);
+
   const visibleMeetupPlans = useMemo(() => {
     const query = meetupSearch.trim().toLowerCase();
     const filteredByDate = meetupFilter === 'today'
@@ -245,12 +299,14 @@ export default function MeetingChecklist() {
 
     return filteredByDate.filter(plan => plan.partyName.toLowerCase().includes(query));
   }, [meetupFilter, meetupPlans, meetupSearch]);
+
   const visibleEntries = useMemo(() => {
     const query = savedChecklistSearch.trim().toLowerCase();
-    if (!query) return entries;
+    const allowed = entries.filter(entry => allowedPartyNamesSet.has(entry.partyName));
 
-    return entries.filter(entry => entry.partyName.toLowerCase().includes(query));
-  }, [entries, savedChecklistSearch]);
+    if (!query) return allowed;
+    return allowed.filter(entry => entry.partyName.toLowerCase().includes(query));
+  }, [entries, savedChecklistSearch, allowedPartyNamesSet]);
   const dueMeetupCount = meetupPlans.filter(plan => plan.status === 'overdue' || plan.status === 'today').length;
 
   const fetchEntries = async () => {
@@ -269,7 +325,17 @@ export default function MeetingChecklist() {
     setIsLoadingPartyNames(true);
     try {
       const data = await request('/api/meeting-checklist/party-names', { silent: true });
-      setPartyNameOptions(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        const options = data.map(item => {
+          if (typeof item === 'string') {
+            return { name: item, salesPerson: '' };
+          }
+          return { name: item?.name || '', salesPerson: item?.salesPerson || '' };
+        });
+        setPartyNameOptions(options);
+      } else {
+        setPartyNameOptions([]);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to load party names');
     } finally {
@@ -488,10 +554,22 @@ export default function MeetingChecklist() {
             Client Visit Checklist
           </h1>
         </div>
-        <Button onClick={() => handleOpenForm()} className="h-11 bg-indigo-600 px-5 hover:bg-indigo-700">
-          <Plus size={17} />
-          New Entry
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 items-end relative z-50">
+          {user?.role === UserRole.ADMIN && (
+            <div className="w-48 relative z-50">
+              <SearchableSelect 
+                value={selectedSalesPerson} 
+                onValueChange={setSelectedSalesPerson}
+                options={salesPersonsList}
+                allLabel="All Sales Persons"
+              />
+            </div>
+          )}
+          <Button onClick={() => handleOpenForm()} className="h-11 bg-indigo-600 px-5 hover:bg-indigo-700">
+            <Plus size={17} />
+            New Entry
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
