@@ -937,6 +937,20 @@ app.use(express.json());
       if (leadData['Follow Up date'] !== undefined) {
         leadData['Follow Up date'] = formatDateForSheet(leadData['Follow Up date']);
       }
+
+      // Auto-generate ID if it's missing from the frontend
+      if (!leadData.Id) {
+        const ppplIds = (LEADS_CACHE || [])
+          .map((r: any) => r.id)
+          .filter((id: any) => typeof id === 'string' && id.startsWith('PPPL-26-'))
+          .map((id: string) => parseInt(id.replace('PPPL-26-', ''), 10))
+          .filter((num: number) => !isNaN(num));
+        let nextNum = 1424;
+        if (ppplIds.length > 0) {
+          nextNum = Math.max(...ppplIds) + 1;
+        }
+        leadData.Id = `PPPL-26-${nextNum}`;
+      }
       
       // Save to 'NEW_FMS' sheet in background
       SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
@@ -1100,10 +1114,6 @@ app.use(express.json());
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
       // Map Technical Discussion Stage fields
-      if (updateData.tech_actual_date !== undefined) mappedUpdate['__col_33'] = updateData.tech_actual_date;
-      if (updateData.tech_status !== undefined) mappedUpdate['__col_34'] = updateData.tech_status;
-      if (updateData.tech_kit_url !== undefined) mappedUpdate['__col_44'] = updateData.tech_kit_url;
-
       // Map Negotiation Stage fields
       if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
       if (updateData.negotiation_status !== undefined) {
@@ -1156,7 +1166,8 @@ app.use(express.json());
            mappedUpdate['__col_72'] = updateData.close_remark;
         }
       }
-      SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => console.error("Background updateRow failed:", e));
+
+      SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => console.error("Background updateRow failed:", e));
 
       if (existingLeadObj) {
         Object.assign(existingLeadObj, updateData);

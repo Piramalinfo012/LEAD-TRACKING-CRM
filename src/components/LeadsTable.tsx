@@ -898,6 +898,7 @@ const table = useReactTable({
   getSortedRowModel: getSortedRowModel(),
   onGlobalFilterChange: setGlobalFilter,
   getFilteredRowModel: getFilteredRowModel(),
+  autoResetPageIndex: false,
   state: {
     sorting,
     globalFilter,
@@ -905,7 +906,7 @@ const table = useReactTable({
 });
 
 const currentRecordCount = table.getFilteredRowModel().rows.length;
-const recordCountLabel = hasHistoryTab && stageTab === 'history' ? 'History Records' : 'Active Records';
+const recordCountLabel = hasHistoryTab && stageTab === 'history' ? 'History Records' : 'Pending Records';
 const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emptyMessage : 'No prospects found in pipeline.';
 
   const handleDownloadCSV = () => {
@@ -991,7 +992,7 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
               value="active"
               className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
-              Active
+              Pending
             </TabsTrigger>
             <TabsTrigger
               value="history"

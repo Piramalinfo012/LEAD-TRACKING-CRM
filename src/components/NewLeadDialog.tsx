@@ -588,10 +588,11 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
             </div>
 
             <div className="space-y-2.5">
-              <Label htmlFor="follow_up_date" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Follow Up Date</Label>
+              <Label htmlFor="follow_up_date" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Follow Up Date <span className="text-rose-500">*</span></Label>
               <Input 
                 id="follow_up_date" 
                 type="date"
+                required
                 className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
                 value={formData.follow_up_date}
                 onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
