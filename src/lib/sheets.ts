@@ -5,6 +5,74 @@ export class SheetsDB {
     return process.env.GOOGLE_SHEET_ID;
   }
 
+  private static buildScriptGetUrl(scriptUrl: string, sheetName: string) {
+    const params = new URLSearchParams({
+      sheet: sheetName,
+      _ts: Date.now().toString(),
+    });
+    return `${scriptUrl}${scriptUrl.includes('?') ? '&' : '?'}${params.toString()}`;
+  }
+
+  private static delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private static formatDateForVerification(date: Date) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).formatToParts(date);
+
+    const day = parts.find(part => part.type === 'day')?.value || '';
+    const month = parts.find(part => part.type === 'month')?.value || '';
+    const year = parts.find(part => part.type === 'year')?.value || '';
+    return day && month && year ? `${day}/${month}/${year}` : '';
+  }
+
+  private static normalizeForVerification(value: any) {
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return SheetsDB.formatDateForVerification(value);
+    }
+
+    const text = String(value ?? '').trim().replace(/\r\n/g, '\n');
+    const dmy = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s.*)?$/);
+    if (dmy) {
+      return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
+    }
+
+    const ymd = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymd) {
+      return `${ymd[3]}/${ymd[2]}/${ymd[1]}`;
+    }
+
+    const isoDate = text.match(/^\d{4}-\d{2}-\d{2}[T\s]/);
+    if (isoDate) {
+      const date = new Date(text);
+      if (!isNaN(date.getTime())) {
+        return SheetsDB.formatDateForVerification(date);
+      }
+    }
+
+    return text;
+  }
+
+  private static valuesMatchForVerification(expected: any, actual: any) {
+    return SheetsDB.normalizeForVerification(expected) === SheetsDB.normalizeForVerification(actual);
+  }
+
+  private static columnToLetter(index: number) {
+    let n = index + 1;
+    let letters = '';
+    while (n > 0) {
+      const remainder = (n - 1) % 26;
+      letters = String.fromCharCode(65 + remainder) + letters;
+      n = Math.floor((n - 1) / 26);
+    }
+    return letters;
+  }
+
   static async getRows(sheetName: string, rangeOverride?: string, headerRowIndex: number = 0, timeoutMs: number = 50000) {
     const spreadsheetId = this.spreadsheetId;
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
@@ -195,29 +263,49 @@ export class SheetsDB {
       const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
       if (scriptUrl) {
         try {
-          // 1. Fetch all rows to find the rowIndex
-          const getController = new AbortController();
-          const getTimeoutId = setTimeout(() => getController.abort(), 30000);
-          const getResponse = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
-            signal: getController.signal
-          });
-          clearTimeout(getTimeoutId);
-          const getResult = await getResponse.json();
-          
-          if (!getResult.success || !getResult.data) throw new Error('Failed to fetch data for update');
-          
-          const allRows = getResult.data;
-          if (allRows.length <= headerRowIndex) throw new Error('Sheet is empty or missing headers');
-          
-          const headers = allRows[headerRowIndex];
-          const idColIndex = headers.indexOf(idField);
-          if (idColIndex === -1) throw new Error(`Id field ${idField} not found in headers`);
-          
-          const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
-          if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+          const fetchSheetRows = async () => {
+            const getController = new AbortController();
+            const getTimeoutId = setTimeout(() => getController.abort(), 30000);
+            const getResponse = await fetch(SheetsDB.buildScriptGetUrl(scriptUrl, sheetName), {
+              headers: { 'Cache-Control': 'no-cache' },
+              signal: getController.signal
+            });
+            clearTimeout(getTimeoutId);
+
+            if (!getResponse.ok) {
+              throw new Error(`Google Apps Script returned status ${getResponse.status}`);
+            }
+
+            const getResult = await getResponse.json();
+            if (!getResult.success || !getResult.data) throw new Error('Failed to fetch data for update');
+            return getResult.data;
+          };
+
+          const resolveRow = async () => {
+            const allRows = await fetchSheetRows();
+            if (allRows.length <= headerRowIndex) throw new Error('Sheet is empty or missing headers');
+
+            const headers = allRows[headerRowIndex];
+            const idColIndex = headers.indexOf(idField);
+            if (idColIndex === -1) throw new Error(`Id field ${idField} not found in headers`);
+
+            const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
+            if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+
+            return {
+              headers,
+              row: allRows[rowIndex0Based] || [],
+              rowIndex1Based: rowIndex0Based + 1,
+            };
+          };
+
+          const resolved = await resolveRow();
+          const headers = resolved.headers;
           
           const cellUpdates = new Map<number, any>();
           const formulaColumns = new Set([15, 23, 32, 59, 73]);
+          const matchedKeys: string[] = [];
+          const unmatchedKeys: string[] = [];
 
           for (const key of Object.keys(data)) {
             let colIndex = headers.indexOf(key);
@@ -231,78 +319,109 @@ export class SheetsDB {
               const nextValue = data[key] == null ? '' : String(data[key]);
               // Always send the update - do NOT skip based on stale data comparison
               cellUpdates.set(colIndex, nextValue);
+              matchedKeys.push(`${key}->col${colIndex}`);
+            } else {
+              unmatchedKeys.push(key);
             }
           }
+
+          console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} cells to update. Matched: [${matchedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
 
           if (cellUpdates.size === 0) {
-            console.log(`[SheetsDB.updateRow] No matching sheet columns to update for ${idValue} in ${sheetName}`);
-            return;
+            console.error(`[SheetsDB.updateRow] ZERO cells matched for ${idValue}! Data keys: [${Object.keys(data).join(', ')}]. First 10 headers: [${headers.slice(0, 10).join(', ')}]`);
+            throw new Error(`No matching sheet columns found for update of ${idValue} in ${sheetName}`);
           }
 
-          const rowIndex1Based = rowIndex0Based + 1;
-          let successCount = 0;
-          const failedCells: number[] = [];
+          const writeCells = async (updates: Map<number, any>, rowIndex1Based: number, label: string) => {
+            let successCount = 0;
+            const failedCells: number[] = [];
 
-          for (const [colIndex, value] of Array.from(cellUpdates)) {
-            let lastErr: any = null;
-            let success = false;
-            
-            // Retry each cell update up to 3 times
-            for (let attempt = 1; attempt <= 3; attempt++) {
-              try {
-                const params = new URLSearchParams();
-                params.append('action', 'updateCell');
-                params.append('sheetName', sheetName);
-                params.append('rowIndex', rowIndex1Based.toString());
-                params.append('columnIndex', String(colIndex + 1));
-                params.append('value', value);
+            for (const [colIndex, value] of Array.from(updates)) {
+              let lastErr: any = null;
+              let success = false;
 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
-                const postResponse = await fetch(scriptUrl, {
-                  method: 'POST',
-                  body: params,
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  signal: controller.signal
-                });
-                clearTimeout(timeoutId);
+              for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                  const params = new URLSearchParams();
+                  params.append('action', 'updateCell');
+                  params.append('sheetName', sheetName);
+                  params.append('rowIndex', rowIndex1Based.toString());
+                  params.append('columnIndex', String(colIndex + 1));
+                  params.append('value', value);
 
-                if (!postResponse.ok) {
-                  throw new Error(`Update cell failed with status ${postResponse.status}`);
-                }
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 30000);
+                  const postResponse = await fetch(scriptUrl, {
+                    method: 'POST',
+                    body: params,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    signal: controller.signal
+                  });
+                  clearTimeout(timeoutId);
 
-                const result = await postResponse.json();
-                if (!result.success) throw new Error(result.error || 'Update cell failed via App Script');
-                
-                success = true;
-                successCount++;
-                break; // Success, move to next cell
-              } catch (retryErr: any) {
-                lastErr = retryErr;
-                console.warn(`[SheetsDB.updateRow] Cell col=${colIndex} attempt ${attempt}/3 failed: ${retryErr.message}`);
-                if (attempt < 3) {
-                  // Wait before retry (exponential backoff: 1s, 2s)
-                  await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                  if (!postResponse.ok) {
+                    throw new Error(`Update cell failed with status ${postResponse.status}`);
+                  }
+
+                  const result = await postResponse.json();
+                  if (!result.success) throw new Error(result.error || 'Update cell failed via App Script');
+
+                  success = true;
+                  successCount++;
+                  break;
+                } catch (retryErr: any) {
+                  lastErr = retryErr;
+                  console.warn(`[SheetsDB.updateRow] ${label} cell col=${colIndex} attempt ${attempt}/3 failed: ${retryErr.message}`);
+                  if (attempt < 3) await SheetsDB.delay(attempt * 1000);
                 }
               }
-            }
-            
-            if (!success) {
-              failedCells.push(colIndex);
-              console.error(`[SheetsDB.updateRow] Cell col=${colIndex} FAILED after 3 attempts: ${lastErr?.message}`);
+
+              if (!success) {
+                failedCells.push(colIndex);
+                console.error(`[SheetsDB.updateRow] ${label} cell col=${colIndex} FAILED after 3 attempts: ${lastErr?.message}`);
+              }
+
+              if (updates.size > 1) await SheetsDB.delay(200);
             }
 
-            // Small delay between cell updates to avoid Google rate limiting
-            if (cellUpdates.size > 1) {
-              await new Promise(resolve => setTimeout(resolve, 200));
+            if (failedCells.length > 0) {
+              throw new Error(`Failed to update ${failedCells.length}/${updates.size} cells (columns: ${failedCells.join(', ')}) for ${idValue} in ${sheetName}`);
             }
+
+            return successCount;
+          };
+
+          const verifyCells = async () => {
+            const latest = await resolveRow();
+            const mismatches = new Map<number, any>();
+            const details: string[] = [];
+
+            for (const [colIndex, expected] of Array.from(cellUpdates)) {
+              const actual = latest.row[colIndex] ?? '';
+              if (!SheetsDB.valuesMatchForVerification(expected, actual)) {
+                mismatches.set(colIndex, expected);
+                details.push(`col${colIndex}: expected="${expected}" actual="${actual}"`);
+              }
+            }
+
+            return { mismatches, details, rowIndex1Based: latest.rowIndex1Based };
+          };
+
+          const initialCount = await writeCells(cellUpdates, resolved.rowIndex1Based, 'write');
+          let verification = await verifyCells();
+
+          for (let verifyAttempt = 1; verification.mismatches.size > 0 && verifyAttempt <= 3; verifyAttempt++) {
+            console.warn(`[SheetsDB.updateRow] Verification mismatch for ${idValue} in ${sheetName}, retry ${verifyAttempt}/3: ${verification.details.join('; ')}`);
+            await SheetsDB.delay(verifyAttempt * 750);
+            await writeCells(verification.mismatches, verification.rowIndex1Based, `verify-retry-${verifyAttempt}`);
+            verification = await verifyCells();
           }
 
-          if (failedCells.length > 0) {
-            throw new Error(`Failed to update ${failedCells.length}/${cellUpdates.size} cells (columns: ${failedCells.join(', ')}) for ${idValue} in ${sheetName}`);
+          if (verification.mismatches.size > 0) {
+            throw new Error(`Sheet verification failed after update for ${idValue} in ${sheetName}: ${verification.details.join('; ')}`);
           }
 
-          console.log(`[SheetsDB.updateRow] Successfully updated ${successCount} cells for ${idValue} in ${sheetName} via App Script`);
+          console.log(`[SheetsDB.updateRow] Successfully updated and verified ${initialCount} cells for ${idValue} in ${sheetName} via App Script`);
           return;
         } catch (e: any) {
           console.error('[SheetsDB.updateRow] App Script fallback failed:', e.message);
@@ -320,51 +439,98 @@ export class SheetsDB {
     }
 
     const sheets = await getSheetsClient();
-    const allRows = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${sheetName}!A:CE`,
-    });
+    const formulaColumns = new Set([15, 23, 32, 59, 73]);
 
-    const rows = allRows.data.values || [];
-    const headers = rows[headerRowIndex] || [];
-    const idIndex = headers.indexOf(idField);
-    
-    if (idIndex === -1) throw new Error(`Field ${idField} not found`);
+    const resolveRow = async () => {
+      const allRows = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${sheetName}!A:CE`,
+      });
 
-    const rowIndex = rows.findIndex((row, idx) => idx > headerRowIndex && row[idIndex] === idValue);
-    if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+      const rows = allRows.data.values || [];
+      const headers = rows[headerRowIndex] || [];
+      const idIndex = headers.indexOf(idField);
 
-    const updatedRow = headers.map((header, index) => {
-        if (header === 'Lead Planned Date' || header === '__col_15' ||
-            header === 'Meeting Planned' || header === 'Meeting Planned Date' || header === '__col_23' ||
-            header === 'Technical Discussion Planned' || header === 'Technical Discussion Planned Date' ||
-            header === 'Tech Planned' || header === 'Tech Planned Date' || header === '__col_32' || index === 32 ||
-            header === 'Order Planned' || header === 'Order Planned Date' || header === '__col_59' || index === 59 ||
-            header === 'Sample Planned' || header === 'Sample Planned Date' || header === '__col_73' || index === 73) {
-          return null;
-        }
-        return data[header] !== undefined ? data[header] : rows[rowIndex][index];
-    });
+      if (idIndex === -1) throw new Error(`Field ${idField} not found`);
+
+      const rowIndex = rows.findIndex((row, idx) => idx > headerRowIndex && row[idIndex] === idValue);
+      if (rowIndex === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
+
+      return { headers, row: rows[rowIndex] || [], rowNumber: rowIndex + 1 };
+    };
+
+    const resolved = await resolveRow();
+    const cellUpdates = new Map<number, any>();
+    const matchedKeys: string[] = [];
+    const unmatchedKeys: string[] = [];
 
     for (const key of Object.keys(data)) {
-      if (!key.startsWith('__col_')) continue;
+      let colIndex = resolved.headers.indexOf(key);
+      if (key.startsWith('__col_')) {
+        const idx = parseInt(key.replace('__col_', ''), 10);
+        if (!isNaN(idx)) colIndex = idx;
+      }
 
-      const colIndex = parseInt(key.replace('__col_', ''), 10);
-      if (isNaN(colIndex)) continue;
-      if (colIndex === 32 || colIndex === 59 || colIndex === 73) continue;
-
-      while (updatedRow.length <= colIndex) updatedRow.push('');
-      updatedRow[colIndex] = data[key];
+      if (colIndex !== -1) {
+        if (formulaColumns.has(colIndex)) continue;
+        const nextValue = data[key] == null ? '' : String(data[key]);
+        cellUpdates.set(colIndex, nextValue);
+        matchedKeys.push(`${key}->col${colIndex}`);
+      } else {
+        unmatchedKeys.push(key);
+      }
     }
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${sheetName}!A${rowIndex + 1}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: [updatedRow],
-      },
-    });
+    console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} direct cells to update. Matched: [${matchedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
+
+    if (cellUpdates.size === 0) {
+      throw new Error(`No matching sheet columns found for update of ${idValue} in ${sheetName}`);
+    }
+
+    const writeCells = async (updates: Map<number, any>, rowNumber: number) => {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          valueInputOption: 'USER_ENTERED',
+          data: Array.from(updates).map(([colIndex, value]) => ({
+            range: `${sheetName}!${SheetsDB.columnToLetter(colIndex)}${rowNumber}`,
+            values: [[value]],
+          })),
+        },
+      });
+    };
+
+    const verifyCells = async () => {
+      const latest = await resolveRow();
+      const mismatches = new Map<number, any>();
+      const details: string[] = [];
+
+      for (const [colIndex, expected] of Array.from(cellUpdates)) {
+        const actual = latest.row[colIndex] ?? '';
+        if (!SheetsDB.valuesMatchForVerification(expected, actual)) {
+          mismatches.set(colIndex, expected);
+          details.push(`col${colIndex}: expected="${expected}" actual="${actual}"`);
+        }
+      }
+
+      return { mismatches, details, rowNumber: latest.rowNumber };
+    };
+
+    await writeCells(cellUpdates, resolved.rowNumber);
+    let verification = await verifyCells();
+
+    for (let verifyAttempt = 1; verification.mismatches.size > 0 && verifyAttempt <= 3; verifyAttempt++) {
+      console.warn(`[SheetsDB.updateRow] Direct verification mismatch for ${idValue} in ${sheetName}, retry ${verifyAttempt}/3: ${verification.details.join('; ')}`);
+      await SheetsDB.delay(verifyAttempt * 750);
+      await writeCells(verification.mismatches, verification.rowNumber);
+      verification = await verifyCells();
+    }
+
+    if (verification.mismatches.size > 0) {
+      throw new Error(`Direct sheet verification failed after update for ${idValue} in ${sheetName}: ${verification.details.join('; ')}`);
+    }
+
+    console.log(`[SheetsDB.updateRow] Successfully updated and verified ${cellUpdates.size} cells for ${idValue} in ${sheetName} via direct API`);
   }
 
   static async deleteRow(sheetName: string, idField: string, idValue: string, headerRowIndex: number = 0) {
