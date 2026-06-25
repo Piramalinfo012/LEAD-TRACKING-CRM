@@ -805,9 +805,12 @@ app.use(express.json());
         updated_at: new Date().toISOString()
       };
       
-      // Background save to Sheets
-      SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
-        .finally(() => refreshLeadsCache(true));
+      // Save to Sheets synchronously to ensure data is stored
+      await SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => {
+        console.error("Sheet Add Error:", e);
+        throw new Error("Failed to save to Google Sheets.");
+      });
+      refreshLeadsCache(true).catch(e => console.error(e));
       
       // Update cache optimistically
       if (LEADS_CACHE) {
@@ -844,9 +847,12 @@ app.use(express.json());
         leadData.Id = `PPPL-26-${nextNum}`;
       }
       
-      // Save to 'NEW_FMS' sheet in background
-      SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => console.error("Background Sheet Add Error:", e))
-        .finally(() => refreshLeadsCache(true));
+      // Save to 'NEW_FMS' sheet synchronously to ensure data is stored
+      await SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => {
+        console.error("Sheet Add Error:", e);
+        throw new Error("Failed to save to Google Sheets.");
+      });
+      refreshLeadsCache(true).catch(e => console.error(e));
       
       // Update cache optimistically
       if (LEADS_CACHE) {
@@ -1073,7 +1079,10 @@ app.use(express.json());
         }
       }
 
-      SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => console.error("Background updateRow failed:", e));
+      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => {
+        console.error("updateRow failed:", e);
+        throw new Error("Failed to save updates to Google Sheets.");
+      });
 
       if (existingLeadObj) {
         Object.assign(existingLeadObj, updateData);
@@ -1170,39 +1179,36 @@ app.use(express.json());
       // Capture delete timestamp
       const deletedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
-      // Delete in background
-      (async () => {
-        try {
-          // 1. First, log deletion to 'Deleted' sheet for record-keeping
-          const deletedRowData: any = {
-            'Id': id,
-            'DELETE': id,
-            'Entry By Id': employee_id || deleterName || 'SYSTEM',
-            'Deleted By': deleterName || employee_id || 'SYSTEM',
-            'Deleted At': deletedAt,
-            'Party Name': targetLead?.company_name || targetLead?.['Party Name'] || '',
-            'Person Name': targetLead?.contact_person || targetLead?.['Person Name'] || '',
-            'Mobile No. ': targetLead?.mobile || targetLead?.['Mobile No. '] || '',
-            'Owner': targetLead?.owner_id || '',
-            'Status': targetLead?.status || '',
-            'Source': targetLead?.source || targetLead?.['Source'] || '',
-            'Sheet': sheetName,
-          };
-          await SheetsDB.addRow('Deleted', deletedRowData).catch(e =>
-            console.error('Failed to log deletion to Deleted sheet:', e)
-          );
+      // Delete synchronously
+      try {
+        // 1. First, log deletion to 'Deleted' sheet for record-keeping
+        const deletedRowData: any = {
+          'Id': id,
+          'DELETE': id,
+          'Entry By Id': employee_id || deleterName || 'SYSTEM',
+          'Deleted By': deleterName || employee_id || 'SYSTEM',
+          'Deleted At': deletedAt,
+          'Party Name': targetLead?.company_name || targetLead?.['Party Name'] || '',
+          'Person Name': targetLead?.contact_person || targetLead?.['Person Name'] || '',
+          'Mobile No. ': targetLead?.mobile || targetLead?.['Mobile No. '] || '',
+          'Owner': targetLead?.owner_id || '',
+          'Status': targetLead?.status || '',
+          'Source': targetLead?.source || targetLead?.['Source'] || '',
+          'Sheet': sheetName,
+        };
+        await SheetsDB.addRow('Deleted', deletedRowData).catch(e =>
+          console.error('Failed to log deletion to Deleted sheet:', e)
+        );
 
-          // 2. Actually DELETE the row from the data sheet
-          await SheetsDB.deleteRow(sheetName, 'Id', id, 5);
-          console.log(`[DELETE] Successfully deleted lead ${id} from ${sheetName}`);
-        } catch (err) {
-          console.error("Background Sheet Delete Error:", err);
-        } finally {
-          refreshLeadsCache(true);
-        }
-      })();
-
-      res.json({ success: true });
+        // 2. Actually DELETE the row from the data sheet
+        await SheetsDB.deleteRow(sheetName, 'Id', id, 5);
+        console.log(`[DELETE] Successfully deleted lead ${id} from ${sheetName}`);
+        refreshLeadsCache(true).catch(e => console.error(e));
+        res.json({ success: true });
+      } catch (err) {
+        console.error("Sheet Delete Error:", err);
+        throw new Error("Failed to delete lead from Google Sheets.");
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
