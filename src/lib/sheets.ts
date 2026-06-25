@@ -127,14 +127,14 @@ export class SheetsDB {
             params.append('sheetName', sheetName);
             params.append('rowData', JSON.stringify(row));
             
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 50000);
+            const postController = new AbortController();
+            const postTimeoutId = setTimeout(() => postController.abort(), 50000);
             const postResponse = await fetch(scriptUrl, {
               method: 'POST',
               body: params,
-              signal: controller.signal
+              signal: postController.signal
             });
-            clearTimeout(timeoutId);
+            clearTimeout(postTimeoutId);
 
             if (!postResponse.ok) {
               throw new Error(`Google Apps Script POST failed with status ${postResponse.status}`);
@@ -195,8 +195,13 @@ export class SheetsDB {
       const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
       if (scriptUrl) {
         try {
-          // 1. Fetch all rows to find the rowIndex and construct the updated array
-          const getResponse = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`);
+          // 1. Fetch all rows to find the rowIndex
+          const getController = new AbortController();
+          const getTimeoutId = setTimeout(() => getController.abort(), 30000);
+          const getResponse = await fetch(`${scriptUrl}?sheet=${encodeURIComponent(sheetName)}`, {
+            signal: getController.signal
+          });
+          clearTimeout(getTimeoutId);
           const getResult = await getResponse.json();
           
           if (!getResult.success || !getResult.data) throw new Error('Failed to fetch data for update');
@@ -211,7 +216,6 @@ export class SheetsDB {
           const rowIndex0Based = allRows.findIndex((r: any[], i: number) => i > headerRowIndex && String(r[idColIndex]) === String(idValue));
           if (rowIndex0Based === -1) throw new Error(`Row with ${idField}=${idValue} not found`);
           
-          const existingRow = allRows[rowIndex0Based] || [];
           const cellUpdates = new Map<number, any>();
           const formulaColumns = new Set([15, 23, 32, 59, 73]);
 
@@ -225,8 +229,7 @@ export class SheetsDB {
             if (colIndex !== -1) {
               if (formulaColumns.has(colIndex)) continue;
               const nextValue = data[key] == null ? '' : String(data[key]);
-              const currentValue = existingRow[colIndex] == null ? '' : String(existingRow[colIndex]);
-              if (currentValue === nextValue) continue;
+              // Always send the update - do NOT skip based on stale data comparison
               cellUpdates.set(colIndex, nextValue);
             }
           }
@@ -237,33 +240,69 @@ export class SheetsDB {
           }
 
           const rowIndex1Based = rowIndex0Based + 1;
+          let successCount = 0;
+          const failedCells: number[] = [];
+
           for (const [colIndex, value] of Array.from(cellUpdates)) {
-            const params = new URLSearchParams();
-            params.append('action', 'updateCell');
-            params.append('sheetName', sheetName);
-            params.append('rowIndex', rowIndex1Based.toString());
-            params.append('columnIndex', String(colIndex + 1));
-            params.append('value', value);
+            let lastErr: any = null;
+            let success = false;
+            
+            // Retry each cell update up to 3 times
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              try {
+                const params = new URLSearchParams();
+                params.append('action', 'updateCell');
+                params.append('sheetName', sheetName);
+                params.append('rowIndex', rowIndex1Based.toString());
+                params.append('columnIndex', String(colIndex + 1));
+                params.append('value', value);
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
-            const postResponse = await fetch(scriptUrl, {
-              method: 'POST',
-              body: params,
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const postResponse = await fetch(scriptUrl, {
+                  method: 'POST',
+                  body: params,
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-            if (!postResponse.ok) {
-              throw new Error(`Update cell failed with status ${postResponse.status}`);
+                if (!postResponse.ok) {
+                  throw new Error(`Update cell failed with status ${postResponse.status}`);
+                }
+
+                const result = await postResponse.json();
+                if (!result.success) throw new Error(result.error || 'Update cell failed via App Script');
+                
+                success = true;
+                successCount++;
+                break; // Success, move to next cell
+              } catch (retryErr: any) {
+                lastErr = retryErr;
+                console.warn(`[SheetsDB.updateRow] Cell col=${colIndex} attempt ${attempt}/3 failed: ${retryErr.message}`);
+                if (attempt < 3) {
+                  // Wait before retry (exponential backoff: 1s, 2s)
+                  await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+                }
+              }
+            }
+            
+            if (!success) {
+              failedCells.push(colIndex);
+              console.error(`[SheetsDB.updateRow] Cell col=${colIndex} FAILED after 3 attempts: ${lastErr?.message}`);
             }
 
-            const result = await postResponse.json();
-            if (!result.success) throw new Error(result.error || 'Update cell failed via App Script');
+            // Small delay between cell updates to avoid Google rate limiting
+            if (cellUpdates.size > 1) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
           }
 
-          console.log(`[SheetsDB.updateRow] Successfully updated ${cellUpdates.size} cells for ${idValue} in ${sheetName} via App Script`);
+          if (failedCells.length > 0) {
+            throw new Error(`Failed to update ${failedCells.length}/${cellUpdates.size} cells (columns: ${failedCells.join(', ')}) for ${idValue} in ${sheetName}`);
+          }
+
+          console.log(`[SheetsDB.updateRow] Successfully updated ${successCount} cells for ${idValue} in ${sheetName} via App Script`);
           return;
         } catch (e: any) {
           console.error('[SheetsDB.updateRow] App Script fallback failed:', e.message);
@@ -427,4 +466,3 @@ export class SheetsDB {
     });
   }
 }
-
