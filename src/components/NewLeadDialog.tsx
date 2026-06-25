@@ -148,6 +148,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     last_remarks: '',
     source: '',
     follow_up_date: '',
+    lead_start_date: '',
+    gst_number: '',
     id: '', // Will be generated automatically
     owner_id: JSON.parse(localStorage.getItem('crm_user') || '{}').id,
     sales_person_name: JSON.parse(localStorage.getItem('crm_user') || '{}').name,
@@ -317,6 +319,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         last_remarks: '',
         source: '',
         follow_up_date: '',
+        lead_start_date: '',
+        gst_number: '',
         id: '',
         owner_id: currentUser.id || '',
         sales_person_name: currentUser.name || '',
@@ -346,6 +350,8 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         'Source': formData.source,
         'Gmail ID': formData.gmail_id,
         'Follow Up date': formatDateToDMY(formData.follow_up_date),
+        'Lead Start date': formData.lead_start_date ? formatDateToDMY(formData.lead_start_date) : '',
+        'Gst Number': formData.gst_number,
         'Entry By Id': user?.employee_id || user?.id || '',
         // Also keep standard fields for compatibility if needed
         company_name: formData.party_name,
@@ -598,6 +604,28 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
               />
             </div>
+            <div className="space-y-2.5">
+              <Label htmlFor="lead_start_date" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Lead Start Date</Label>
+              <Input 
+                id="lead_start_date" 
+                type="date"
+                className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
+                value={formData.lead_start_date}
+                onChange={(e) => setFormData({...formData, lead_start_date: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2.5">
+              <Label htmlFor="gst_number" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">GST Number</Label>
+              <Input 
+                id="gst_number" 
+                placeholder="Enter GST Number"
+                className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
+                value={formData.gst_number}
+                onChange={(e) => setFormData({...formData, gst_number: e.target.value})}
+              />
+            </div>
+
             <div className="space-y-2.5">
                <Label htmlFor="sales_person" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Sales Person Name</Label>
                {isAdmin ? (
