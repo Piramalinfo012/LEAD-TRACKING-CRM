@@ -1026,6 +1026,13 @@ app.use(express.json());
       if (updateData.meeting_url !== undefined) mappedUpdate['Picture of Meeting Url'] = updateData.meeting_url;
 
       // Map Technical Discussion Stage fields
+      if (updateData.tech_actual_date !== undefined) mappedUpdate['__col_33'] = updateData.tech_actual_date;
+      if (updateData.tech_status !== undefined) mappedUpdate['__col_34'] = updateData.tech_status;
+      if (updateData.tech_kit_url !== undefined) {
+         mappedUpdate['__col_44'] = updateData.tech_kit_url;
+         mappedUpdate['Kit Attachment Url'] = updateData.tech_kit_url;
+      }
+
       // Map Negotiation Stage fields
       if (updateData.negotiation_actual_date !== undefined) mappedUpdate['__col_47'] = updateData.negotiation_actual_date;
       if (updateData.negotiation_status !== undefined) {
