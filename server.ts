@@ -1090,20 +1090,25 @@ app.use(express.json());
       const headerKeys = Object.keys(mappedUpdate).filter(k => !k.startsWith('__col_') && k !== 'updated_at' && k !== 'status' && !['company_name','contact_person','mobile','email','address','state','district','source','owner_id','custom_status','lead_status','lead_actual_date','meeting_actual_date','meeting_status','tech_actual_date','tech_status','tech_kit_url','negotiation_actual_date','negotiation_status','sample_actual_date','sample_status','order_actual_date','reschedule_date','discussion_points','meeting_person_name','meeting_number','bullet_point_remarks','meeting_url','quotation_url','unit','final_price','quantity','payment_terms','delivery_schedule','party_type','negotiation_remark','negotiation_kit_url','order_copy_url','delivery_in','unloading','motor_pump_requirement','transport','order_remark','order_attachment_url','order_status','sample_product_name','sample_qty','sample_dispatch_date','sample_remark','sample_attachment','closed_at','close_reason','close_remark','followup_date','product_details','mcb_requirement','pain_points','kit_details','meeting_followup_date','remarks'].includes(k));
       console.log(`[PATCH /api/leads/${id}] __col_ keys: [${colKeys.join(', ')}], sheet-header keys: [${headerKeys.join(', ')}], total mappedUpdate keys: ${Object.keys(mappedUpdate).length}`);
 
-      await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => {
-        console.error("updateRow failed:", e);
-        throw new Error("Failed to save updates to Google Sheets.");
-      });
+      const updatedLeadObj = existingLeadObj
+        ? { ...existingLeadObj, ...updateData }
+        : { id, ...updateData };
 
       if (existingLeadObj) {
         Object.assign(existingLeadObj, updateData);
       }
 
-      refreshLeadsCache(true).catch(e => console.error('Post-update cache refresh failed:', e));
+      res.json({ success: true, ...updatedLeadObj });
 
-      // Side logs should never block the primary NEW_FMS update.
+      // Keep Google Sheets and side logs out of the response path so stage saves feel instant.
       (async () => {
         try {
+          await SheetsDB.updateRow(sheetName, idField, id, mappedUpdate, isFms ? 5 : 0).catch(e => {
+            console.error("updateRow failed:", e);
+            throw new Error("Failed to save updates to Google Sheets.");
+          });
+
+          refreshLeadsCache(true).catch(e => console.error('Post-update cache refresh failed:', e));
           if (updateData.status && prevStatus && prevStatus !== updateData.status) {
             try {
               await SheetsDB.addRow('LeadHistory', {
@@ -1158,11 +1163,9 @@ app.use(express.json());
             }
           }
         } catch (err) {
-          console.error("Background side-log error:", err);
+          console.error("Background lead update error:", err);
         }
       })();
-      
-      res.json({ success: true, ...existingLeadObj });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

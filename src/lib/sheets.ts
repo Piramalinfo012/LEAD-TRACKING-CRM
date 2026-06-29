@@ -305,6 +305,7 @@ export class SheetsDB {
           const cellUpdates = new Map<number, any>();
           const formulaColumns = new Set([15, 23, 32, 59, 73]);
           const matchedKeys: string[] = [];
+          const skippedKeys: string[] = [];
           const unmatchedKeys: string[] = [];
 
           for (const key of Object.keys(data)) {
@@ -317,7 +318,11 @@ export class SheetsDB {
             if (colIndex !== -1) {
               if (formulaColumns.has(colIndex)) continue;
               const nextValue = data[key] == null ? '' : String(data[key]);
-              // Always send the update - do NOT skip based on stale data comparison
+              const currentValue = resolved.row[colIndex] ?? '';
+              if (SheetsDB.valuesMatchForVerification(nextValue, currentValue)) {
+                skippedKeys.push(`${key}->col${colIndex}`);
+                continue;
+              }
               cellUpdates.set(colIndex, nextValue);
               matchedKeys.push(`${key}->col${colIndex}`);
             } else {
@@ -325,9 +330,13 @@ export class SheetsDB {
             }
           }
 
-          console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} cells to update. Matched: [${matchedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
+          console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} changed cells to update. Matched: [${matchedKeys.join(', ')}]. Skipped unchanged: [${skippedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
 
           if (cellUpdates.size === 0) {
+            if (matchedKeys.length > 0 || skippedKeys.length > 0) {
+              console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: no sheet changes needed`);
+              return;
+            }
             console.error(`[SheetsDB.updateRow] ZERO cells matched for ${idValue}! Data keys: [${Object.keys(data).join(', ')}]. First 10 headers: [${headers.slice(0, 10).join(', ')}]`);
             throw new Error(`No matching sheet columns found for update of ${idValue} in ${sheetName}`);
           }
@@ -462,6 +471,7 @@ export class SheetsDB {
     const resolved = await resolveRow();
     const cellUpdates = new Map<number, any>();
     const matchedKeys: string[] = [];
+    const skippedKeys: string[] = [];
     const unmatchedKeys: string[] = [];
 
     for (const key of Object.keys(data)) {
@@ -474,6 +484,11 @@ export class SheetsDB {
       if (colIndex !== -1) {
         if (formulaColumns.has(colIndex)) continue;
         const nextValue = data[key] == null ? '' : String(data[key]);
+        const currentValue = resolved.row[colIndex] ?? '';
+        if (SheetsDB.valuesMatchForVerification(nextValue, currentValue)) {
+          skippedKeys.push(`${key}->col${colIndex}`);
+          continue;
+        }
         cellUpdates.set(colIndex, nextValue);
         matchedKeys.push(`${key}->col${colIndex}`);
       } else {
@@ -481,9 +496,13 @@ export class SheetsDB {
       }
     }
 
-    console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} direct cells to update. Matched: [${matchedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
+    console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: ${cellUpdates.size} changed direct cells to update. Matched: [${matchedKeys.join(', ')}]. Skipped unchanged: [${skippedKeys.join(', ')}]. Unmatched: [${unmatchedKeys.join(', ')}]`);
 
     if (cellUpdates.size === 0) {
+      if (matchedKeys.length > 0 || skippedKeys.length > 0) {
+        console.log(`[SheetsDB.updateRow] ${idValue} in ${sheetName}: no direct sheet changes needed`);
+        return;
+      }
       throw new Error(`No matching sheet columns found for update of ${idValue} in ${sheetName}`);
     }
 
