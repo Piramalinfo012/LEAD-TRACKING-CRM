@@ -1074,6 +1074,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         <SelectItem value="Pending">Pending</SelectItem>
                         <SelectItem value="Dispatched">Dispatched</SelectItem>
                         <SelectItem value="Received">Received</SelectItem>
+                        <SelectItem value="By Hand">By Hand</SelectItem>
                         <SelectItem value="Testing in Progress">Testing in Progress</SelectItem>
                         <SelectItem value="Approved">Approved</SelectItem>
                         <SelectItem value="Rejected">Rejected</SelectItem>

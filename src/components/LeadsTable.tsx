@@ -740,7 +740,7 @@ export default function LeadsTable() {
     return closedCols as ColumnDef<Lead>[];
   }
 
-  if (stage?.toLowerCase() === 'lead') {
+  if (stage?.toLowerCase() === 'lead' && !(historyConfig && stageTab === 'history')) {
     const leadCols = [...defaultCols];
 
     leadCols.push({
@@ -789,12 +789,6 @@ export default function LeadsTable() {
           {String((row.original as any)[historyConfig.statusKey] || 'Completed')}
         </Badge>
       ),
-    });
-
-    historyCols.push({
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }: any) => renderActions(row)
     });
 
     return historyCols as ColumnDef<Lead>[];
