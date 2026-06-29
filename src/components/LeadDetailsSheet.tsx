@@ -47,7 +47,7 @@ import {
   SelectValue 
 } from './ui/select';
 import { toast } from 'sonner';
-import { formatDateToDMY } from '../lib/utils';
+import { formatDateToDMY, formatDateToYMD } from '../lib/utils';
 
 interface LeadDetailsSheetProps {
   lead: Lead | null;
@@ -85,6 +85,50 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
     expected_value: 0,
     notes: '',
     followup_date: '',
+    lead_actual_date: '',
+    product_details: '',
+    mcb_requirement: '',
+    pain_points: '',
+    kit_details: '',
+    meeting_followup_date: '',
+    meeting_actual_date: '',
+    meeting_status: '',
+    reschedule_date: '',
+    discussion_points: '',
+    meeting_person_name: '',
+    meeting_number: '',
+    bullet_point_remarks: '',
+    meeting_url: '',
+    tech_actual_date: '',
+    tech_status: '',
+    tech_kit_url: '',
+    sample_actual_date: '',
+    sample_status: '',
+    sample_product_name: '',
+    sample_qty: '',
+    sample_dispatch_date: '',
+    sample_remark: '',
+    sample_attachment: '',
+    negotiation_actual_date: '',
+    negotiation_status: '',
+    quotation_url: '',
+    unit: '',
+    final_price: '',
+    quantity: '',
+    payment_terms: '',
+    delivery_schedule: '',
+    party_type: '',
+    negotiation_remark: '',
+    negotiation_kit_url: '',
+    order_actual_date: '',
+    order_copy_url: '',
+    delivery_in: '',
+    unloading: '',
+    motor_pump_requirement: '',
+    transport: '',
+    order_remark: '',
+    order_attachment_url: '',
+    order_status: '',
   });
 
   useEffect(() => {
@@ -105,6 +149,50 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
         expected_value: lead.expected_value || 0,
         notes: lead.notes || lead['Last Remarks'] || '',
         followup_date: lead.followup_date || lead['Follow Up date'] || '',
+        lead_actual_date: formatDateToYMD(lead.lead_actual_date || lead['Lead Actual Date']),
+        product_details: lead.product_details || '',
+        mcb_requirement: lead.mcb_requirement || '',
+        pain_points: lead.pain_points || '',
+        kit_details: lead.kit_details || lead['MCBs. (KIT) URl'] || '',
+        meeting_followup_date: formatDateToYMD(lead.meeting_followup_date),
+        meeting_actual_date: formatDateToYMD(lead.meeting_actual_date || lead['Meeting Actual Date'] || lead['Meeting Actual']),
+        meeting_status: lead.meeting_status || '',
+        reschedule_date: formatDateToYMD(lead.reschedule_date),
+        discussion_points: lead.discussion_points || '',
+        meeting_person_name: lead.meeting_person_name || '',
+        meeting_number: lead.meeting_number || '',
+        bullet_point_remarks: lead.bullet_point_remarks || '',
+        meeting_url: lead.meeting_url || '',
+        tech_actual_date: formatDateToYMD(lead.tech_actual_date),
+        tech_status: lead.tech_status || '',
+        tech_kit_url: lead.tech_kit_url || '',
+        sample_actual_date: formatDateToYMD(lead.sample_actual_date),
+        sample_status: lead.sample_status || '',
+        sample_product_name: lead.sample_product_name || '',
+        sample_qty: lead.sample_qty || '',
+        sample_dispatch_date: formatDateToYMD(lead.sample_dispatch_date),
+        sample_remark: lead.sample_remark || '',
+        sample_attachment: lead.sample_attachment || '',
+        negotiation_actual_date: formatDateToYMD(lead.negotiation_actual_date),
+        negotiation_status: lead.negotiation_status || '',
+        quotation_url: lead.quotation_url || '',
+        unit: lead.unit || '',
+        final_price: lead.final_price || '',
+        quantity: lead.quantity || '',
+        payment_terms: lead.payment_terms || '',
+        delivery_schedule: lead.delivery_schedule || '',
+        party_type: lead.party_type || '',
+        negotiation_remark: lead.negotiation_remark || '',
+        negotiation_kit_url: lead.negotiation_kit_url || '',
+        order_actual_date: formatDateToYMD(lead.order_actual_date),
+        order_copy_url: lead.order_copy_url || '',
+        delivery_in: lead.delivery_in || '',
+        unloading: lead.unloading || '',
+        motor_pump_requirement: lead.motor_pump_requirement || '',
+        transport: lead.transport || '',
+        order_remark: lead.order_remark || '',
+        order_attachment_url: lead.order_attachment_url || '',
+        order_status: lead.order_status || '',
       });
       setIsEditing(false);
     }
@@ -155,6 +243,50 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
           'Last Remarks': editFormData.notes,
           followup_date: editFormData.followup_date,
           'Follow Up date': editFormData.followup_date,
+          lead_actual_date: formatDateToDMY(editFormData.lead_actual_date),
+          product_details: editFormData.product_details,
+          mcb_requirement: editFormData.mcb_requirement,
+          pain_points: editFormData.pain_points,
+          kit_details: editFormData.kit_details,
+          meeting_followup_date: formatDateToDMY(editFormData.meeting_followup_date),
+          meeting_actual_date: formatDateToDMY(editFormData.meeting_actual_date),
+          meeting_status: editFormData.meeting_status,
+          reschedule_date: formatDateToDMY(editFormData.reschedule_date),
+          discussion_points: editFormData.discussion_points,
+          meeting_person_name: editFormData.meeting_person_name,
+          meeting_number: editFormData.meeting_number,
+          bullet_point_remarks: editFormData.bullet_point_remarks,
+          meeting_url: editFormData.meeting_url,
+          tech_actual_date: formatDateToDMY(editFormData.tech_actual_date),
+          tech_status: editFormData.tech_status,
+          tech_kit_url: editFormData.tech_kit_url,
+          sample_actual_date: formatDateToDMY(editFormData.sample_actual_date),
+          sample_status: editFormData.sample_status,
+          sample_product_name: editFormData.sample_product_name,
+          sample_qty: editFormData.sample_qty,
+          sample_dispatch_date: formatDateToDMY(editFormData.sample_dispatch_date),
+          sample_remark: editFormData.sample_remark,
+          sample_attachment: editFormData.sample_attachment,
+          negotiation_actual_date: formatDateToDMY(editFormData.negotiation_actual_date),
+          negotiation_status: editFormData.negotiation_status,
+          quotation_url: editFormData.quotation_url,
+          unit: editFormData.unit,
+          final_price: editFormData.final_price,
+          quantity: editFormData.quantity,
+          payment_terms: editFormData.payment_terms,
+          delivery_schedule: editFormData.delivery_schedule,
+          party_type: editFormData.party_type,
+          negotiation_remark: editFormData.negotiation_remark,
+          negotiation_kit_url: editFormData.negotiation_kit_url,
+          order_actual_date: formatDateToDMY(editFormData.order_actual_date),
+          order_copy_url: editFormData.order_copy_url,
+          delivery_in: editFormData.delivery_in,
+          unloading: editFormData.unloading,
+          motor_pump_requirement: editFormData.motor_pump_requirement,
+          transport: editFormData.transport,
+          order_remark: editFormData.order_remark,
+          order_attachment_url: editFormData.order_attachment_url,
+          order_status: editFormData.order_status,
         })
       });
       toast.success("Lead details updated successfully!");
@@ -255,6 +387,69 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
   };
 
   if (!lead) return null;
+
+  const visibleStagesOrder = [
+    LeadStatus.COLD,
+    LeadStatus.LEAD,
+    LeadStatus.MEETING,
+    LeadStatus.SAMPLE,
+    LeadStatus.TECHNICAL_DISCUSSION,
+    LeadStatus.NEGOTIATION,
+    LeadStatus.ORDER,
+    LeadStatus.CLOSED
+  ];
+  let visibleStageStr = (lead.status as string) || 'COLD';
+  if (currentStageView) {
+    visibleStageStr = currentStageView.toUpperCase().replace(/-/g, '_');
+    if (visibleStageStr === 'TECH') visibleStageStr = 'TECHNICAL_DISCUSSION';
+    if (visibleStageStr === 'TECHNICAL__DISCUSSION') visibleStageStr = 'TECHNICAL_DISCUSSION';
+  } else if (!lead.status) {
+    visibleStageStr = 'COLD';
+  }
+  const visibleStageIndex = visibleStagesOrder.indexOf(visibleStageStr as LeadStatus);
+
+  const updateEditField = (key: keyof typeof editFormData, value: string) => {
+    setEditFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const renderEditInput = (label: string, key: keyof typeof editFormData, type = 'text', className = '') => (
+    <div className={`space-y-1.5 ${className}`}>
+      <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{label}</Label>
+      <Input
+        type={type}
+        className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light]"
+        value={String(editFormData[key] || '')}
+        onChange={(e) => updateEditField(key, e.target.value)}
+      />
+    </div>
+  );
+
+  const renderEditTextarea = (label: string, key: keyof typeof editFormData, className = '') => (
+    <div className={`space-y-1.5 ${className}`}>
+      <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{label}</Label>
+      <Textarea
+        className="bg-white border-slate-300 text-slate-900 font-sans text-xs [color-scheme:light] min-h-[72px]"
+        value={String(editFormData[key] || '')}
+        onChange={(e) => updateEditField(key, e.target.value)}
+      />
+    </div>
+  );
+
+  const renderEditSelect = (label: string, key: keyof typeof editFormData, options: string[]) => (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{label}</Label>
+      <Select value={String(editFormData[key] || '')} onValueChange={(val) => updateEditField(key, val)}>
+        <SelectTrigger className="bg-white border-slate-300 h-9 text-xs text-slate-900 rounded-lg">
+          <SelectValue placeholder="Select Status" />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-border rounded-lg shadow-xl">
+          {options.map(option => (
+            <SelectItem key={option} value={option} className="text-xs font-semibold">{option}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -444,6 +639,97 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                           />
                         </div>
 
+                        {visibleStageIndex >= 1 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Lead Stage Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Lead Actual Date', 'lead_actual_date', 'date')}
+                              {renderEditInput('Meeting Follow-up Date', 'meeting_followup_date', 'date')}
+                              {renderEditInput('Product Details', 'product_details')}
+                              {renderEditInput('MCB Requirement Url', 'mcb_requirement')}
+                              {renderEditInput('KIT Url', 'kit_details')}
+                              {renderEditTextarea('Pain Points', 'pain_points', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
+
+                        {visibleStageIndex >= 2 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Meeting Stage Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Meeting Actual Date', 'meeting_actual_date', 'date')}
+                              {renderEditSelect('Meeting Status', 'meeting_status', ['Done', 'Hold', 'Not Done', 'Reschedule', 'Follow up'])}
+                              {renderEditInput('Reschedule Date', 'reschedule_date', 'date')}
+                              {renderEditInput('Person Met', 'meeting_person_name')}
+                              {renderEditInput('Contact Number', 'meeting_number')}
+                              {renderEditInput('Meeting File / Image Url', 'meeting_url')}
+                              {renderEditTextarea('Discussion Points', 'discussion_points', 'md:col-span-2')}
+                              {renderEditTextarea('Remarks', 'bullet_point_remarks', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
+
+                        {visibleStageIndex >= 3 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Sample Stage Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Sample Actual Date', 'sample_actual_date', 'date')}
+                              {renderEditInput('Sample Dispatch Date', 'sample_dispatch_date', 'date')}
+                              {renderEditSelect('Sample Status', 'sample_status', ['Pending', 'Dispatched', 'Received', 'By Hand', 'Testing in Progress', 'Approved', 'Rejected'])}
+                              {renderEditInput('Product Name', 'sample_product_name')}
+                              {renderEditInput('Quantity', 'sample_qty')}
+                              {renderEditInput('Sample Attachment Url', 'sample_attachment')}
+                              {renderEditTextarea('Sample Remarks', 'sample_remark', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
+
+                        {visibleStageIndex >= 4 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Technical Discussion Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Technical Actual Date', 'tech_actual_date', 'date')}
+                              {renderEditSelect('Technical Status', 'tech_status', ['Done', 'Hold', 'Not Done', 'Reschedule', 'Follow up'])}
+                              {renderEditInput('Technical Kit Attachment Url', 'tech_kit_url', 'text', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
+
+                        {visibleStageIndex >= 5 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Negotiation Stage Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Negotiation Actual Date', 'negotiation_actual_date', 'date')}
+                              {renderEditSelect('Negotiation Status', 'negotiation_status', ['Done', 'Hold', 'Not Done', 'Reschedule', 'Follow up'])}
+                              {renderEditInput('Quotation Upload Url', 'quotation_url')}
+                              {renderEditInput('Unit', 'unit')}
+                              {renderEditInput('Final Price', 'final_price')}
+                              {renderEditInput('Quantity', 'quantity')}
+                              {renderEditInput('Payment Terms', 'payment_terms')}
+                              {renderEditInput('Delivery Schedule', 'delivery_schedule')}
+                              {renderEditInput('Party Type', 'party_type')}
+                              {renderEditInput('Kit Attachment Url', 'negotiation_kit_url')}
+                              {renderEditTextarea('Negotiation Remarks', 'negotiation_remark', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
+
+                        {visibleStageIndex >= 6 && (
+                          <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Order Stage Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {renderEditInput('Order Actual Date', 'order_actual_date', 'date')}
+                              {renderEditInput('Order Status', 'order_status')}
+                              {renderEditInput('Order Copy Url', 'order_copy_url')}
+                              {renderEditInput('Delivery In', 'delivery_in')}
+                              {renderEditInput('Unloading', 'unloading')}
+                              {renderEditInput('Motor / Pump Requirement', 'motor_pump_requirement')}
+                              {renderEditInput('Transport', 'transport')}
+                              {renderEditInput('Order Attachment Url', 'order_attachment_url')}
+                              {renderEditTextarea('Order Remarks', 'order_remark', 'md:col-span-2')}
+                            </div>
+                          </div>
+                        )}
                         {/* Action buttons */}
                         <div className="flex gap-3 pt-2">
                           <Button 
@@ -486,10 +772,6 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                                  <div className="space-y-1">
                                     <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Source</span>
                                     <p className="text-xs font-sans font-bold text-slate-700 uppercase">{lead.source || lead['Source'] || 'Organic'}</p>
-                                 </div>
-                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">Product</span>
-                                    <p className="text-xs font-sans font-bold text-slate-700 uppercase">{lead.product || 'Unspecified'}</p>
                                  </div>
                               </div>
                            </div>
