@@ -73,6 +73,20 @@ export class SheetsDB {
     return letters;
   }
 
+  private static buildAppendRow(headers: string[], data: any) {
+    const row = headers.map((header: string) => data[header] !== undefined && data[header] !== '' ? data[header] : null);
+
+    Object.keys(data).forEach(key => {
+      if (!key.startsWith('__col_')) return;
+      const idx = parseInt(key.replace('__col_', ''), 10);
+      if (isNaN(idx)) return;
+      while (row.length <= idx) row.push(null);
+      row[idx] = data[key] !== undefined && data[key] !== '' ? data[key] : null;
+    });
+
+    return row;
+  }
+
   static async getRows(sheetName: string, rangeOverride?: string, headerRowIndex: number = 0, timeoutMs: number = 50000) {
     const spreadsheetId = this.spreadsheetId;
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
@@ -135,7 +149,7 @@ export class SheetsDB {
     const sheets = await getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: rangeOverride || `${sheetName}!A:CE`,
+      range: rangeOverride || `${sheetName}!A:CH`,
     });
 
     const rows = response.data.values || [];
@@ -184,7 +198,7 @@ export class SheetsDB {
           
           if (headers.length > 0) {
             // Pass null instead of '' to avoid breaking ArrayFormulas when appending rows
-            const row = headers.map((header: string) => data[header] !== undefined && data[header] !== '' ? data[header] : null);
+            const row = SheetsDB.buildAppendRow(headers, data);
             console.log(`[SheetsDB.addRow] Sheet: ${sheetName}`);
             console.log(`[SheetsDB.addRow] Payload Keys:`, Object.keys(data));
             console.log(`[SheetsDB.addRow] First 5 Headers:`, headers.slice(0, 5));
@@ -238,12 +252,12 @@ export class SheetsDB {
     const rowNum = headerRowIndex + 1;
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A${rowNum}:CE${rowNum}`,
+      range: `${sheetName}!A${rowNum}:CH${rowNum}`,
     });
     
     headers = response.data.values?.[0] || [];
     // Pass null instead of '' to avoid breaking ArrayFormulas
-    const row = headers.map(header => data[header] !== undefined && data[header] !== '' ? data[header] : null);
+    const row = SheetsDB.buildAppendRow(headers, data);
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
@@ -453,7 +467,7 @@ export class SheetsDB {
     const resolveRow = async () => {
       const allRows = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A:CE`,
+        range: `${sheetName}!A:CH`,
       });
 
       const rows = allRows.data.values || [];
@@ -613,7 +627,7 @@ export class SheetsDB {
     
     const allRows = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:CE`,
+      range: `${sheetName}!A:CH`,
     });
 
     const rows = allRows.data.values || [];

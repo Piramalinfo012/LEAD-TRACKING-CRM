@@ -408,6 +408,20 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
   }
   const visibleStageIndex = visibleStagesOrder.indexOf(visibleStageStr as LeadStatus);
 
+  const splitContactField = (value: any) => {
+    return String(value || '').split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  };
+
+  const contactNames = splitContactField(lead.contact_person || lead['Person Name']);
+  const contactNumbers = splitContactField(lead.mobile || lead['Mobile No. ']);
+  const contactDesignations = splitContactField((lead as any).designation || (lead as any)['Designation'] || (lead as any).__col_85);
+  const contactRowCount = Math.max(contactNames.length, contactNumbers.length, contactDesignations.length, 1);
+  const contactRows = Array.from({ length: contactRowCount }, (_, index) => ({
+    name: contactNames[index] || (index === 0 ? 'N/A' : ''),
+    mobile: contactNumbers[index] || '',
+    designation: contactDesignations[index] || '',
+  }));
+
   const updateEditField = (key: keyof typeof editFormData, value: string) => {
     setEditFormData(prev => ({ ...prev, [key]: value }));
   };
@@ -753,13 +767,24 @@ export default function LeadDetailsSheet({ lead, isOpen, onClose, onUpdate, curr
                       <>
 
 
-                        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-widest">Lead Contact</span>
-                            <div className="flex items-center gap-2 text-slate-900 font-sans font-semibold">
-                              <CheckCircle2 size={14} className="text-emerald-500" />
-                              <span>{lead.contact_person || lead['Person Name'] || 'N/A'}</span>
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-heading uppercase font-bold text-slate-400 tracking-widest">Lead Contact</span>
+                          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50">
+                            <div className="grid grid-cols-3 gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-heading uppercase font-bold text-slate-400 tracking-tight">
+                              <span>Name</span>
+                              <span>Contact</span>
+                              <span>Designation</span>
                             </div>
+                            {contactRows.map((contact, index) => (
+                              <div key={index} className="grid grid-cols-3 gap-3 px-4 py-3 text-sm font-sans font-semibold text-slate-800 border-b border-slate-100 last:border-b-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                                  <span className="break-words">{contact.name || '-'}</span>
+                                </div>
+                                <span className="break-words">{contact.mobile || '-'}</span>
+                                <span className="break-words">{contact.designation || '-'}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
 

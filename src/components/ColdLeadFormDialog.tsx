@@ -60,6 +60,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
     meeting_planned_date: '',
     meeting_status: '',
     reschedule_date: '',
+    reschedule_remark: '',
     discussion_points: '',
     meeting_person_name: '',
     meeting_number: '',
@@ -193,6 +194,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         meeting_planned_date: lead.meeting_planned_date ? lead.meeting_planned_date.split('T')[0] : '',
         meeting_status: lead.meeting_status || '',
         reschedule_date: lead.reschedule_date ? lead.reschedule_date.split('T')[0] : '',
+        reschedule_remark: '',
         discussion_points: lead.discussion_points || '',
         meeting_person_name: lead.meeting_person_name || '',
         meeting_number: lead.meeting_number || '',
@@ -781,6 +783,15 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                       onChange={(e) => setFormData(p => ({ ...p, reschedule_date: e.target.value }))}
                       className="bg-rose-50 border-rose-200 text-sm h-11 focus-visible:ring-rose-500/20"
                     />
+                    <Label className="text-[10px] uppercase font-bold text-rose-500 tracking-wider flex items-center gap-1.5">
+                      <MessageSquare size={12} /> Reschedule Remark
+                    </Label>
+                    <Textarea
+                      value={formData.reschedule_remark}
+                      onChange={(e) => setFormData(p => ({ ...p, reschedule_remark: e.target.value }))}
+                      className="bg-white border-rose-200 text-sm min-h-[70px] resize-none focus-visible:ring-rose-500/20"
+                      placeholder="Enter reschedule remark..."
+                    />
                   </div>
                 )}
 
@@ -936,6 +947,15 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                         value={formData.reschedule_date}
                         onChange={(e) => setFormData(p => ({ ...p, reschedule_date: e.target.value }))}
                         className="bg-rose-50 border-rose-200 text-sm h-11 focus-visible:ring-rose-500/20"
+                      />
+                      <Label className="text-[10px] uppercase font-bold text-rose-500 tracking-wider flex items-center gap-1.5">
+                        <MessageSquare size={12} /> Reschedule Remark
+                      </Label>
+                      <Textarea
+                        value={formData.reschedule_remark}
+                        onChange={(e) => setFormData(p => ({ ...p, reschedule_remark: e.target.value }))}
+                        className="bg-white border-rose-200 text-sm min-h-[70px] resize-none focus-visible:ring-rose-500/20"
+                        placeholder="Enter reschedule remark..."
                       />
                     </div>
                   )}
@@ -1124,6 +1144,8 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-rose-500 tracking-wider">Reschedule Date</Label>
                       <Input type="date" value={formData.reschedule_date} onChange={e => setFormData(p => ({ ...p, reschedule_date: e.target.value }))} className="h-11 text-sm bg-rose-50 border-rose-200" />
+                      <Label className="text-[10px] uppercase font-bold text-rose-500 tracking-wider">Reschedule Remark</Label>
+                      <Textarea value={formData.reschedule_remark} onChange={e => setFormData(p => ({ ...p, reschedule_remark: e.target.value }))} className="min-h-[70px] text-sm bg-white border-rose-200" placeholder="Enter reschedule remark..." />
                     </div>
                   )}
 

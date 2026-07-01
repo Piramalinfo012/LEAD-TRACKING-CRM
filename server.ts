@@ -259,6 +259,7 @@ async function doLeadsFetch() {
           state: l['State'] || '',
           district: l['District'] || '',
           source: l['Source'] || '',
+          designation: l['Designation'] || l['__col_85'] || '',
           status: normalizePipelineStage(l['Pramoted To'] || l['Stage'] || l['stage']),
           sales_person_name: l['Sales Person Name'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'] || '',
@@ -271,6 +272,8 @@ async function doLeadsFetch() {
           'Person Name': l['Person Name'],
           'Mobile No. ': l['Mobile No. '] || l['Mobile No.'],
           'Gmail ID': l['Gmail ID'],
+          'Designation': l['Designation'] || l['__col_85'] || '',
+          __col_85: l['__col_85'] || l['Designation'] || '',
           'MCBs. (KIT) URl': l['MCBs. (KIT) URl'] || l['MCBs. (KIT)'],
           'Last Remarks': l['Last Remarks'],
           created_at: l['Timestamp'] || l['__col_0'] || '',
@@ -833,6 +836,12 @@ app.use(express.json());
         leadData['Follow Up date'] = formatDateForSheet(leadData['Follow Up date']);
       }
 
+      const designationValue = leadData['Designation'] ?? leadData.designation ?? leadData['__col_85'];
+      if (designationValue !== undefined) {
+        leadData['Designation'] = designationValue;
+        leadData['__col_85'] = designationValue;
+      }
+
       // Auto-generate ID if it's missing from the frontend
       if (!leadData.Id) {
         const ppplIds = (LEADS_CACHE || [])
@@ -868,6 +877,7 @@ app.use(express.json());
           district: l['District'] || '',
           owner_id: l['Sales Person Name'] || 'SYSTEM_FMS',
           source: l['Source'] || '',
+          designation: l['Designation'] || l['__col_85'] || '',
           follow_up_date: l['Follow Up date'] || '',
           mcb_kit_url: l['MCBs. (KIT) URl'] || '',
           last_remarks: l['Last Remarks'] || '',
@@ -881,6 +891,8 @@ app.use(express.json());
           'Person Name': l['Person Name'],
           'Mobile No. ': l['Mobile No. '],
           'Gmail ID': l['Gmail ID'],
+          'Designation': l['Designation'] || l['__col_85'] || '',
+          __col_85: l['__col_85'] || l['Designation'] || '',
           'MCBs. (KIT) URl': l['MCBs. (KIT) URl'],
           'Last Remarks': l['Last Remarks'],
           'Entry By Id': entryUserId,
@@ -1087,7 +1099,7 @@ app.use(express.json());
       }
       // DEBUG: Log what we're trying to update
       const colKeys = Object.keys(mappedUpdate).filter(k => k.startsWith('__col_'));
-      const headerKeys = Object.keys(mappedUpdate).filter(k => !k.startsWith('__col_') && k !== 'updated_at' && k !== 'status' && !['company_name','contact_person','mobile','email','address','state','district','source','owner_id','custom_status','lead_status','lead_actual_date','meeting_actual_date','meeting_status','tech_actual_date','tech_status','tech_kit_url','negotiation_actual_date','negotiation_status','sample_actual_date','sample_status','order_actual_date','reschedule_date','discussion_points','meeting_person_name','meeting_number','bullet_point_remarks','meeting_url','quotation_url','unit','final_price','quantity','payment_terms','delivery_schedule','party_type','negotiation_remark','negotiation_kit_url','order_copy_url','delivery_in','unloading','motor_pump_requirement','transport','order_remark','order_attachment_url','order_status','sample_product_name','sample_qty','sample_dispatch_date','sample_remark','sample_attachment','closed_at','close_reason','close_remark','followup_date','product_details','mcb_requirement','pain_points','kit_details','meeting_followup_date','remarks'].includes(k));
+      const headerKeys = Object.keys(mappedUpdate).filter(k => !k.startsWith('__col_') && k !== 'updated_at' && k !== 'status' && !['company_name','contact_person','mobile','email','address','state','district','source','owner_id','custom_status','lead_status','lead_actual_date','meeting_actual_date','meeting_status','tech_actual_date','tech_status','tech_kit_url','negotiation_actual_date','negotiation_status','sample_actual_date','sample_status','order_actual_date','reschedule_date','discussion_points','meeting_person_name','meeting_number','bullet_point_remarks','meeting_url','quotation_url','unit','final_price','quantity','payment_terms','delivery_schedule','party_type','negotiation_remark','negotiation_kit_url','order_copy_url','delivery_in','unloading','motor_pump_requirement','transport','order_remark','order_attachment_url','order_status','sample_product_name','sample_qty','sample_dispatch_date','sample_remark','sample_attachment','closed_at','close_reason','close_remark','followup_date','product_details','mcb_requirement','pain_points','kit_details','meeting_followup_date','reschedule_remark','remarks'].includes(k));
       console.log(`[PATCH /api/leads/${id}] __col_ keys: [${colKeys.join(', ')}], sheet-header keys: [${headerKeys.join(', ')}], total mappedUpdate keys: ${Object.keys(mappedUpdate).length}`);
 
       const updatedLeadObj = existingLeadObj
@@ -1125,18 +1137,25 @@ app.use(express.json());
             }
           }
           
-          if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.status === 'Reschedule') {
+          if (updateData.meeting_status === 'Reschedule' || updateData.tech_status === 'Reschedule' || updateData.negotiation_status === 'Reschedule' || updateData.order_status === 'Reschedule' || updateData.status === 'Reschedule') {
             const d = new Date();
             const formattedTimestamp = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            const rescheduleRemark = updateData.reschedule_remark || updateData.custom_status || '';
             const rescheduleData = {
               'Timestamp': formattedTimestamp,
               'Id': id,
               'Party Name': updateData.company_name || existingLeadObj?.company_name || '',
               'Reschedule Date': updateData.reschedule_date || '',
-              'Remark': updateData.custom_status || '',
+              'Remark': rescheduleRemark,
               'Stage': updateData.status || existingLeadObj?.status || 'MEETING',
             };
-            await SheetsDB.addRow('Reschedule', rescheduleData).catch(err => console.error("Reschedule side-log failed:", err));
+            const rescheduleLogged = await SheetsDB.addRow('Reschedule', rescheduleData)
+              .then(() => true)
+              .catch(err => {
+                console.error("Reschedule side-log failed:", err);
+                return false;
+              });
+            if (rescheduleLogged && EXTRA_DATA_CACHE?.history) EXTRA_DATA_CACHE.history.push(rescheduleData);
           }
     
           if (Array.isArray(updateData.tech_products) && updateData.tech_products.length > 0 && updateData.tech_status !== 'Reschedule') {

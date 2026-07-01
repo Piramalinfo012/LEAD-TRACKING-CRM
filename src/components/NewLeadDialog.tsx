@@ -114,6 +114,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   const [masterData, setMasterData] = useState<any[]>([]);
   const [existingLeads, setExistingLeads] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [additionalContacts, setAdditionalContacts] = useState<Array<{ person_name: string; mobile_no: string; designation: string }>>([]);
 
   const user = useMemo(() => {
     try {
@@ -150,6 +151,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     follow_up_date: '',
     lead_start_date: '',
     gst_number: '',
+    designation: '',
     id: '', // Will be generated automatically
     owner_id: JSON.parse(localStorage.getItem('crm_user') || '{}').id,
     sales_person_name: JSON.parse(localStorage.getItem('crm_user') || '{}').name,
@@ -243,6 +245,31 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     setFormData(prev => ({ ...prev, mobile_no: val }));
   };
 
+  const addAdditionalContact = () => {
+    setAdditionalContacts(prev => [...prev, { person_name: '', mobile_no: '', designation: '' }]);
+  };
+
+  const updateAdditionalContact = (index: number, field: 'person_name' | 'mobile_no' | 'designation', value: string) => {
+    setAdditionalContacts(prev => prev.map((contact, idx) => idx === index ? { ...contact, [field]: value } : contact));
+  };
+
+  const removeAdditionalContact = (index: number) => {
+    setAdditionalContacts(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const getContactValues = () => {
+    const contacts = [
+      { person_name: formData.person_name, mobile_no: formData.mobile_no, designation: formData.designation },
+      ...additionalContacts
+    ].filter(contact => contact.person_name.trim() || contact.mobile_no.trim() || contact.designation.trim());
+
+    return {
+      personNames: contacts.map(contact => contact.person_name.trim()).join('\n'),
+      mobileNumbers: contacts.map(contact => contact.mobile_no.trim()).join('\n'),
+      designations: contacts.map(contact => contact.designation.trim()).join('\n')
+    };
+  };
+
   const handlePartyNameChange = (name: string) => {
     setFormData(prev => ({ ...prev, party_name: name }));
     
@@ -321,12 +348,14 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         follow_up_date: '',
         lead_start_date: '',
         gst_number: '',
+        designation: '',
         id: '',
         owner_id: currentUser.id || '',
         sales_person_name: currentUser.name || '',
         senior_sales_id: currentUser.senior_sales_id || ''
       });
       setDuplicateLead(null);
+      setAdditionalContacts([]);
     } catch (e) {
       console.error(e);
     }
@@ -335,13 +364,14 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const contactValues = getContactValues();
       const payload = {
         Timestamp: formatDateToDMY(new Date()),
         Id: formData.id,
         'Party Name': formData.party_name,
         'Address': formData.address,
-        'Person Name': formData.person_name,
-        'Mobile No. ': formData.mobile_no,
+        'Person Name': contactValues.personNames,
+        'Mobile No. ': contactValues.mobileNumbers,
         'MCBs. (KIT) URl': formData.mcb_kit_url,
         'Last Remarks': formData.last_remarks,
         'District': formData.district,
@@ -352,10 +382,12 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         'Follow Up date': formatDateToDMY(formData.follow_up_date),
         'Lead Start date': formData.lead_start_date ? formatDateToDMY(formData.lead_start_date) : '',
         'Gst Number': formData.gst_number,
+        'Designation': contactValues.designations,
+        '__col_85': contactValues.designations,
         'Entry By Id': user?.employee_id || user?.id || '',
         // Also keep standard fields for compatibility if needed
         company_name: formData.party_name,
-        contact_person: formData.person_name,
+        contact_person: contactValues.personNames,
         status: 'COLD'
       };
 
@@ -483,6 +515,72 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
                 </div>
               )}
             </div>
+            <div className="space-y-2.5">
+              <Label htmlFor="designation" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Designation</Label>
+              <Input
+                id="designation"
+                placeholder="Enter Designation"
+                className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
+                value={formData.designation}
+                onChange={(e) => setFormData({...formData, designation: e.target.value})}
+              />
+            </div>
+
+            {additionalContacts.map((contact, index) => (
+              <div key={index} className="sm:col-span-2 grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end bg-slate-50/60 border border-slate-200 rounded-xl p-3">
+                <div className="space-y-2.5">
+                  <Label htmlFor={`additional_person_${index}`} className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Contact Person {index + 2}</Label>
+                  <Input
+                    id={`additional_person_${index}`}
+                    placeholder="Full Name"
+                    className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
+                    value={contact.person_name}
+                    onChange={(e) => updateAdditionalContact(index, 'person_name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor={`additional_mobile_${index}`} className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Mobile No. {index + 2}</Label>
+                  <Input
+                    id={`additional_mobile_${index}`}
+                    placeholder="00000 00000"
+                    className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm transition-all rounded-xl"
+                    value={contact.mobile_no}
+                    onChange={(e) => updateAdditionalContact(index, 'mobile_no', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor={`additional_designation_${index}`} className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider">Designation {index + 2}</Label>
+                  <Input
+                    id={`additional_designation_${index}`}
+                    placeholder="Enter Designation"
+                    className="bg-white border-slate-300 text-slate-900 h-12 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-sans text-sm shadow-sm px-4 transition-all rounded-xl"
+                    value={contact.designation}
+                    onChange={(e) => updateAdditionalContact(index, 'designation', e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 px-3 rounded-xl border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                  onClick={() => removeAdditionalContact(index)}
+                  aria-label={`Remove contact ${index + 2}`}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            ))}
+
+            <div className="sm:col-span-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 px-4 rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-heading font-bold uppercase text-[10px] tracking-widest"
+                onClick={addAdditionalContact}
+              >
+                <Plus size={14} /> Add Contact
+              </Button>
+            </div>
+
             <div className="space-y-2.5">
               <Label htmlFor="gmail_id" className="text-[11px] font-heading uppercase font-extrabold text-slate-900 tracking-wider flex items-center gap-2">
                 <Mail size={14} className="text-indigo-600" /> Email Address

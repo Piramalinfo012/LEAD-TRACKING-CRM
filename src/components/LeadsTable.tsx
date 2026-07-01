@@ -1441,6 +1441,11 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
                         ? `Rescheduled to ${formatDateToDMY(log['Reschedule Date'])} (Stage: ${log.Stage || 'MEETING'})`
                         : log.remarks || `Moved from ${log.prev_stage?.replace('_', ' ')} to ${log.next_stage?.replace('_', ' ')}`}
                     </p>
+                    {log.Remark && (
+                      <p className="mt-1 text-xs text-slate-500 leading-snug">
+                        Remark: {log.Remark}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
