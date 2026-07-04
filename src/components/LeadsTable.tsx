@@ -604,7 +604,7 @@ export default function LeadsTable() {
                 </Badge>
               ) : null}
               {rescheduleDate ? (
-                <span className="text-[10px] font-mono font-bold text-rose-500 whitespace-nowrap">{formatDateToDMY(rescheduleDate)}</span>
+                <span className="text-xs font-bold text-rose-600 tracking-tight whitespace-nowrap">{formatDateToDMY(rescheduleDate)}</span>
               ) : null}
             </div>
           );
@@ -1240,6 +1240,7 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
             const priority = row.original.priority || '';
             const createdAt = formatDateToDMY(row.original.created_at || row.original.Timestamp);
             const followUpDate = row.original['Follow Up date'] || row.original.followup_date;
+            const rescheduleDate = row.original.reschedule_date || row.original['Reschedule Date'];
             const plannedDate = historyConfig
               ? ((row.original as any)[stageTab === 'history' ? historyConfig.actualKey : historyConfig.plannedKey])
               : null;
@@ -1319,7 +1320,7 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
                 </div>
 
                 {/* Follow-up / Stage date row */}
-                {(followUpDate || plannedDate) && (
+                {(followUpDate || plannedDate || rescheduleDate) && (
                   <div className="px-4 pb-3 flex flex-wrap gap-2">
                     {stage?.toLowerCase() === 'cold' && followUpDate && (
                       <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-full">
@@ -1331,6 +1332,12 @@ const emptyMessage = hasHistoryTab && stageTab === 'history' ? historyConfig.emp
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-full">
                         <Calendar size={11} />
                         {stageDateLabel}: {formatDateToDMY(plannedDate)}
+                      </div>
+                    )}
+                    {rescheduleDate && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full">
+                        <Calendar size={11} />
+                        Reschedule: {formatDateToDMY(rescheduleDate)}
                       </div>
                     )}
                   </div>
