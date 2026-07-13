@@ -7,7 +7,7 @@ import { Textarea } from './ui/textarea';
 import { Lead, LeadStatus } from '../types';
 import { toast } from 'sonner';
 import { useApi } from '../lib/api';
-import { formatDateToDMY } from '../lib/utils';
+import { formatDateToDMY, formatDateToYMD } from '../lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
@@ -184,16 +184,16 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
       setFormData({
         custom_status: lead.custom_status || '',
         
-        lead_planned_date: lead.lead_planned_date ? lead.lead_planned_date.split('T')[0] : '',
+        lead_planned_date: lead.lead_planned_date ? formatDateToYMD(lead.lead_planned_date.split('T')[0]) : '',
         product_details: lead.product_details || '',
         mcb_requirement: lead.mcb_requirement || '',
         pain_points: lead.pain_points || '',
         kit_details: lead.kit_details || '',
-        meeting_followup_date: lead.meeting_followup_date ? lead.meeting_followup_date.split('T')[0] : '',
+        meeting_followup_date: lead.meeting_followup_date ? formatDateToYMD(lead.meeting_followup_date.split('T')[0]) : '',
 
-        meeting_planned_date: lead.meeting_planned_date ? lead.meeting_planned_date.split('T')[0] : '',
+        meeting_planned_date: lead.meeting_planned_date ? formatDateToYMD(lead.meeting_planned_date.split('T')[0]) : '',
         meeting_status: lead.meeting_status || '',
-        reschedule_date: lead.reschedule_date ? lead.reschedule_date.split('T')[0] : '',
+        reschedule_date: lead.reschedule_date ? formatDateToYMD(lead.reschedule_date.split('T')[0]) : '',
         reschedule_remark: '',
         discussion_points: lead.discussion_points || '',
         meeting_person_name: lead.meeting_person_name || '',
@@ -224,11 +224,11 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
         order_attachment_url: lead.order_attachment_url || '',
         order_status: lead.order_status || '',
         
-        sample_actual_date: lead.sample_actual_date || '',
+        sample_actual_date: lead.sample_actual_date ? formatDateToYMD(lead.sample_actual_date) : '',
         sample_status: lead.sample_status || '',
         sample_product_name: lead.sample_product_name || '',
         sample_qty: lead.sample_qty || '',
-        sample_dispatch_date: lead.sample_dispatch_date || '',
+        sample_dispatch_date: lead.sample_dispatch_date ? formatDateToYMD(lead.sample_dispatch_date) : '',
         sample_remark: lead.sample_remark || '',
         sample_attachment: lead.sample_attachment || '',
         
@@ -285,6 +285,7 @@ export default function ColdLeadFormDialog({ lead, isOpen, onClose, onSuccess, p
       if (payload.meeting_followup_date) payload.meeting_followup_date = formatDateToDMY(payload.meeting_followup_date);
       if (payload.reschedule_date) payload.reschedule_date = formatDateToDMY(payload.reschedule_date);
       if (payload.sample_dispatch_date) payload.sample_dispatch_date = formatDateToDMY(payload.sample_dispatch_date);
+      if (payload.sample_actual_date) payload.sample_actual_date = formatDateToDMY(payload.sample_actual_date);
 
       // Do NOT send any planned dates as they are auto-generated in Google Sheets
       delete payload.lead_planned_date;
