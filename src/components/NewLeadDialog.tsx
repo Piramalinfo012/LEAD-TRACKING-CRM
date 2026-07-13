@@ -169,7 +169,10 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
       
       let nextNum = 1424; // Default fallback if no sequence found
       if (ppplIds.length > 0) {
-        nextNum = Math.max(...ppplIds) + 1;
+        nextNum = ppplIds[ppplIds.length - 1] + 1;
+        while (ppplIds.includes(nextNum)) {
+          nextNum++;
+        }
       }
       setFormData(prev => ({ ...prev, id: `PPPL-26-${nextNum}` }));
     }
@@ -365,9 +368,29 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
     e.preventDefault();
     try {
       const contactValues = getContactValues();
+
+      // Fetch fresh leads to prevent duplicate ID generation due to concurrency
+      const freshLeads = await request('/api/leads');
+      const allRecords = [...masterData, ...(freshLeads || [])];
+      
+      const ppplIds = allRecords
+        .map(r => r['Id'] || r.id)
+        .filter(id => typeof id === 'string' && id.startsWith('PPPL-26-'))
+        .map(id => parseInt(id.replace('PPPL-26-', ''), 10))
+        .filter(num => !isNaN(num));
+      
+      let finalId = formData.id;
+      if (ppplIds.length > 0) {
+        let nextNum = ppplIds[ppplIds.length - 1] + 1;
+        while (ppplIds.includes(nextNum)) {
+          nextNum++;
+        }
+        finalId = `PPPL-26-${nextNum}`;
+      }
+
       const payload = {
         Timestamp: formatDateToDMY(new Date()),
-        Id: formData.id,
+        Id: finalId,
         'Party Name': formData.party_name,
         'Address': formData.address,
         'Person Name': contactValues.personNames,
@@ -395,7 +418,7 @@ export default function NewLeadDialog({ isOpen, onClose, onSuccess }: NewLeadDia
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      toast.success(`Lead added with ID: ${formData.id}`);
+      toast.success(`Lead added with ID: ${finalId}`);
       
       resetForm();
       window.dispatchEvent(new CustomEvent('crm_leads_refresh'));
