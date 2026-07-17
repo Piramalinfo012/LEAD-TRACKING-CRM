@@ -27,11 +27,12 @@ export const QuickAccessApps = () => {
   useEffect(() => {
     request('/api/quick-access')
       .then((data: any) => {
+        const appLinks: AppIconProps[] = [];
         if (Array.isArray(data) && data.length > 0) {
           const firstRow = data[0];
-          const appLinks: AppIconProps[] = [];
           
           Object.keys(firstRow).forEach(key => {
+            if (key.toUpperCase().includes('LEAVE APPLICATION')) return;
             const url = firstRow[key];
             // Filter out empty values or internal keys like __col_0
             if (url && typeof url === 'string' && url.startsWith('http') && !key.startsWith('__col')) {
@@ -42,11 +43,37 @@ export const QuickAccessApps = () => {
               });
             }
           });
-          
-          setApps(appLinks);
         }
+        
+        appLinks.push({
+          name: 'Sales Deck',
+          url: 'https://docs.google.com/spreadsheets/d/12nzS8YyzEv_1BeW7KGfxdiVDIQb_w5c1oxXa3liHyoY/edit?usp=drive_open&ouid=113906479186417162902',
+          icon: getIconForName('Sales Deck')
+        });
+        
+        appLinks.push({
+          name: 'Company Verification Form',
+          url: 'https://docs.google.com/forms/d/e/1FAIpQLScdqqiXwcYrjE_dgKyoRlB8nt2nYIMGG9D4A3EWlZPD2IUFDQ/viewform',
+          icon: getIconForName('Company Verification Form')
+        });
+        
+        setApps(appLinks);
       })
-      .catch(err => console.error("Failed to load Quick Access data:", err))
+      .catch(err => {
+        console.error("Failed to load Quick Access data:", err);
+        setApps([
+          {
+            name: 'Sales Deck',
+            url: 'https://docs.google.com/spreadsheets/d/12nzS8YyzEv_1BeW7KGfxdiVDIQb_w5c1oxXa3liHyoY/edit?usp=drive_open&ouid=113906479186417162902',
+            icon: getIconForName('Sales Deck')
+          },
+          {
+            name: 'Company Verification Form',
+            url: 'https://docs.google.com/forms/d/e/1FAIpQLScdqqiXwcYrjE_dgKyoRlB8nt2nYIMGG9D4A3EWlZPD2IUFDQ/viewform',
+            icon: getIconForName('Company Verification Form')
+          }
+        ]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
