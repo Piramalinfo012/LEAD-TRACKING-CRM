@@ -856,8 +856,8 @@ app.use(express.json());
 
       // Fetch the absolute latest rows from NEW_FMS directly from Google Sheets to prevent duplicates
       const freshRows = await SheetsDB.getRows('NEW_FMS', undefined, 5).catch(err => {
-        console.error("Failed to fetch fresh rows for ID generation, falling back to cache:", err);
-        return LEADS_CACHE || [];
+        console.error("Failed to fetch fresh rows for ID generation:", err);
+        throw new Error("Unable to fetch sheet data to generate a unique ID. Please try again.");
       });
 
       const ppplIds = freshRows
