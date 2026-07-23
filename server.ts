@@ -826,8 +826,20 @@ app.use(express.json());
     }
   });
 
+  // Lock to serialize all lead entries to prevent duplicate ID generation due to concurrency
+  let entryLockPromise = Promise.resolve();
+
   // Leads: Create (NEW_FMS Special)
   app.post('/api/leads/entry', authenticateToken, async (req: any, res) => {
+    // Acquire the entry lock
+    const release = await new Promise<() => void>((resolve) => {
+      entryLockPromise = entryLockPromise.then(() => {
+        return new Promise<void>((innerResolve) => {
+          resolve(innerResolve);
+        });
+      });
+    });
+
     try {
       const leadData = req.body;
       const entryUserId = req.user.employee_id || req.user.id || '';
@@ -842,19 +854,23 @@ app.use(express.json());
         leadData['__col_85'] = designationValue;
       }
 
-      // Auto-generate ID if it's missing from the frontend
-      if (!leadData.Id) {
-        const ppplIds = (LEADS_CACHE || [])
-          .map((r: any) => r.id)
-          .filter((id: any) => typeof id === 'string' && id.startsWith('PPPL-26-'))
-          .map((id: string) => parseInt(id.replace('PPPL-26-', ''), 10))
-          .filter((num: number) => !isNaN(num));
-        let nextNum = 1424;
-        if (ppplIds.length > 0) {
-          nextNum = Math.max(...ppplIds) + 1;
-        }
-        leadData.Id = `PPPL-26-${nextNum}`;
+      // Fetch the absolute latest rows from NEW_FMS directly from Google Sheets to prevent duplicates
+      const freshRows = await SheetsDB.getRows('NEW_FMS', undefined, 5).catch(err => {
+        console.error("Failed to fetch fresh rows for ID generation, falling back to cache:", err);
+        return LEADS_CACHE || [];
+      });
+
+      const ppplIds = freshRows
+        .map((r: any) => r.Id || r.id)
+        .filter((id: any) => typeof id === 'string' && id.startsWith('PPPL-26-'))
+        .map((id: string) => parseInt(id.replace('PPPL-26-', ''), 10))
+        .filter((num: number) => !isNaN(num));
+
+      let nextNum = 1500;
+      if (ppplIds.length > 0) {
+        nextNum = Math.max(...ppplIds) + 1;
       }
+      leadData.Id = `PPPL-26-${nextNum}`;
       
       // Save to 'NEW_FMS' sheet synchronously to ensure data is stored
       await SheetsDB.addRow('NEW_FMS', leadData, 5).catch(e => {
@@ -922,6 +938,8 @@ app.use(express.json());
     } catch (error: any) {
       console.error('Lead creation error:', error);
       res.status(500).json({ error: error.message });
+    } finally {
+      release();
     }
   });
 
