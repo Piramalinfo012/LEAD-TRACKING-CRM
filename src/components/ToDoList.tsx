@@ -12,7 +12,9 @@ import {
   Sparkles,
   ClipboardList,
   CheckCircle,
-  X
+  X,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from './ui/badge';
@@ -37,6 +39,63 @@ interface ToDoItem {
   updated_at: string;
 }
 
+const renderRemarks = (remarks: string) => {
+  if (!remarks) return null;
+  
+  const attachmentRegex = /\[Attachment: (.*?)\]/;
+  const match = remarks.match(attachmentRegex);
+  const text = remarks.replace(attachmentRegex, '').trim();
+  
+  return (
+    <div className="text-sm text-slate-300 space-y-2 mt-1.5">
+      {text && <p className="whitespace-pre-wrap">{text}</p>}
+      {match && match[1] && (
+        <a 
+          href={match[1]} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1.5 rounded-md border border-indigo-500/20 transition-colors w-fit"
+        >
+          <ImageIcon size={12} />
+          View Attachment
+        </a>
+      )}
+    </div>
+  );
+};
+
+const formatDateForCompare = (dateStr: string) => {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split(' ')[0].split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+  }
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {}
+  return dateStr;
+};
+
+const formatDisplayDate = (dateStr: string) => {
+  if (!dateStr) return '-';
+  if (dateStr.includes('/')) return dateStr.split(' ')[0].replace(/\//g, '-');
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-GB').replace(/\//g, '-');
+    }
+  } catch (e) {}
+  return dateStr;
+};
+
 export default function ToDoList() {
   const { user } = useAuth();
   const { request, loading } = useApi();
@@ -46,6 +105,8 @@ export default function ToDoList() {
   const [newPlans, setNewPlans] = useState<string[]>(['']);
   const [taskDate, setTaskDate] = useState(new Date().toISOString().slice(0, 10));
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [eveningImage, setEveningImage] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Evening complete form state
   const [activeCompletingId, setActiveCompletingId] = useState<string | null>(null);
@@ -53,8 +114,8 @@ export default function ToDoList() {
   
   // Filters
   const [selectedUserFilter, setSelectedUserFilter] = useState<string>('All');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Completed'>('All');
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Completed'>('Pending');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>(new Date().toISOString().slice(0, 10));
 
   const fetchTodos = async () => {
     try {
@@ -72,6 +133,12 @@ export default function ToDoList() {
   useEffect(() => {
     fetchTodos();
   }, []);
+
+  useEffect(() => {
+    if (isDialogOpen && selectedDateFilter) {
+      setTaskDate(selectedDateFilter);
+    }
+  }, [isDialogOpen, selectedDateFilter]);
 
   const handleCreateTodo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,17 +171,36 @@ export default function ToDoList() {
   };
 
   const handleCompleteTodo = async (id: string) => {
-    if (!eveningRemarks.trim()) {
-      toast.error('Please enter evening remarks/comments to complete the task');
-      return;
-    }
-
     try {
+      let imageUrl = '';
+      if (eveningImage) {
+        setIsUploading(true);
+        const uploadData = new FormData();
+        uploadData.append('file', eveningImage);
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('crm_token')}`
+          },
+          body: uploadData
+        });
+        const result = await response.json();
+        setIsUploading(false);
+        if (result.webViewLink) {
+          imageUrl = result.webViewLink;
+        } else {
+          toast.error(result.error || 'Image upload failed');
+          return;
+        }
+      }
+
+      const finalRemarks = imageUrl ? `${eveningRemarks}\n\n[Attachment: ${imageUrl}]` : eveningRemarks;
+
       const res = await request(`/api/todo/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           status: 'Completed',
-          remarks: eveningRemarks,
+          remarks: finalRemarks,
         }),
       });
 
@@ -122,9 +208,11 @@ export default function ToDoList() {
         toast.success('Task marked as Done!');
         setActiveCompletingId(null);
         setEveningRemarks('');
-        setTodos(prev => prev.map(t => t.id === id ? { ...t, status: 'Completed', remarks: eveningRemarks } : t));
+        setEveningImage(null);
+        setTodos(prev => prev.map(t => t.id === id ? { ...t, status: 'Completed', remarks: finalRemarks } : t));
       }
     } catch (err: any) {
+      setIsUploading(false);
       toast.error(err.message || 'Failed to complete task');
     }
   };
@@ -143,7 +231,9 @@ export default function ToDoList() {
     return todos.filter(t => {
       const matchUser = selectedUserFilter === 'All' || t.sales_person_name === selectedUserFilter;
       const matchStatus = statusFilter === 'All' || t.status === statusFilter;
-      const matchDate = !selectedDateFilter || t.date.includes(selectedDateFilter) || t.created_at.includes(selectedDateFilter);
+      const normalizedTodoDate = formatDateForCompare(t.date);
+      const matchDate = !selectedDateFilter || 
+        normalizedTodoDate === selectedDateFilter;
       return matchUser && matchStatus && matchDate;
     });
   }, [todos, selectedUserFilter, statusFilter, selectedDateFilter]);
@@ -199,7 +289,7 @@ export default function ToDoList() {
                 type="date"
                 value={selectedDateFilter}
                 onChange={(e) => setSelectedDateFilter(e.target.value)}
-                className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-lg flex-1 sm:flex-none sm:max-w-[140px]"
+                className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-lg flex-1 sm:flex-none sm:max-w-[140px] [color-scheme:dark]"
               />
             </div>
 
@@ -233,6 +323,19 @@ export default function ToDoList() {
               </div>
             )}
             
+            {/* History Button */}
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setSelectedDateFilter('');
+                setStatusFilter('Completed');
+              }}
+              className="bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-9 px-3 rounded-lg flex-1 sm:flex-none text-xs font-semibold"
+            >
+              <Clock size={14} className="mr-1.5" />
+              History
+            </Button>
+
             {/* Add Task Dialog Button */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -245,7 +348,7 @@ export default function ToDoList() {
                 <DialogHeader>
                   <DialogTitle className="text-xl font-heading text-white flex items-center gap-2">
                     <PlusCircle size={20} className="text-indigo-400" />
-                    Morning Plan Assignment
+                    Task/Plan Assignment
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreateTodo} className="space-y-4 mt-4">
@@ -257,14 +360,14 @@ export default function ToDoList() {
                         type="date"
                         value={taskDate}
                         onChange={(e) => setTaskDate(e.target.value)}
-                        className="bg-slate-950 border-slate-800 text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 pl-10"
+                        className="bg-slate-950 border-slate-800 text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500 pl-10 [color-scheme:dark]"
                       />
                       <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                     </div>
                   </div>
 
                   <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-                    <Label className="text-slate-300 text-xs font-semibold">Morning Task(s) / Plan</Label>
+                    <Label className="text-slate-300 text-xs font-semibold">Task(s) / Plan</Label>
                     {newPlans.map((plan, index) => (
                       <div key={index} className="flex gap-2">
                         <Textarea 
@@ -306,7 +409,7 @@ export default function ToDoList() {
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl py-6 font-heading font-bold shadow-lg mt-4"
                   >
-                    {loading ? 'ASSIGNING...' : 'ASSIGN MORNING PLAN'}
+                    {loading ? 'ASSIGNING...' : 'ASSIGN TASK/PLAN'}
                   </Button>
                 </form>
               </DialogContent>
@@ -326,7 +429,7 @@ export default function ToDoList() {
               <ClipboardList size={48} className="text-slate-600 mb-4" />
               <h3 className="text-lg font-bold text-slate-300">No Tasks Found</h3>
               <p className="text-slate-500 text-sm max-w-sm mt-1">
-                Click on "Add Task" to create a new morning plan or adjust your filters.
+                Click on "Add Task" to create a new task/plan or adjust your filters.
               </p>
             </div>
           ) : (
@@ -338,7 +441,9 @@ export default function ToDoList() {
                     <tr className="bg-slate-800/50 border-b border-slate-800 text-slate-300 font-heading uppercase text-xs tracking-wider">
                       <th className="p-4 font-semibold whitespace-nowrap">Date</th>
                       {isAdminOrCrm && <th className="p-4 font-semibold whitespace-nowrap">Sales Person</th>}
-                      <th className="p-4 font-semibold min-w-[250px]">Morning Plan</th>
+                      {isAdminOrCrm && <th className="p-4 font-semibold whitespace-nowrap">Created At</th>}
+                      {isAdminOrCrm && <th className="p-4 font-semibold whitespace-nowrap">Updated At</th>}
+                      <th className="p-4 font-semibold min-w-[250px]">Task/Plan</th>
                       <th className="p-4 font-semibold whitespace-nowrap">Status</th>
                       <th className="p-4 font-semibold min-w-[200px]">Action / Remarks</th>
                     </tr>
@@ -353,17 +458,25 @@ export default function ToDoList() {
                           <td className="p-4 whitespace-nowrap text-slate-300 align-top">
                             <div className="flex items-center gap-1.5 text-xs font-medium">
                               <Calendar size={14} className="text-indigo-400" />
-                              {todo.date}
+                              {formatDisplayDate(todo.date)}
                             </div>
                           </td>
                           
                           {isAdminOrCrm && (
-                            <td className="p-4 whitespace-nowrap align-top">
-                              <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 w-fit">
-                                <User size={12} className="text-slate-500" />
-                                <span className="font-semibold">{todo.sales_person_name}</span>
-                              </div>
-                            </td>
+                            <>
+                              <td className="p-4 whitespace-nowrap align-top">
+                                <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 w-fit">
+                                  <User size={12} className="text-slate-500" />
+                                  <span className="font-semibold">{todo.sales_person_name}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 whitespace-nowrap align-top text-xs text-slate-400">
+                                {formatDisplayDate(todo.created_at)}
+                              </td>
+                              <td className="p-4 whitespace-nowrap align-top text-xs text-slate-400">
+                                {formatDisplayDate(todo.updated_at)}
+                              </td>
+                            </>
                           )}
 
                           <td className="p-4 text-slate-200 align-top">
@@ -395,13 +508,14 @@ export default function ToDoList() {
                                   <MessageSquare size={10} className="text-emerald-500" />
                                   Evening Remarks
                                 </div>
-                                <p className="text-slate-300 text-xs italic leading-relaxed">{todo.remarks}</p>
+                                {renderRemarks(todo.remarks)}
                               </div>
                             ) : isPending && !isCompleting ? (
                               <Button 
                                 onClick={() => {
                                   setActiveCompletingId(todo.id);
                                   setEveningRemarks('');
+                                  setEveningImage(null);
                                 }}
                                 className="bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white rounded-lg h-8 text-xs px-3 w-full sm:w-auto transition-all duration-200"
                               >
@@ -417,15 +531,37 @@ export default function ToDoList() {
                                   className="bg-slate-900 border-slate-800 text-white text-xs h-8 rounded-lg"
                                 />
                                 <div className="flex items-center gap-2">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    id={`file-upload-desktop-${todo.id}`}
+                                    className="hidden"
+                                    onChange={(e) => e.target.files && setEveningImage(e.target.files[0])}
+                                  />
+                                  <Button 
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => document.getElementById(`file-upload-desktop-${todo.id}`)?.click()}
+                                    className={`h-7 px-2 text-[10px] flex-1 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 ${eveningImage ? 'border-emerald-500/50 text-emerald-400' : ''}`}
+                                  >
+                                    <Upload size={12} className="mr-1" />
+                                    {eveningImage ? 'Pic Added' : 'Add Pic'}
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-2 pt-1">
                                   <Button 
                                     onClick={() => handleCompleteTodo(todo.id)}
+                                    disabled={isUploading}
                                     className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg h-7 text-[10px] font-bold px-3 flex-1"
                                   >
-                                    Save
+                                    {isUploading ? '...' : 'Save'}
                                   </Button>
                                   <Button 
                                     variant="ghost"
-                                    onClick={() => setActiveCompletingId(null)}
+                                    onClick={() => {
+                                      setActiveCompletingId(null);
+                                      setEveningImage(null);
+                                    }}
                                     className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg h-7 text-[10px] px-2"
                                   >
                                     Cancel
@@ -452,7 +588,7 @@ export default function ToDoList() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
                           <Calendar size={14} className="text-indigo-400" />
-                          {todo.date}
+                          {formatDisplayDate(todo.date)}
                         </div>
                         <Badge className={
                             isPending 
@@ -468,9 +604,19 @@ export default function ToDoList() {
                       </div>
                       
                       {isAdminOrCrm && (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 w-fit">
-                          <User size={12} className="text-slate-500" />
-                          <span className="font-semibold">{todo.sales_person_name}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 w-fit">
+                            <User size={12} className="text-slate-500" />
+                            <span className="font-semibold">{todo.sales_person_name}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 bg-slate-950 px-2 py-1 rounded-md border border-slate-800">
+                            <span className="font-semibold text-slate-500 mr-1">Created:</span>
+                            {formatDisplayDate(todo.created_at)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 bg-slate-950 px-2 py-1 rounded-md border border-slate-800">
+                            <span className="font-semibold text-slate-500 mr-1">Updated:</span>
+                            {formatDisplayDate(todo.updated_at)}
+                          </div>
                         </div>
                       )}
                       
@@ -485,13 +631,14 @@ export default function ToDoList() {
                                 <MessageSquare size={10} className="text-emerald-500" />
                                 Remarks
                               </div>
-                              <p className="text-slate-300 text-xs italic leading-relaxed">{todo.remarks}</p>
+                              {renderRemarks(todo.remarks)}
                             </div>
                           ) : isPending && !isCompleting ? (
                             <Button 
                               onClick={() => {
                                 setActiveCompletingId(todo.id);
                                 setEveningRemarks('');
+                                setEveningImage(null);
                               }}
                               className="bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white rounded-lg h-9 text-xs px-3 w-full transition-all duration-200"
                             >
@@ -507,15 +654,37 @@ export default function ToDoList() {
                                 className="bg-slate-900 border-slate-800 text-white text-xs h-9 rounded-lg"
                               />
                               <div className="flex items-center gap-2">
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  id={`file-upload-mobile-${todo.id}`}
+                                  className="hidden"
+                                  onChange={(e) => e.target.files && setEveningImage(e.target.files[0])}
+                                />
+                                <Button 
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById(`file-upload-mobile-${todo.id}`)?.click()}
+                                  className={`h-8 px-2 text-[11px] flex-1 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 ${eveningImage ? 'border-emerald-500/50 text-emerald-400' : ''}`}
+                                >
+                                  <Upload size={12} className="mr-1.5" />
+                                  {eveningImage ? 'Pic Added' : 'Add Pic'}
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2 pt-1">
                                 <Button 
                                   onClick={() => handleCompleteTodo(todo.id)}
+                                  disabled={isUploading}
                                   className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg h-8 text-[11px] font-bold px-3 flex-1"
                                 >
-                                  Save
+                                  {isUploading ? 'Uploading...' : 'Save'}
                                 </Button>
                                 <Button 
                                   variant="ghost"
-                                  onClick={() => setActiveCompletingId(null)}
+                                  onClick={() => {
+                                    setActiveCompletingId(null);
+                                    setEveningImage(null);
+                                  }}
                                   className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg h-8 text-[11px] px-3"
                                 >
                                   Cancel
