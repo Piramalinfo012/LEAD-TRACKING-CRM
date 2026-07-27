@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import streamifier from 'streamifier';
 import { SheetsDB } from './src/lib/sheets.js';
-import { getDriveClient } from './src/lib/google-auth.js';
+import { getDriveClient, getSheetsClient } from './src/lib/google-auth.js';
 
 // --- Server Side Caching ---
 const LEADS_CACHE_TTL = 2 * 1000; // 2 seconds cache TTL for near real-time sync
@@ -1942,6 +1942,163 @@ app.use(express.json());
       await doMasterFetch();
       res.json({ success: true, notice });
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // --- To Do List API Endpoints ---
+  async function ensureToDoHeaders() {
+    try {
+      const rows = await SheetsDB.getRows('To Do').catch(() => []);
+      if (rows.length === 0) {
+        console.log('To Do sheet is empty. Initializing headers...');
+        const headers = ['ID', 'Date', 'Sales Person ID', 'Sales Person Name', 'Task Plan', 'Status', 'Evening Remarks', 'Created At', 'Updated At'];
+        const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+        if (scriptUrl) {
+          for (let i = 0; i < headers.length; i++) {
+            const params = new URLSearchParams();
+            params.append('action', 'updateCell');
+            params.append('sheetName', 'To Do');
+            params.append('rowIndex', '1');
+            params.append('columnIndex', (i + 1).toString());
+            params.append('value', headers[i]);
+            await fetch(scriptUrl, { method: 'POST', body: params });
+          }
+        } else if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+          const sheets = await getSheetsClient();
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SheetsDB.spreadsheetId,
+            range: 'To Do!A1:I1',
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [headers]
+            }
+          });
+        }
+        console.log('To Do headers initialized successfully.');
+      }
+    } catch (err) {
+      console.error('Failed to ensure To Do headers:', err);
+    }
+  }
+
+  app.get('/api/todo', authenticateToken, async (req: any, res) => {
+    try {
+      await ensureToDoHeaders();
+      const rows = await SheetsDB.getRows('To Do').catch(() => []);
+      const { role, id, name } = req.user;
+      
+      let filtered = rows;
+      if (role !== 'ADMIN' && role !== 'CRM') {
+        const userId = String(id || '').toLowerCase().trim();
+        filtered = rows.filter((row: any) => {
+          const rowUserId = String(row['Sales Person ID'] || '').toLowerCase().trim();
+          return rowUserId === userId;
+        });
+      }
+      
+      // Clean up fields to guarantee all properties exist
+      const tasks = filtered.map((row: any) => ({
+        id: row.ID || row.id || '',
+        date: row.Date || row.date || '',
+        sales_person_id: row['Sales Person ID'] || '',
+        sales_person_name: row['Sales Person Name'] || '',
+        task_plan: row['Task Plan'] || '',
+        status: row.Status || 'Pending',
+        remarks: row['Evening Remarks'] || '',
+        created_at: row['Created At'] || '',
+        updated_at: row['Updated At'] || ''
+      }));
+
+      res.json(tasks);
+    } catch (error: any) {
+      console.error('Error fetching todos:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  const getIndianDateTime = () => {
+    return new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' }).replace(',', '');
+  };
+
+  app.post('/api/todo', authenticateToken, async (req: any, res) => {
+    try {
+      await ensureToDoHeaders();
+      const { date, plan } = req.body;
+      const { id, name } = req.user;
+
+      if (!plan || !date) {
+        return res.status(400).json({ error: 'Date and Task Plan are required.' });
+      }
+
+      const plans = plan.split('\n').map((p: string) => p.trim()).filter(Boolean);
+      if (plans.length === 0) {
+        return res.status(400).json({ error: 'Valid Task Plan is required.' });
+      }
+
+      const createdTasks: any[] = [];
+      const promises = plans.map((p: string, index: number) => {
+        const taskData = {
+          'ID': `TD-${Date.now()}-${index}`,
+          'Date': formatDateForSheet(date),
+          'Sales Person ID': id || '',
+          'Sales Person Name': name || '',
+          'Task Plan': p,
+          'Status': 'Pending',
+          'Evening Remarks': '',
+          'Created At': getIndianDateTime(),
+          'Updated At': getIndianDateTime()
+        };
+        
+        createdTasks.push({
+          id: taskData.ID,
+          date: taskData.Date,
+          sales_person_id: taskData['Sales Person ID'],
+          sales_person_name: taskData['Sales Person Name'],
+          task_plan: taskData['Task Plan'],
+          status: taskData.Status,
+          remarks: taskData['Evening Remarks'],
+          created_at: taskData['Created At'],
+          updated_at: taskData['Updated At']
+        });
+        
+        return SheetsDB.addRow('To Do', taskData, 0);
+      });
+
+      Promise.all(promises).catch(e => {
+        console.error("Sheet Add Row Error for To Do:", e);
+      });
+
+      res.status(201).json({ success: true, tasks: createdTasks });
+    } catch (error: any) {
+      console.error('Error creating todo:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch('/api/todo/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, remarks } = req.body;
+
+      const updateData: any = {
+        'Updated At': getIndianDateTime()
+      };
+
+      if (status !== undefined) {
+        updateData['Status'] = status;
+      }
+      if (remarks !== undefined) {
+        updateData['Evening Remarks'] = remarks;
+      }
+
+      SheetsDB.updateRow('To Do', 'ID', id, updateData, 0).catch(e => {
+        console.error("Sheet Update Row Error for To Do:", e);
+      });
+
+      res.json({ success: true, id, status, remarks });
+    } catch (error: any) {
+      console.error('Error updating todo:', error);
       res.status(500).json({ error: error.message });
     }
   });

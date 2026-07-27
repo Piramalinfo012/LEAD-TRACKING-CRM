@@ -140,6 +140,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
     { name: 'Dashboard', icon: Home, path: '/' },
     { name: 'Reports', icon: BarChart3, path: '/reports' },
     { name: 'Meeting Checklist', icon: ClipboardCheck, path: '/meeting-checklist' },
+    { name: 'To Do List', icon: CheckCircle2, path: '/todo' },
     { name: 'Other', icon: Layers, path: '/other' },
     { name: 'User Management', icon: Users, path: '/users', roles: ['ADMIN', 'CRM'] },
     { name: 'Settings', icon: Settings, path: '/settings' },
@@ -189,7 +190,7 @@ export function Sidebar({ className, onNewLead, isMobile, onNavItemClick }: { cl
 
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-hide">
         <div className="text-[11px] font-heading uppercase tracking-wider text-slate-200 font-extrabold px-3 mb-2 mt-2 border-l-2 border-indigo-500/50 ml-1 pl-2">Main Menu</div>
-        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports' || i.name === 'Meeting Checklist' || i.name === 'Other').map((item) => {
+        {filteredMenu.filter(i => i.name === 'Dashboard' || i.name === 'Reports' || i.name === 'Meeting Checklist' || i.name === 'To Do List' || i.name === 'Other').map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link key={item.path} to={item.path} onClick={onNavItemClick} className="block relative">
@@ -457,8 +458,8 @@ export function Shell({ children }: LayoutProps) {
       </div>
 
       <main className="flex-1 flex flex-col min-w-0 bg-background relative overflow-hidden">
-        <header className="h-16 lg:h-20 bg-white border-b border-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-50 flex-shrink-0 shadow-sm">
-          <div className="flex items-center gap-4 lg:gap-0 flex-1">
+        <header className="h-16 lg:h-20 bg-white border-b border-border flex items-center justify-between px-2 sm:px-4 lg:px-8 sticky top-0 z-50 flex-shrink-0 shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-0 flex-1">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden text-slate-500">
@@ -479,7 +480,7 @@ export function Shell({ children }: LayoutProps) {
               </SheetContent>
             </Sheet>
 
-            <div className="max-w-md w-full relative">
+            <div className="max-w-[150px] sm:max-w-md w-full relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input 
                 placeholder="Search leads..." 
@@ -556,7 +557,7 @@ export function Shell({ children }: LayoutProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 lg:gap-4 pl-4 relative">
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-4 pl-1 sm:pl-4 relative">
             <div className="relative">
               <Button 
                 variant="ghost" 
@@ -750,7 +751,7 @@ export function Shell({ children }: LayoutProps) {
                   <div className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 border-4 border-white">
                     <item.icon size={24} />
                   </div>
-                  <span className="text-[10px] font-bold text-indigo-600 absolute bottom-[-20px]">{item.label}</span>
+                  <span className="text-[10px] font-bold text-indigo-600 absolute bottom-[-16px] uppercase tracking-tight">{item.label}</span>
                 </button>
               );
             }
