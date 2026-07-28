@@ -857,18 +857,26 @@ app.use(express.json());
       // Fetch the absolute latest rows from NEW_FMS directly from Google Sheets to prevent duplicates
       const freshRows = await SheetsDB.getRows('NEW_FMS', undefined, 5).catch(err => {
         console.error("Failed to fetch fresh rows for ID generation:", err);
-        throw new Error("Unable to fetch sheet data to generate a unique ID. Please try again.");
+        return [];
       });
 
-      const ppplIds = freshRows
+      const sheetIds = freshRows
+        .map((r: any) => r.Id || r.id)
+        .filter((id: any) => typeof id === 'string' && id.startsWith('PPPL-26-'))
+        .map((id: string) => parseInt(id.replace('PPPL-26-', ''), 10))
+        .filter((num: number) => !isNaN(num));
+        
+      const cacheIds = (LEADS_CACHE || [])
         .map((r: any) => r.Id || r.id)
         .filter((id: any) => typeof id === 'string' && id.startsWith('PPPL-26-'))
         .map((id: string) => parseInt(id.replace('PPPL-26-', ''), 10))
         .filter((num: number) => !isNaN(num));
 
+      const allIds = [...sheetIds, ...cacheIds];
+
       let nextNum = 1500;
-      if (ppplIds.length > 0) {
-        nextNum = Math.max(...ppplIds) + 1;
+      if (allIds.length > 0) {
+        nextNum = Math.max(...allIds) + 1;
       }
       leadData.Id = `PPPL-26-${nextNum}`;
       
