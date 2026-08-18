@@ -654,7 +654,7 @@ app.use(express.json());
       const { email, password } = req.body;
       console.log(`Login attempt for: ${email}`);
       
-      const users = await refreshUsersCache();
+      const users = await refreshUsersCache(true);
 
       // Check both 'Gmail' (sheet column), 'ID' (first column), and 'email' (mock/standard)
       const user = users.find((u: any) => {
@@ -668,7 +668,7 @@ app.use(express.json());
         console.warn(`User not found with identifier: ${email}`);
         // Log available identifiers for debugging (only in dev/logs)
         console.log('Available identifiers in sheet:', users.map(u => ({ id: u.ID, gmail: u.Gmail })));
-        return res.status(401).json({ error: 'User not found. Please check your Operational ID or Gmail.' });
+        return res.status(401).json({ error: 'User not found' });
       }
 
       // Handle the password mapping from 'PASSWORD' column (all caps in sheet image)
