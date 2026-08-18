@@ -197,12 +197,31 @@ export default function LoginPage() {
         <div className="lg:hidden absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-indigo-300/20 blur-[80px] rounded-full z-0" />
         <div className="lg:hidden absolute bottom-[-10%] left-[-10%] w-[70%] h-[40%] bg-cyan-300/20 blur-[80px] rounded-full z-0" />
 
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.97, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[420px] bg-white/80 sm:bg-white p-8 sm:p-10 rounded-[2rem] shadow-2xl shadow-indigo-900/5 border border-white sm:border-slate-100/80 relative z-10 backdrop-blur-2xl sm:backdrop-blur-none mt-4 sm:mt-0"
-        >
+        <div className="relative w-full max-w-[420px] mt-4 sm:mt-0">
+          {/* Ambient glow behind card */}
+          <motion.div
+            animate={{ opacity: [0.5, 0.8, 0.5] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -inset-6 bg-gradient-to-r from-indigo-400/30 via-fuchsia-300/20 to-cyan-300/30 blur-3xl rounded-[3rem] pointer-events-none"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{ y: -4 }}
+            className="w-full bg-white/85 sm:bg-white/95 p-8 sm:p-10 rounded-[2rem] shadow-[0_25px_80px_-20px_rgba(79,70,229,0.35)] border border-white/60 relative z-10 backdrop-blur-2xl mt-0 overflow-hidden transition-shadow duration-500 hover:shadow-[0_30px_90px_-15px_rgba(79,70,229,0.45)]"
+          >
+            {/* Gradient border sheen */}
+            <div
+              className="absolute inset-0 rounded-[2rem] pointer-events-none opacity-60"
+              style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, transparent 35%, transparent 65%, rgba(6,182,212,0.10) 100%)' }}
+            />
+            {/* Top accent gradient bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 via-fuchsia-400 to-cyan-400 rounded-t-[2rem]" />
+            {/* Inner hairline ring */}
+            <div className="absolute inset-[1px] rounded-[calc(2rem-1px)] pointer-events-none ring-1 ring-inset ring-white/40" />
+
           {/* Mobile Logo inside the card */}
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
@@ -321,8 +340,9 @@ export default function LoginPage() {
               </Button>
             </motion.div>
           </form>
-        </motion.div>
-        
+          </motion.div>
+        </div>
+
         {/* Mobile Footer inside the right panel flow */}
         <div className="lg:hidden absolute bottom-6 w-full text-center z-10">
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
